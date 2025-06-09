@@ -1,143 +1,102 @@
 
+import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string | null;
+  ingredients: string[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  products: Product[];
+}
 
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const menuData = {
-    pizzasGrandes: {
-      title: "Pizza Grande (35cm)",
-      icon: "🍕",
-      items: [
-        {
-          id: "1",
-          name: "Margherita",
-          description: "Molho de tomate, mussarela, manjericão fresco e azeite",
-          price: 35.90,
-          image: "",
-          ingredients: ["Molho de tomate", "Mussarela", "Manjericão", "Azeite"]
-        },
-        {
-          id: "2",
-          name: "Calabresa",
-          description: "Molho de tomate, mussarela, calabresa e cebola",
-          price: 38.90,
-          image: "",
-          ingredients: ["Molho de tomate", "Mussarela", "Calabresa", "Cebola"]
-        },
-        {
-          id: "3",
-          name: "Portuguesa",
-          description: "Molho de tomate, mussarela, presunto, ovos, cebola e azeitona",
-          price: 42.90,
-          image: "",
-          ingredients: ["Molho de tomate", "Mussarela", "Presunto", "Ovos", "Cebola", "Azeitona"]
-        },
-        {
-          id: "4",
-          name: "Quatro Queijos",
-          description: "Mussarela, gorgonzola, parmesão e provolone",
-          price: 45.90,
-          image: "",
-          ingredients: ["Mussarela", "Gorgonzola", "Parmesão", "Provolone"]
-        }
-      ]
-    },
-    pizzasBrotos: {
-      title: "Pizza Broto (25cm)",
-      icon: "🍕",
-      items: [
-        {
-          id: "5",
-          name: "Margherita Broto",
-          description: "Molho de tomate, mussarela, manjericão fresco e azeite",
-          price: 18.90,
-          image: "",
-          ingredients: ["Molho de tomate", "Mussarela", "Manjericão", "Azeite"]
-        },
-        {
-          id: "6",
-          name: "Calabresa Broto",
-          description: "Molho de tomate, mussarela, calabresa e cebola",
-          price: 21.90,
-          image: "",
-          ingredients: ["Molho de tomate", "Mussarela", "Calabresa", "Cebola"]
-        }
-      ]
-    },
-    pizzasDoces: {
-      title: "Pizzas Doces",
-      icon: "🍰",
-      items: [
-        {
-          id: "7",
-          name: "Chocolate com Morango",
-          description: "Chocolate ao leite, morangos frescos e açúcar de confeiteiro",
-          price: 32.90,
-          image: "",
-          ingredients: ["Chocolate ao leite", "Morangos", "Açúcar de confeiteiro"]
-        },
-        {
-          id: "8",
-          name: "Banana com Canela",
-          description: "Banana, canela, açúcar mascavo e leite condensado",
-          price: 28.90,
-          image: "",
-          ingredients: ["Banana", "Canela", "Açúcar mascavo", "Leite condensado"]
-        }
-      ]
-    },
-    bebidas: {
-      title: "Bebidas",
-      icon: "🥤",
-      items: [
-        {
-          id: "9",
-          name: "Coca-Cola 2L",
-          description: "Refrigerante de cola gelado",
-          price: 8.90,
-          image: "",
-          ingredients: []
-        },
-        {
-          id: "10",
-          name: "Água Mineral 500ml",
-          description: "Água mineral natural",
-          price: 3.50,
-          image: "",
-          ingredients: []
-        },
-        {
-          id: "11",
-          name: "Suco de Laranja 300ml",
-          description: "Suco natural de laranja",
-          price: 6.90,
-          image: "",
-          ingredients: []
-        }
-      ]
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position');
+
+      if (categoriesError) throw categoriesError;
+
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_available', true)
+        .order('order_position');
+
+      if (productsError) throw productsError;
+
+      const categoriesWithProducts = categoriesData.map(category => ({
+        ...category,
+        products: productsData.filter(product => product.category_id === category.id)
+      }));
+
+      setCategories(categoriesWithProducts);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar cardápio",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const categories = [
-    { id: "all", name: "Todos", count: 11 },
-    { id: "pizzasGrandes", name: "Pizza Grande", count: 4 },
-    { id: "pizzasBrotos", name: "Pizza Broto", count: 2 },
-    { id: "pizzasDoces", name: "Pizzas Doces", count: 2 },
-    { id: "bebidas", name: "Bebidas", count: 3 }
+  const getTotalProducts = () => {
+    return categories.reduce((total, category) => total + category.products.length, 0);
+  };
+
+  const categoryFilters = [
+    { id: "all", name: "Todos", count: getTotalProducts() },
+    ...categories.map(category => ({
+      id: category.id,
+      name: category.name.split(' ')[0] + (category.name.includes('(') ? ` ${category.name.split('(')[1]}` : ''),
+      count: category.products.length
+    }))
   ];
 
-  const filteredData = selectedCategory === "all" 
-    ? menuData 
-    : { [selectedCategory]: menuData[selectedCategory as keyof typeof menuData] };
+  const filteredCategories = selectedCategory === "all" 
+    ? categories 
+    : categories.filter(category => category.id === selectedCategory);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pizza-red" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -176,7 +135,7 @@ const Menu = () => {
 
             {/* Categorias */}
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {categoryFilters.map((category) => (
                 <Button
                   key={category.id}
                   variant={selectedCategory === category.id ? "default" : "outline"}
@@ -198,12 +157,16 @@ const Menu = () => {
 
           {/* Menu Categories */}
           <div className="space-y-12">
-            {Object.entries(filteredData).map(([key, category]) => (
+            {filteredCategories.map((category) => (
               <MenuCategory
-                key={key}
-                title={category.title}
-                items={category.items}
-                icon={category.icon}
+                key={category.id}
+                title={category.name}
+                items={category.products.map(product => ({
+                  ...product,
+                  image: product.image_url || "",
+                  category: category.name
+                }))}
+                icon={category.icon || "🍕"}
               />
             ))}
           </div>

@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from './AuthLayout';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RegisterFormProps {
   onToggleToLogin: () => void;
@@ -14,6 +16,7 @@ interface RegisterFormProps {
 export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,15 +34,31 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (currentStep === 1) {
       setCurrentStep(2);
     } else if (currentStep === 2) {
       setCurrentStep(3);
     } else {
-      console.log('Register attempt:', formData);
-      // Aqui será integrado com Supabase Auth
+      if (formData.password !== formData.confirmPassword) {
+        alert('As senhas não coincidem');
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        await signUp(formData.email, formData.password, formData);
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Registration error:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -53,6 +72,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -65,6 +85,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -76,6 +97,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -87,6 +109,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
           value={formData.cpf}
           onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
           required
+          disabled={isLoading}
         />
       </div>
     </>
@@ -105,6 +128,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             address: { ...formData.address, street: e.target.value }
           })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -120,6 +144,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
               address: { ...formData.address, number: e.target.value }
             })}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -134,6 +159,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
               address: { ...formData.address, zipCode: e.target.value }
             })}
             required
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -149,6 +175,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             address: { ...formData.address, neighborhood: e.target.value }
           })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -162,6 +189,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             ...formData, 
             address: { ...formData.address, complement: e.target.value }
           })}
+          disabled={isLoading}
         />
       </div>
 
@@ -175,6 +203,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             ...formData, 
             address: { ...formData.address, reference: e.target.value }
           })}
+          disabled={isLoading}
         />
       </div>
     </>
@@ -192,6 +221,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
+            disabled={isLoading}
           />
           <Button
             type="button"
@@ -199,6 +229,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
             size="sm"
             className="absolute right-0 top-0 h-full px-3"
             onClick={() => setShowPassword(!showPassword)}
+            disabled={isLoading}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
@@ -214,6 +245,7 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
           value={formData.confirmPassword}
           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -295,12 +327,24 @@ export const RegisterForm = ({ onToggleToLogin }: RegisterFormProps) => {
               variant="outline"
               onClick={() => setCurrentStep(currentStep - 1)}
               className="flex-1"
+              disabled={isLoading}
             >
               Voltar
             </Button>
           )}
-          <Button type="submit" className="flex-1 gradient-pizza text-white border-0">
-            {currentStep === 3 ? 'Criar conta e assinar' : 'Continuar'}
+          <Button 
+            type="submit" 
+            className="flex-1 gradient-pizza text-white border-0"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Criando...
+              </>
+            ) : (
+              currentStep === 3 ? 'Criar conta e assinar' : 'Continuar'
+            )}
           </Button>
         </div>
       </form>

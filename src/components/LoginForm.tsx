@@ -1,10 +1,12 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from './AuthLayout';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LoginFormProps {
   onToggleToRegister: () => void;
@@ -16,11 +18,23 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', formData);
-    // Aqui será integrado com Supabase Auth
+    setIsLoading(true);
+    
+    try {
+      await signIn(formData.email, formData.password);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,6 +55,7 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
+            disabled={isLoading}
           />
         </div>
         
@@ -54,6 +69,7 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
+              disabled={isLoading}
             />
             <Button
               type="button"
@@ -61,17 +77,29 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
               size="sm"
               className="absolute right-0 top-0 h-full px-3"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
         </div>
 
-        <Button type="submit" className="w-full gradient-pizza text-white border-0">
-          Entrar
+        <Button 
+          type="submit" 
+          className="w-full gradient-pizza text-white border-0"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Entrando...
+            </>
+          ) : (
+            'Entrar'
+          )}
         </Button>
 
-        <Button variant="link" className="w-full text-sm">
+        <Button variant="link" className="w-full text-sm" disabled={isLoading}>
           Esqueci minha senha
         </Button>
       </form>
