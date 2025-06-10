@@ -1,8 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
+import { CartDrawer } from "@/components/CartDrawer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +113,7 @@ const Menu = () => {
                 Deliciosas pizzas artesanais feitas especialmente para você
               </p>
             </div>
+            <CartDrawer />
           </div>
 
           {/* Filtros e Busca */}

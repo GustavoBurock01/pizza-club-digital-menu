@@ -10,6 +10,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Menu from "./pages/Menu";
+import Orders from "./pages/Orders";
+import Account from "./pages/Account";
+import Checkout from "./pages/Checkout";
+import OrderStatus from "./pages/OrderStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +44,26 @@ const App = () => (
             <Route path="/menu" element={
               <ProtectedRoute requireAuth={true} requireSubscription={true}>
                 <Menu />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders" element={
+              <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                <Orders />
+              </ProtectedRoute>
+            } />
+            <Route path="/account" element={
+              <ProtectedRoute requireAuth={true}>
+                <Account />
+              </ProtectedRoute>
+            } />
+            <Route path="/checkout" element={
+              <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                <Checkout />
+              </ProtectedRoute>
+            } />
+            <Route path="/order-status/:orderId" element={
+              <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                <OrderStatus />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -2,48 +2,45 @@
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Home, 
-  ShoppingCart, 
-  BookOpen, 
+  Pizza, 
+  ShoppingBag, 
   User, 
   CreditCard, 
-  Clock,
-  LogOut,
-  Pizza
+  LogOut, 
+  ShoppingCart 
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
-    title: "Início",
+    title: "Dashboard",
     url: "/dashboard",
     icon: Home,
   },
   {
     title: "Cardápio",
     url: "/menu",
-    icon: BookOpen,
-  },
-  {
-    title: "Novo Pedido",
-    url: "/order",
-    icon: ShoppingCart,
+    icon: Pizza,
   },
   {
     title: "Meus Pedidos",
     url: "/orders",
-    icon: Clock,
+    icon: ShoppingBag,
   },
   {
     title: "Minha Conta",
@@ -58,63 +55,44 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const user = {
-    name: "João Silva",
-    email: "joao@email.com",
-    avatar: "",
-    plan: "Premium",
-    daysLeft: 23
-  };
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  const { signOut } = useAuth();
+  const { getItemCount } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg">
-            <Pizza className="h-6 w-6 text-white" />
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-gradient-to-br from-pizza-red to-pizza-orange rounded-lg flex items-center justify-center">
+            <Pizza className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg">Pizza Premium</h1>
-            <p className="text-sm text-muted-foreground">Cardápio exclusivo</p>
+            <h2 className="text-lg font-bold">PizzaClub</h2>
+            <p className="text-xs text-muted-foreground">Assinante Premium</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-4">
-        <div className="mb-6 p-4 bg-gradient-to-r from-pizza-red/10 to-pizza-orange/10 rounded-lg border border-pizza-orange/20">
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={user.avatar} />
-              <AvatarFallback className="bg-primary text-white">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-medium">{user.name}</p>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {user.plan}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {user.daysLeft} dias restantes
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent transition-colors">
-                      <item.icon className="h-5 w-5" />
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                  >
+                    <a 
+                      href={item.url} 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(item.url);
+                      }}
+                      className="flex items-center gap-3"
+                    >
+                      <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </a>
                   </SidebarMenuButton>
@@ -123,12 +101,41 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Carrinho</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <a 
+                    href="/checkout" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/checkout');
+                    }}
+                    className="flex items-center gap-3"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    <span>Carrinho</span>
+                    {getItemCount() > 0 && (
+                      <Badge className="ml-auto h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                        {getItemCount()}
+                      </Badge>
+                    )}
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+      <SidebarFooter className="p-4">
+        <Button 
+          variant="outline" 
+          onClick={signOut}
+          className="w-full flex items-center gap-2"
         >
           <LogOut className="h-4 w-4" />
           Sair
