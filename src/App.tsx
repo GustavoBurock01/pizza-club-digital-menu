@@ -38,7 +38,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/menu" element={
-              <ProtectedRoute requireAuth={true}>
+              <ProtectedRoute requireAuth={true} requireSubscription={true}>
                 <Menu />
               </ProtectedRoute>
             } />
