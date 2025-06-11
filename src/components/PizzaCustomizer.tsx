@@ -126,7 +126,7 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
               <Checkbox
                 id="half-and-half"
                 checked={isHalfAndHalf}
-                onCheckedChange={setIsHalfAndHalf}
+                onCheckedChange={(checked) => setIsHalfAndHalf(!!checked)}
               />
               <Label htmlFor="half-and-half">Meio a meio</Label>
             </div>
@@ -186,7 +186,7 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
                   <Checkbox
                     id={extra}
                     checked={selectedExtras.includes(extra)}
-                    onCheckedChange={(checked) => handleExtraChange(extra, checked as boolean)}
+                    onCheckedChange={(checked) => handleExtraChange(extra, !!checked)}
                   />
                   <Label htmlFor={extra} className="text-sm">{extra}</Label>
                 </div>

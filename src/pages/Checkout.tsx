@@ -82,14 +82,14 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      // Insert order items
+      // Insert order items with proper type conversion
       const orderItems = items.map(item => ({
         order_id: order.id,
         product_id: item.productId,
         quantity: item.quantity,
         unit_price: item.price,
         total_price: item.price * item.quantity,
-        customizations: item.customizations || null,
+        customizations: item.customizations ? JSON.stringify(item.customizations) as any : null,
       }));
 
       const { error: itemsError } = await supabase
