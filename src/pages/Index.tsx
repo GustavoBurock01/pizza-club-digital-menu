@@ -78,7 +78,7 @@ const Index = () => {
               Começar Agora - R$ 1,00
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-pizza-red text-lg px-8 py-4">
+            <Button size="lg" variant="outline" className="border-white hover:bg-white text-lg px-8 py-4 text-orange-600">
               Ver Cardápio Demo
             </Button>
           </div>
