@@ -23,30 +23,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Recuperar sessão atual
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let mounted = true;
+
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Defer any additional data fetching
+          setTimeout(() => {
+            if (mounted) {
+              console.log('User signed in:', session.user.email);
+            }
+          }, 0);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      
+      if (error) {
+        console.error('Error getting session:', error);
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
       setLoading(true);
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: userData.name,
             phone: userData.phone,
@@ -57,26 +92,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Se o usuário foi criado com sucesso, criar endereço
-      if (data.user) {
-        const { error: addressError } = await supabase
-          .from('addresses')
-          .insert({
-            user_id: data.user.id,
-            street: userData.address.street,
-            number: userData.address.number,
-            complement: userData.address.complement,
-            neighborhood: userData.address.neighborhood,
-            zip_code: userData.address.zipCode,
-            reference_point: userData.address.reference,
-            is_default: true
-          });
+      // If the user was created with success, create additional data
+      if (data.user && !error) {
+        // Create address if provided
+        if (userData.address) {
+          const { error: addressError } = await supabase
+            .from('addresses')
+            .insert({
+              user_id: data.user.id,
+              street: userData.address.street,
+              number: userData.address.number,
+              complement: userData.address.complement || null,
+              neighborhood: userData.address.neighborhood,
+              zip_code: userData.address.zipCode,
+              reference_point: userData.address.reference || null,
+              is_default: true
+            });
 
-        if (addressError) {
-          console.error('Erro ao criar endereço:', addressError);
+          if (addressError) {
+            console.error('Error creating address:', addressError);
+          }
         }
 
-        // Criar assinatura inicial
+        // Create initial subscription
         const { error: subscriptionError } = await supabase
           .from('subscriptions')
           .insert({
@@ -87,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
 
         if (subscriptionError) {
-          console.error('Erro ao criar assinatura:', subscriptionError);
+          console.error('Error creating subscription:', subscriptionError);
         }
       }
 
@@ -96,6 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Verifique seu email para confirmar a conta.",
       });
     } catch (error: any) {
+      console.error('Sign up error:', error);
       toast({
         title: "Erro ao criar conta",
         description: error.message,
@@ -122,6 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Bem-vindo de volta!",
       });
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast({
         title: "Erro ao fazer login",
         description: error.message,
@@ -143,6 +183,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Até a próxima!",
       });
     } catch (error: any) {
+      console.error('Sign out error:', error);
       toast({
         title: "Erro ao fazer logout",
         description: error.message,
@@ -167,6 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Suas informações foram salvas com sucesso.",
       });
     } catch (error: any) {
+      console.error('Update profile error:', error);
       toast({
         title: "Erro ao atualizar perfil",
         description: error.message,
