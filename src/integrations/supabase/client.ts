@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types';
 
@@ -11,4 +12,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '[PRESENT]' : '[MISSING]');
 }
 
-export const supabase
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
