@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Menu from "./pages/Menu";
+import Product from "./pages/Product";
+import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Account from "./pages/Account";
 import Checkout from "./pages/Checkout";
@@ -61,6 +63,16 @@ const App = () => (
               <Route path="/menu" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
                   <Menu />
+                </ProtectedRoute>
+              } />
+              <Route path="/produto/:id" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <Product />
+                </ProtectedRoute>
+              } />
+              <Route path="/cart" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <Cart />
                 </ProtectedRoute>
               } />
               <Route path="/orders" element={
