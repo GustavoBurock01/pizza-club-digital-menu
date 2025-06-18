@@ -11,6 +11,7 @@ interface SubscriptionStatus {
   plan_price: number;
   expires_at: string | null;
   loading: boolean;
+  hasSubscriptionHistory: boolean;
 }
 
 export const useSubscription = () => {
@@ -23,7 +24,31 @@ export const useSubscription = () => {
     plan_price: 0,
     expires_at: null,
     loading: true,
+    hasSubscriptionHistory: false,
   });
+
+  const checkSubscriptionHistory = async () => {
+    if (!user || !session) return false;
+
+    try {
+      // Verifica se já existe registro de assinatura na tabela subscriptions
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking subscription history:', error);
+        return false;
+      }
+
+      return data && data.length > 0;
+    } catch (error: any) {
+      console.error('Error checking subscription history:', error);
+      return false;
+    }
+  };
 
   const checkSubscription = async () => {
     if (!user || !session) {
@@ -33,6 +58,9 @@ export const useSubscription = () => {
 
     try {
       setSubscription(prev => ({ ...prev, loading: true }));
+      
+      // Primeiro verifica o histórico de assinaturas
+      const hasHistory = await checkSubscriptionHistory();
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
@@ -49,6 +77,7 @@ export const useSubscription = () => {
         plan_price: data.plan_price || 0,
         expires_at: data.expires_at,
         loading: false,
+        hasSubscriptionHistory: hasHistory,
       });
     } catch (error: any) {
       console.error('Error checking subscription:', error);

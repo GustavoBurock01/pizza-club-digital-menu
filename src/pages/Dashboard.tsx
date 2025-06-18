@@ -1,4 +1,3 @@
-
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -179,6 +178,35 @@ const Dashboard = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
+  // Função para determinar qual botão de assinatura mostrar
+  const renderSubscriptionButton = () => {
+    if (subscription.subscribed) return null;
+    
+    // Se nunca teve assinatura, mostra trial por R$ 1,00
+    if (!subscription.hasSubscriptionHistory) {
+      return (
+        <Button 
+          onClick={() => createCheckout('trial')} 
+          size="sm"
+          className="gradient-pizza text-white"
+        >
+          Primeiro mês R$ 1,00
+        </Button>
+      );
+    }
+    
+    // Se já teve assinatura antes, mostra plano mensal
+    return (
+      <Button 
+        onClick={() => createCheckout('monthly')} 
+        variant="outline" 
+        size="sm"
+      >
+        Assinar R$ 9,90/mês
+      </Button>
+    );
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -245,20 +273,7 @@ const Dashboard = () => {
                   <strong>Assinatura necessária!</strong> Assine para ter acesso ao cardápio exclusivo e fazer pedidos.
                 </span>
                 <div className="flex gap-2 ml-4">
-                  <Button 
-                    onClick={() => createCheckout('trial')} 
-                    size="sm"
-                    className="gradient-pizza text-white"
-                  >
-                    Primeiro mês R$ 1,00
-                  </Button>
-                  <Button 
-                    onClick={() => createCheckout('monthly')} 
-                    variant="outline" 
-                    size="sm"
-                  >
-                    Assinar R$ 9,90/mês
-                  </Button>
+                  {renderSubscriptionButton()}
                 </div>
               </AlertDescription>
             </Alert>
@@ -415,20 +430,7 @@ const Dashboard = () => {
                       Assine para começar a fazer pedidos e ver seu histórico aqui!
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button 
-                        onClick={() => createCheckout('trial')} 
-                        size="sm"
-                        className="gradient-pizza text-white"
-                      >
-                        Começar com R$ 1,00
-                      </Button>
-                      <Button 
-                        onClick={() => createCheckout('monthly')} 
-                        variant="outline" 
-                        size="sm"
-                      >
-                        Assinar R$ 9,90
-                      </Button>
+                      {renderSubscriptionButton()}
                     </div>
                   </div>
                 )}
