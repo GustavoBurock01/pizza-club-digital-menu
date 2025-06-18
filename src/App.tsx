@@ -15,6 +15,8 @@ import Orders from "./pages/Orders";
 import Account from "./pages/Account";
 import Checkout from "./pages/Checkout";
 import OrderStatus from "./pages/OrderStatus";
+import Loading from "./pages/Loading";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,6 +45,12 @@ const App = () => (
               <Route path="/auth" element={
                 <ProtectedRoute requireAuth={false}>
                   <Auth />
+                </ProtectedRoute>
+              } />
+              <Route path="/loading" element={<Loading />} />
+              <Route path="/payment-success" element={
+                <ProtectedRoute requireAuth={true}>
+                  <PaymentSuccess />
                 </ProtectedRoute>
               } />
               <Route path="/dashboard" element={
