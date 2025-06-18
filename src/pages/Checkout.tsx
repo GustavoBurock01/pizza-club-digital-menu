@@ -24,20 +24,24 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [addressInitialized, setAddressInitialized] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) {
       navigate('/menu');
       return;
     }
+  }, [items.length, navigate]);
 
-    if (addresses.length > 0 && !selectedAddress) {
+  useEffect(() => {
+    if (addresses.length > 0 && !addressInitialized) {
       const defaultAddr = addresses.find(addr => addr.is_default) || addresses[0];
       setSelectedAddress(defaultAddr.id);
       const fee = calculateDeliveryFee(defaultAddr.neighborhood);
       setDeliveryFee(fee);
+      setAddressInitialized(true);
     }
-  }, [addresses, items.length, navigate, selectedAddress, calculateDeliveryFee, setDeliveryFee]);
+  }, [addresses, addressInitialized, calculateDeliveryFee, setDeliveryFee]);
 
   const handleAddressChange = (addressId: string) => {
     setSelectedAddress(addressId);
