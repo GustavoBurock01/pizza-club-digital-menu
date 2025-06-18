@@ -51,16 +51,28 @@ serve(async (req) => {
     logStep("Found Stripe customer", { customerId });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/dashboard`,
-    });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/dashboard`,
+      });
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ url: portalSession.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (stripeError: any) {
+      logStep("Stripe portal error", { error: stripeError.message });
+      
+      // Verificar se é erro de configuração do portal
+      if (stripeError.message.includes('billing portal') || stripeError.message.includes('configuration')) {
+        throw new Error("Portal de cobrança não configurado no Stripe. Configure em: https://dashboard.stripe.com/test/settings/billing/portal");
+      }
+      
+      throw stripeError;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });

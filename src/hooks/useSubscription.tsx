@@ -139,15 +139,34 @@ export const useSubscription = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Tratamento específico para erro de portal não configurado
+        if (error.message.includes('portal') || error.message.includes('billing')) {
+          toast({
+            title: "Portal não configurado",
+            description: "O portal de gerenciamento precisa ser configurado no Stripe. Entre em contato com o suporte.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       // Open customer portal in a new tab
       window.open(data.url, '_blank');
     } catch (error: any) {
       console.error('Error opening customer portal:', error);
+      
+      // Mensagem mais específica baseada no tipo de erro
+      let errorMessage = error.message;
+      if (error.message.includes('500') || error.message.includes('non-2xx')) {
+        errorMessage = "Portal de gerenciamento não configurado. Entre em contato com o suporte.";
+      }
+      
       toast({
         title: "Erro ao abrir portal do cliente",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
