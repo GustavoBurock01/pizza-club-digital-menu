@@ -239,6 +239,7 @@ export type Database = {
           name: string
           order_position: number | null
           price: number
+          subcategory_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -252,6 +253,7 @@ export type Database = {
           name: string
           order_position?: number | null
           price: number
+          subcategory_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -265,6 +267,7 @@ export type Database = {
           name?: string
           order_position?: number | null
           price?: number
+          subcategory_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -273,6 +276,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
             referencedColumns: ["id"]
           },
         ]
@@ -312,6 +322,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      subcategories: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          order_position: number | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          order_position?: number | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          order_position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

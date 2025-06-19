@@ -1,12 +1,13 @@
+
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
+import { SubcategoryNavigation } from "@/components/SubcategoryNavigation";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Loader2 } from "lucide-react";
+import { Search, Filter, Loader2, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,27 +20,42 @@ interface Product {
   ingredients: string[];
 }
 
+interface Subcategory {
+  id: string;
+  name: string;
+  description: string | null;
+  category_id: string;
+  order_position: number | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  product_count: number;
+}
+
 interface Category {
   id: string;
   name: string;
   description: string | null;
   icon: string | null;
-  products: Product[];
+  subcategories: Subcategory[];
 }
 
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
+  const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'products'>('categories');
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCategories();
+    fetchCategoriesAndSubcategories();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategoriesAndSubcategories = async () => {
     try {
+      // Buscar categorias
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
@@ -48,20 +64,42 @@ const Menu = () => {
 
       if (categoriesError) throw categoriesError;
 
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
+      // Buscar subcategorias
+      const { data: subcategoriesData, error: subcategoriesError } = await supabase
+        .from('subcategories')
         .select('*')
-        .eq('is_available', true)
+        .eq('is_active', true)
         .order('order_position');
 
-      if (productsError) throw productsError;
+      if (subcategoriesError) throw subcategoriesError;
 
-      const categoriesWithProducts = categoriesData.map(category => ({
+      // Contar produtos por subcategoria
+      const { data: productCounts, error: countError } = await supabase
+        .from('products')
+        .select('subcategory_id')
+        .eq('is_available', true);
+
+      if (countError) throw countError;
+
+      const subcategoryProductCounts = productCounts.reduce((acc: Record<string, number>, product) => {
+        if (product.subcategory_id) {
+          acc[product.subcategory_id] = (acc[product.subcategory_id] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      // Organizar dados hierarquicamente
+      const categoriesWithSubcategories = categoriesData.map(category => ({
         ...category,
-        products: productsData.filter(product => product.category_id === category.id)
+        subcategories: subcategoriesData
+          .filter(sub => sub.category_id === category.id)
+          .map(sub => ({
+            ...sub,
+            product_count: subcategoryProductCounts[sub.id] || 0
+          }))
       }));
 
-      setCategories(categoriesWithProducts);
+      setCategories(categoriesWithSubcategories);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar cardápio",
@@ -73,24 +111,67 @@ const Menu = () => {
     }
   };
 
-  const getTotalProducts = () => {
-    return categories.reduce((total, category) => total + category.products.length, 0);
+  const fetchProductsBySubcategory = async (subcategoryId: string) => {
+    try {
+      setLoading(true);
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('subcategory_id', subcategoryId)
+        .eq('is_available', true)
+        .order('order_position');
+
+      if (productsError) throw productsError;
+
+      setProducts(productsData || []);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar produtos",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const categoryFilters = [
-    { id: "all", name: "Todos", count: getTotalProducts() },
-    ...categories.map(category => ({
-      id: category.id,
-      name: category.name.split(' ')[0] + (category.name.includes('(') ? ` ${category.name.split('(')[1]}` : ''),
-      count: category.products.length
-    }))
-  ];
+  const handleSubcategorySelect = (categoryId: string, subcategoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    
+    if (subcategoryId) {
+      setSelectedSubcategoryId(subcategoryId);
+      setCurrentView('products');
+      fetchProductsBySubcategory(subcategoryId);
+    } else {
+      setCurrentView('subcategories');
+    }
+  };
 
-  const filteredCategories = selectedCategory === "all" 
-    ? categories 
-    : categories.filter(category => category.id === selectedCategory);
+  const handleBackToCategories = () => {
+    setSelectedCategoryId("");
+    setSelectedSubcategoryId("");
+    setCurrentView('categories');
+    setProducts([]);
+  };
 
-  if (loading) {
+  const handleBackToSubcategories = () => {
+    setSelectedSubcategoryId("");
+    setCurrentView('subcategories');
+    setProducts([]);
+  };
+
+  const getCurrentCategoryName = () => {
+    const category = categories.find(cat => cat.id === selectedCategoryId);
+    return category?.name || "";
+  };
+
+  const getCurrentSubcategoryName = () => {
+    const category = categories.find(cat => cat.id === selectedCategoryId);
+    const subcategory = category?.subcategories.find(sub => sub.id === selectedSubcategoryId);
+    return subcategory?.name || "";
+  };
+
+  if (loading && currentView === 'categories') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-pizza-red" />
@@ -106,23 +187,44 @@ const Menu = () => {
           <div className="flex items-center gap-4 mb-6">
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                {currentView !== 'categories' && (
+                  <>
+                    <Button variant="ghost" onClick={handleBackToCategories} className="p-1">
+                      <Home className="h-4 w-4" />
+                    </Button>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="text-muted-foreground">{getCurrentCategoryName()}</span>
+                    {currentView === 'products' && (
+                      <>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-medium">{getCurrentSubcategoryName()}</span>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
               <h1 className="text-3xl font-bold text-pizza-dark mb-2">
-                Cardápio Exclusivo 🍕
+                {currentView === 'categories' && "Cardápio Exclusivo 🍕"}
+                {currentView === 'subcategories' && `${getCurrentCategoryName()}`}
+                {currentView === 'products' && `${getCurrentSubcategoryName()}`}
               </h1>
               <p className="text-muted-foreground">
-                Deliciosas pizzas artesanais feitas especialmente para você
+                {currentView === 'categories' && "Escolha uma categoria para começar"}
+                {currentView === 'subcategories' && "Selecione uma subcategoria"}
+                {currentView === 'products' && `${products.length} ${products.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`}
               </p>
             </div>
             <CartDrawer />
           </div>
 
-          {/* Filtros e Busca */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+          {/* Busca (apenas na view de produtos) */}
+          {currentView === 'products' && (
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Buscar pizza ou ingrediente..."
+                  placeholder="Buscar produto..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -133,69 +235,81 @@ const Menu = () => {
                 Filtros
               </Button>
             </div>
+          )}
 
-            {/* Categorias */}
-            <div className="flex flex-wrap gap-2">
-              {categoryFilters.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`flex items-center gap-2 ${
-                    selectedCategory === category.id 
-                      ? "gradient-pizza text-white" 
-                      : "hover:bg-pizza-cream"
-                  }`}
-                >
-                  {category.name}
-                  <Badge variant="secondary" className="text-xs">
-                    {category.count}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
-          </div>
+          {/* Navegação de Categorias e Subcategorias */}
+          {(currentView === 'categories' || currentView === 'subcategories') && (
+            <SubcategoryNavigation
+              categories={categories}
+              onSubcategorySelect={handleSubcategorySelect}
+              onBackToCategories={handleBackToCategories}
+              selectedCategoryId={currentView === 'subcategories' ? selectedCategoryId : undefined}
+            />
+          )}
 
-          {/* Menu Categories */}
-          <div className="space-y-12">
-            {filteredCategories.map((category) => (
-              <MenuCategory
-                key={category.id}
-                title={category.name}
-                items={category.products.map(product => ({
-                  ...product,
-                  image: product.image_url || "",
-                  category: category.name
-                }))}
-                icon={category.icon || "🍕"}
-              />
-            ))}
-          </div>
+          {/* Lista de Produtos */}
+          {currentView === 'products' && (
+            <div className="space-y-12">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-pizza-red" />
+                </div>
+              ) : (
+                <>
+                  {products.length > 0 && (
+                    <MenuCategory
+                      title={getCurrentSubcategoryName()}
+                      items={products.map(product => ({
+                        ...product,
+                        image: product.image_url || "",
+                        category: getCurrentSubcategoryName()
+                      }))}
+                      icon="🍽️"
+                    />
+                  )}
+                  
+                  {currentView === 'products' && (
+                    <div className="flex justify-center">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleBackToSubcategories}
+                        className="flex items-center gap-2"
+                      >
+                        Voltar para {getCurrentCategoryName()}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
-          {/* Informações Adicionais */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-pizza-cream p-6 rounded-lg text-center">
-              <div className="text-3xl mb-2">🚚</div>
-              <h3 className="font-semibold mb-1">Entrega Grátis</h3>
-              <p className="text-sm text-muted-foreground">
-                Para assinantes em toda a cidade
-              </p>
+          {/* Informações Adicionais (apenas na view de categorias) */}
+          {currentView === 'categories' && (
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-pizza-cream p-6 rounded-lg text-center">
+                <div className="text-3xl mb-2">🚚</div>
+                <h3 className="font-semibold mb-1">Entrega Grátis</h3>
+                <p className="text-sm text-muted-foreground">
+                  Para assinantes em toda a cidade
+                </p>
+              </div>
+              <div className="bg-pizza-cream p-6 rounded-lg text-center">
+                <div className="text-3xl mb-2">⏰</div>
+                <h3 className="font-semibold mb-1">Entrega Rápida</h3>
+                <p className="text-sm text-muted-foreground">
+                  Em até 45 minutos na sua casa
+                </p>
+              </div>
+              <div className="bg-pizza-cream p-6 rounded-lg text-center">
+                <div className="text-3xl mb-2">🍕</div>
+                <h3 className="font-semibold mb-1">Meio a Meio</h3>
+                <p className="text-sm text-muted-foreground">
+                  Combine dois sabores em uma pizza
+                </p>
+              </div>
             </div>
-            <div className="bg-pizza-cream p-6 rounded-lg text-center">
-              <div className="text-3xl mb-2">⏰</div>
-              <h3 className="font-semibold mb-1">Entrega Rápida</h3>
-              <p className="text-sm text-muted-foreground">
-                Em até 45 minutos na sua casa
-              </p>
-            </div>
-            <div className="bg-pizza-cream p-6 rounded-lg text-center">
-              <div className="text-3xl mb-2">🍕</div>
-              <h3 className="font-semibold mb-1">Meio a Meio</h3>
-              <p className="text-sm text-muted-foreground">
-                Combine dois sabores em uma pizza
-              </p>
-            </div>
-          </div>
+          )}
         </main>
       </div>
     </SidebarProvider>
