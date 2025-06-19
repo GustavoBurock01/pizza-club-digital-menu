@@ -4,21 +4,13 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Sparkles, Clock, Gift, Star } from "lucide-react";
+import { Crown, Sparkles, Clock, Gift } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const { subscription, loading } = useSubscription();
+  const { subscription } = useSubscription();
   const navigate = useNavigate();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pizza-red"></div>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>
