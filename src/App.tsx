@@ -16,6 +16,8 @@ import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Account from "./pages/Account";
 import Checkout from "./pages/Checkout";
+import Payment from "./pages/Payment";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderStatus from "./pages/OrderStatus";
 import Loading from "./pages/Loading";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -75,6 +77,21 @@ const App = () => (
                   <Cart />
                 </ProtectedRoute>
               } />
+              <Route path="/checkout" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <Checkout />
+                </ProtectedRoute>
+              } />
+              <Route path="/payment/:orderId" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <Payment />
+                </ProtectedRoute>
+              } />
+              <Route path="/order-confirmation/:orderId" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <OrderConfirmation />
+                </ProtectedRoute>
+              } />
               <Route path="/orders" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
                   <Orders />
@@ -83,11 +100,6 @@ const App = () => (
               <Route path="/account" element={
                 <ProtectedRoute requireAuth={true}>
                   <Account />
-                </ProtectedRoute>
-              } />
-              <Route path="/checkout" element={
-                <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Checkout />
                 </ProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={

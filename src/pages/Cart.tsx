@@ -3,29 +3,20 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Minus, Plus, X, Tag } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, X } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { CartSuggestions } from '@/components/CartSuggestions';
 
 const Cart = () => {
-  const { items, updateQuantity, removeItem, getSubtotal, getTotal, deliveryFee } = useCart();
+  const { items, updateQuantity, removeItem, getSubtotal, getTotal } = useCart();
   const navigate = useNavigate();
-  const [couponCode, setCouponCode] = useState('');
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     });
-  };
-
-  const applyCoupon = () => {
-    // TODO: Implementar lógica de cupons
-    console.log('Aplicar cupom:', couponCode);
   };
 
   if (items.length === 0) {
@@ -39,7 +30,7 @@ const Cart = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/menu')}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -76,7 +67,7 @@ const Cart = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/menu')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -104,18 +95,6 @@ const Cart = () => {
                     
                     <div className="flex-1">
                       <h3 className="font-medium">{item.name}</h3>
-                      
-                      {/* Customizations */}
-                      {item.customizations && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {item.customizations.crust && item.customizations.crust !== 'tradicional' && (
-                            <p>Borda: {item.customizations.crust}</p>
-                          )}
-                          {item.customizations.extras && item.customizations.extras.length > 0 && (
-                            <p>Extras: {item.customizations.extras.join(', ')}</p>
-                          )}
-                        </div>
-                      )}
                       
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
@@ -164,33 +143,6 @@ const Cart = () => {
               </CardContent>
             </Card>
 
-            {/* Suggestions */}
-            <CartSuggestions />
-
-            {/* Coupon */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Tag className="h-4 w-4 text-pizza-red" />
-                  <span className="font-medium">Cupom de desconto</span>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Digite seu cupom"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                  />
-                  <Button 
-                    variant="outline" 
-                    onClick={applyCoupon}
-                    disabled={!couponCode}
-                  >
-                    Resgatar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Summary */}
             <Card>
               <CardContent className="p-4 space-y-2">
@@ -218,7 +170,7 @@ const Cart = () => {
                 onClick={() => navigate('/checkout')}
                 className="w-full gradient-pizza text-white h-12"
               >
-                Continuar • {formatPrice(getTotal())}
+                Finalizar Pedido • {formatPrice(getTotal())}
               </Button>
             </div>
           </div>
