@@ -105,14 +105,14 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // Create order items with proper Json casting
       const orderItems = items.map(item => ({
         order_id: orderData.id,
         product_id: item.productId,
         quantity: item.quantity,
         unit_price: item.price,
         total_price: item.price * item.quantity,
-        customizations: item.customizations
+        customizations: item.customizations ? JSON.parse(JSON.stringify(item.customizations)) : null
       }));
 
       const { error: itemsError } = await supabase
