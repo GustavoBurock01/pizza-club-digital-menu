@@ -36,7 +36,7 @@ const items = [
   },
   {
     title: "Analytics",
-    url: "/admin?tab=analytics",
+    url: "/analytics",
     icon: BarChart3,
   },
 ];

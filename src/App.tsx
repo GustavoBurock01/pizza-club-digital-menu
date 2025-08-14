@@ -22,6 +22,7 @@ import OrderStatus from "./pages/OrderStatus";
 import Loading from "./pages/Loading";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Admin from "./pages/Admin";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -111,6 +112,11 @@ const App = () => (
               <Route path="/admin" element={
                 <ProtectedRoute requireAuth={true}>
                   <Admin />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute requireAuth={true}>
+                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
