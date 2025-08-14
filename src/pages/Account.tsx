@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { User, MapPin, Plus, Edit, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AppSidebar } from '@/components/AppSidebar';
 
 const Account = () => {
   const { user } = useAuth();
@@ -171,8 +173,15 @@ const Account = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <main className="flex-1">
+          <header className="h-12 flex items-center border-b bg-background px-4">
+            <SidebarTrigger />
+          </header>
+          <div className="bg-gray-50 py-8">
+            <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Minha Conta</h1>
           <p className="text-muted-foreground">
@@ -578,8 +587,11 @@ const Account = () => {
             </CardContent>
           </Card>
         </div>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
