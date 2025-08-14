@@ -7,10 +7,13 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Minus, Plus, X } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Cart = () => {
   const { items, updateQuantity, removeItem, getSubtotal, getTotal } = useCart();
   const navigate = useNavigate();
+  const [productDetails, setProductDetails] = useState<Record<string, { categoryName: string; subcategoryName: string }>>({});
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -40,6 +43,46 @@ const Cart = () => {
     
     return customizations;
   };
+
+  // Buscar informações de categoria e subcategoria para os produtos
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      const productIds = [...new Set(items.map(item => item.productId))];
+      if (productIds.length === 0) return;
+
+      try {
+        const { data: products, error } = await supabase
+          .from('products')
+          .select(`
+            id,
+            categories (
+              name
+            ),
+            subcategories (
+              name
+            )
+          `)
+          .in('id', productIds);
+
+        if (error) throw error;
+
+        const detailsMap: Record<string, { categoryName: string; subcategoryName: string }> = {};
+        
+        products?.forEach((product: any) => {
+          detailsMap[product.id] = {
+            categoryName: product.categories?.name || '',
+            subcategoryName: product.subcategories?.name || ''
+          };
+        });
+
+        setProductDetails(detailsMap);
+      } catch (error) {
+        console.error('Erro ao buscar detalhes dos produtos:', error);
+      }
+    };
+
+    fetchProductDetails();
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -127,6 +170,11 @@ const Cart = () => {
                     </div>
                     
                     <div className="flex-1">
+                      {productDetails[item.productId] && (
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {productDetails[item.productId].categoryName} • {productDetails[item.productId].subcategoryName}
+                        </div>
+                      )}
                       <h3 className="font-medium">{item.name}</h3>
                       {getCustomizations(item).length > 0 && (
                         <div className="text-sm text-muted-foreground mt-1 space-y-1">
