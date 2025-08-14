@@ -21,6 +21,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderStatus from "./pages/OrderStatus";
 import Loading from "./pages/Loading";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -105,6 +106,11 @@ const App = () => (
               <Route path="/order-status/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
                   <OrderStatus />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute requireAuth={true}>
+                  <Admin />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
