@@ -4,8 +4,8 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useCart, CartCustomization } from '@/hooks/useCart';
@@ -177,21 +177,25 @@ const Product = () => {
                 {/* Crust Selection */}
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Borda Recheada</Label>
-                  <RadioGroup value={selectedCrust} onValueChange={setSelectedCrust}>
-                    {CRUST_OPTIONS.map((crust) => (
-                      <div key={crust.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={crust.id} id={crust.id} />
-                        <Label htmlFor={crust.id} className="flex-1">
-                          {crust.name}
-                          {crust.price > 0 && (
-                            <span className="text-sm text-muted-foreground ml-2">
-                              +{formatPrice(crust.price)}
-                            </span>
-                          )}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <Select value={selectedCrust} onValueChange={setSelectedCrust}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione a borda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CRUST_OPTIONS.map((crust) => (
+                        <SelectItem key={crust.id} value={crust.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{crust.name}</span>
+                            {crust.price > 0 && (
+                              <span className="text-sm text-muted-foreground ml-2">
+                                +{formatPrice(crust.price)}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Notes */}
