@@ -105,6 +105,9 @@ const Product = () => {
       title: "Produto adicionado!",
       description: `${quantity}x ${product.name} adicionado ao carrinho.`
     });
+    
+    // Redirect to menu
+    navigate('/menu');
   };
 
   const isPizza = () => {
