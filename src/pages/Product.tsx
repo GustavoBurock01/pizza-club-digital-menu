@@ -4,8 +4,11 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { useCart, CartCustomization } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 interface Product {
@@ -15,7 +18,15 @@ interface Product {
   price: number;
   image_url: string | null;
   ingredients: string[];
+  category_id: string;
 }
+
+const CRUST_OPTIONS = [
+  { id: 'tradicional', name: 'Tradicional', price: 0 },
+  { id: 'catupiry', name: 'Catupiry', price: 5 },
+  { id: 'cheddar', name: 'Cheddar', price: 5 },
+  { id: 'chocolate', name: 'Chocolate', price: 6 },
+];
 const Product = () => {
   const {
     id
@@ -31,6 +42,8 @@ const Product = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [selectedCrust, setSelectedCrust] = useState('tradicional');
+  const [notes, setNotes] = useState('');
   useEffect(() => {
     if (id) {
       fetchProduct();
@@ -41,7 +54,7 @@ const Product = () => {
       const {
         data,
         error
-      } = await supabase.from('products').select('*').eq('id', id).single();
+      } = await supabase.from('products').select('*, categories(name)').eq('id', id).single();
       if (error) throw error;
       setProduct(data);
     } catch (error: any) {
@@ -57,13 +70,41 @@ const Product = () => {
   };
   const handleAddToCart = () => {
     if (!product) return;
-    for (let i = 0; i < quantity; i++) {
-      addItem(product);
+    
+    const customizations: CartCustomization = {};
+    
+    // Check if it's a pizza and add crust customization
+    if (isPizza() && selectedCrust !== 'tradicional') {
+      customizations.crust = selectedCrust;
     }
+    
+    for (let i = 0; i < quantity; i++) {
+      addItem(product, customizations, notes || undefined);
+    }
+    
     toast({
       title: "Produto adicionado!",
       description: `${quantity}x ${product.name} adicionado ao carrinho.`
     });
+  };
+
+  const isPizza = () => {
+    if (!product) return false;
+    return product.category_id === '0d3e70fa-f7cb-4676-a217-88afed30dc27' || // Pizzas Grandes
+           product.category_id === 'e2591c0d-5de4-48f0-bb60-9f07d692e24c';   // Pizzas Broto
+  };
+
+  const calculateTotalPrice = () => {
+    if (!product) return 0;
+    let price = product.price;
+    
+    // Add crust price if it's a pizza
+    if (isPizza()) {
+      const crust = CRUST_OPTIONS.find(c => c.id === selectedCrust);
+      if (crust) price += crust.price;
+    }
+    
+    return price * quantity;
   };
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -121,7 +162,67 @@ const Product = () => {
             </div>
 
             {/* Ingredients */}
-            {product.ingredients && product.ingredients.length > 0}
+            {product.ingredients && product.ingredients.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium mb-2">Ingredientes:</h3>
+                <p className="text-muted-foreground text-sm">
+                  {product.ingredients.join(', ')}
+                </p>
+              </div>
+            )}
+
+            {/* Pizza Customization */}
+            {isPizza() && (
+              <div className="space-y-6 mb-8">
+                {/* Crust Selection */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Borda Recheada</Label>
+                  <RadioGroup value={selectedCrust} onValueChange={setSelectedCrust}>
+                    {CRUST_OPTIONS.map((crust) => (
+                      <div key={crust.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={crust.id} id={crust.id} />
+                        <Label htmlFor={crust.id} className="flex-1">
+                          {crust.name}
+                          {crust.price > 0 && (
+                            <span className="text-sm text-muted-foreground ml-2">
+                              +{formatPrice(crust.price)}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-base font-medium">Observações</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Alguma observação especial sobre sua pizza..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isPizza() && (
+              <div className="space-y-4 mb-8">
+                {/* Notes for non-pizza items */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-base font-medium">Observações</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Alguma observação especial..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Quantity */}
             <div className="flex items-center justify-between mb-8">
@@ -142,7 +243,7 @@ const Product = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64">
             <div className="max-w-2xl mx-auto">
               <Button onClick={handleAddToCart} className="w-full gradient-pizza text-white h-12">
-                Adicionar ao Carrinho • {formatPrice(product.price * quantity)}
+                Adicionar ao Carrinho • {formatPrice(calculateTotalPrice())}
               </Button>
             </div>
           </div>
