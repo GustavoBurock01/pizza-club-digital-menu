@@ -50,10 +50,25 @@ export const useSubscription = () => {
     }
   };
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (forceCheck = false) => {
     if (!user || !session) {
       setSubscription(prev => ({ ...prev, loading: false }));
       return;
+    }
+
+    // Verifica cache - só consulta se passou mais de 8 horas ou se forçado
+    const lastCheck = localStorage.getItem('subscription_last_check');
+    const eightHoursInMs = 8 * 60 * 60 * 1000; // 8 horas em millisegundos
+    const now = Date.now();
+    
+    if (!forceCheck && lastCheck && (now - parseInt(lastCheck)) < eightHoursInMs) {
+      // Usa dados do cache se não passou 8 horas
+      const cachedData = localStorage.getItem('subscription_data');
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
+        return;
+      }
     }
 
     try {
@@ -70,7 +85,7 @@ export const useSubscription = () => {
 
       if (error) throw error;
 
-      setSubscription({
+      const subscriptionData = {
         subscribed: data.subscribed || false,
         status: data.status || 'inactive',
         plan_name: data.plan_name || 'Nenhum',
@@ -78,7 +93,13 @@ export const useSubscription = () => {
         expires_at: data.expires_at,
         loading: false,
         hasSubscriptionHistory: hasHistory,
-      });
+      };
+
+      setSubscription(subscriptionData);
+      
+      // Salva no cache com timestamp
+      localStorage.setItem('subscription_last_check', now.toString());
+      localStorage.setItem('subscription_data', JSON.stringify(subscriptionData));
     } catch (error: any) {
       console.error('Error checking subscription:', error);
       toast({
