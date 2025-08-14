@@ -113,11 +113,27 @@ const Product = () => {
   };
 
   const isPizza = () => {
-    if (!product || !product.subcategories) return false;
-    const subcategoryName = product.subcategories.name.toLowerCase();
-    return subcategoryName.includes('pizza') || 
-           subcategoryName.includes('grande') || 
-           subcategoryName.includes('broto');
+    if (!product) return false;
+    console.log('Product data:', product);
+    console.log('Category ID:', product.category_id);
+    console.log('Subcategory ID:', product.subcategory_id);
+    console.log('Subcategories:', product.subcategories);
+    
+    // Check if product has subcategories and if it's a pizza
+    if (product.subcategories) {
+      const subcategoryName = product.subcategories.name.toLowerCase();
+      const isPizzaSubcategory = subcategoryName.includes('pizza') || 
+                                 subcategoryName.includes('grande') || 
+                                 subcategoryName.includes('broto');
+      console.log('Subcategory name:', subcategoryName, 'Is pizza:', isPizzaSubcategory);
+      return isPizzaSubcategory;
+    }
+    
+    // Fallback: check if product name indicates it's a pizza
+    const productName = product.name.toLowerCase();
+    const isPizzaProduct = productName.includes('pizza');
+    console.log('Product name:', productName, 'Is pizza product:', isPizzaProduct);
+    return isPizzaProduct;
   };
 
   const calculateTotalPrice = () => {
