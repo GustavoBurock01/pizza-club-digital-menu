@@ -231,7 +231,7 @@ export const RegisterForm = ({
             {isLoading ? <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Criando...
-              </> : currentStep === 3 ? 'Criar conta e assinar' : 'Continuar'}
+              </> : currentStep === 3 ? 'Criar conta' : 'Continuar'}
           </Button>
         </div>
       </form>
