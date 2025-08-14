@@ -15,6 +15,7 @@ import Product from "./pages/Product";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Account from "./pages/Account";
+import OrderReview from "./pages/OrderReview";
 import Checkout from "./pages/Checkout";
 import Payment from "./pages/Payment";
 import OrderConfirmation from "./pages/OrderConfirmation";
@@ -77,6 +78,11 @@ const App = () => (
               <Route path="/cart" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
                   <Cart />
+                </ProtectedRoute>
+              } />
+              <Route path="/order-review" element={
+                <ProtectedRoute requireAuth={true} requireSubscription={true}>
+                  <OrderReview />
                 </ProtectedRoute>
               } />
               <Route path="/checkout" element={

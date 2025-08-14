@@ -270,7 +270,7 @@ const Cart = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64">
             <div className="max-w-2xl mx-auto">
               <Button 
-                onClick={() => navigate('/checkout')}
+                onClick={() => navigate('/order-review')}
                 className="w-full gradient-pizza text-white h-12"
               >
                 Finalizar Pedido • {formatPrice(getTotal())}
