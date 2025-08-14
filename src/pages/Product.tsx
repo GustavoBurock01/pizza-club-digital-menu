@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
@@ -9,7 +8,6 @@ import { ArrowLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
 interface Product {
   id: string;
   name: string;
@@ -18,83 +16,72 @@ interface Product {
   image_url: string | null;
   ingredients: string[];
 }
-
 const Product = () => {
-  const { id } = useParams();
+  const {
+    id
+  } = useParams();
   const navigate = useNavigate();
-  const { addItem, getItemCount } = useCart();
-  const { toast } = useToast();
-  
+  const {
+    addItem,
+    getItemCount
+  } = useCart();
+  const {
+    toast
+  } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-
   useEffect(() => {
     if (id) {
       fetchProduct();
     }
   }, [id]);
-
   const fetchProduct = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('products').select('*').eq('id', id).single();
       if (error) throw error;
       setProduct(data);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar produto",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
       navigate('/menu');
     } finally {
       setLoading(false);
     }
   };
-
   const handleAddToCart = () => {
     if (!product) return;
-
     for (let i = 0; i < quantity; i++) {
       addItem(product);
     }
-
     toast({
       title: "Produto adicionado!",
-      description: `${quantity}x ${product.name} adicionado ao carrinho.`,
+      description: `${quantity}x ${product.name} adicionado ao carrinho.`
     });
   };
-
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     });
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pizza-red"></div>
-      </div>
-    );
+      </div>;
   }
-
   if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <p>Produto não encontrado</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset>
@@ -107,40 +94,21 @@ const Product = () => {
           <div className="flex-1">
             <div className="p-4">
               <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/menu')}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="ghost" size="sm" onClick={() => navigate('/menu')} className="flex items-center gap-2">
                   <ArrowLeft className="h-4 w-4" />
                   Voltar
                 </Button>
-              {getItemCount() > 0 && (
-                <Button 
-                  onClick={() => navigate('/cart')}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
+              {getItemCount() > 0 && <Button onClick={() => navigate('/cart')} variant="outline" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
                   ({getItemCount()})
-                </Button>
-              )}
+                </Button>}
               </div>
             </div>
 
             <div className="max-w-2xl mx-auto p-4 pb-32">
             {/* Product Image */}
             <div className="aspect-square bg-gradient-to-br from-pizza-cream to-pizza-orange/20 flex items-center justify-center rounded-lg mb-6">
-              {product.image_url ? (
-                <img 
-                  src={product.image_url} 
-                  alt={product.name}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <div className="text-8xl">🍕</div>
-              )}
+              {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" /> : <div className="text-8xl">🍕</div>}
             </div>
 
             {/* Product Info */}
@@ -153,36 +121,17 @@ const Product = () => {
             </div>
 
             {/* Ingredients */}
-            {product.ingredients && product.ingredients.length > 0 && (
-              <Card className="mb-6">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2">Ingredientes:</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {product.ingredients.join(', ')}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            {product.ingredients && product.ingredients.length > 0}
 
             {/* Quantity */}
             <div className="flex items-center justify-between mb-8">
               <span className="font-medium">Quantidade</span>
               <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-9 w-9 p-0"
-                >
+                <Button variant="outline" size="sm" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-9 w-9 p-0">
                   <Minus className="h-4 w-4" />
                 </Button>
                 <span className="w-8 text-center font-medium">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="h-9 w-9 p-0"
-                >
+                <Button variant="outline" size="sm" onClick={() => setQuantity(quantity + 1)} className="h-9 w-9 p-0">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -192,10 +141,7 @@ const Product = () => {
           {/* Fixed Bottom Button */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64">
             <div className="max-w-2xl mx-auto">
-              <Button 
-                onClick={handleAddToCart} 
-                className="w-full gradient-pizza text-white h-12"
-              >
+              <Button onClick={handleAddToCart} className="w-full gradient-pizza text-white h-12">
                 Adicionar ao Carrinho • {formatPrice(product.price * quantity)}
               </Button>
             </div>
@@ -203,8 +149,6 @@ const Product = () => {
           </div>
         </SidebarInset>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default Product;
