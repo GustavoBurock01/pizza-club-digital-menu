@@ -30,7 +30,7 @@ interface RecentOrder {
 }
 
 const Dashboard = () => {
-  const { subscription } = useSubscription();
+  const { subscription, createCheckout } = useSubscription();
   const { addItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -156,7 +156,7 @@ const Dashboard = () => {
                 </span>
                 <Button 
                   className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                  onClick={() => navigate('/account')}
+                  onClick={createCheckout}
                 >
                   Assinar por R$ 99,90/ano
                 </Button>
@@ -259,7 +259,7 @@ const Dashboard = () => {
                     <CardContent className="pt-0">
                       <Button 
                         className="w-full gradient-pizza text-white"
-                        onClick={() => navigate('/account')}
+                        onClick={createCheckout}
                       >
                         Ativar Assinatura
                       </Button>
@@ -303,7 +303,7 @@ const Dashboard = () => {
                       {subscription?.status !== 'active' && (
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={() => navigate('/account')}
+                          onClick={createCheckout}
                         >
                           Assinar por R$ 99,90/ano
                         </Button>

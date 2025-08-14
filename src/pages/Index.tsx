@@ -4,11 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Pizza, Star, Clock, Shield, CreditCard, Check, ArrowRight, Users, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useEffect } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { createCheckout } = useSubscription();
 
   useEffect(() => {
     // Set page title and meta description
@@ -78,6 +80,14 @@ const Index = () => {
     }
   };
 
+  const handleSubscriptionAction = () => {
+    if (user) {
+      createCheckout();
+    } else {
+      navigate('/auth');
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -114,8 +124,8 @@ const Index = () => {
             entrega grátis ilimitada e atendimento VIP por apenas R$ 99,90/ano
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-pizza-red hover:bg-gray-100 text-lg px-8 py-4" onClick={handleAuthNavigation}>
-              {user ? 'Acessar Dashboard' : 'Assinar por R$ 99,90/ano'}
+            <Button size="lg" className="bg-white text-pizza-red hover:bg-gray-100 text-lg px-8 py-4" onClick={handleSubscriptionAction}>
+              {user ? 'Assinar por R$ 99,90/ano' : 'Assinar por R$ 99,90/ano'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button size="lg" variant="outline" className="border-white hover:bg-white text-lg px-8 py-4 text-orange-600" onClick={() => navigate('/menu')}>
@@ -214,8 +224,8 @@ const Index = () => {
                     </div>
                   ))}
                 </div>
-                <Button className="w-full gradient-pizza text-white text-lg py-6" onClick={handleAuthNavigation}>
-                  {user ? 'Acessar Minha Conta' : 'Assinar por R$ 99,90/ano'}
+                <Button className="w-full gradient-pizza text-white text-lg py-6" onClick={handleSubscriptionAction}>
+                  {user ? 'Assinar por R$ 99,90/ano' : 'Assinar por R$ 99,90/ano'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
@@ -285,8 +295,8 @@ const Index = () => {
             Junte-se a mais de 2.500 pessoas que já descobriram o prazer de ter acesso 
             ao melhor cardápio de pizzas da cidade.
           </p>
-          <Button size="lg" onClick={handleAuthNavigation} className="bg-white text-pizza-red hover:bg-gray-100 py-[16px] px-[32px] rounded-sm text-center text-sm">
-            {user ? 'Acessar Minha Conta' : 'Assinar por R$ 99,90/ano'}
+          <Button size="lg" onClick={handleSubscriptionAction} className="bg-white text-pizza-red hover:bg-gray-100 py-[16px] px-[32px] rounded-sm text-center text-sm">
+            {user ? 'Assinar por R$ 99,90/ano' : 'Assinar por R$ 99,90/ano'}
             <Users className="ml-2 h-5 w-5" />
           </Button>
           <p className="text-sm text-white/80 mt-4">
