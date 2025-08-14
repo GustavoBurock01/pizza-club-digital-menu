@@ -62,31 +62,31 @@ const Cart = () => {
 
         if (error) throw error;
 
-        // Buscar categorias e subcategorias separadamente
-        const categoryIds = [...new Set(products?.map(p => p.category_id).filter(Boolean))];
+        // Buscar subcategorias com suas categorias
         const subcategoryIds = [...new Set(products?.map(p => p.subcategory_id).filter(Boolean))];
+        
+        const { data: subcategoriesWithCategories, error: subcatError } = await supabase
+          .from('subcategories')
+          .select(`
+            id,
+            name,
+            category_id,
+            categories (
+              id,
+              name
+            )
+          `)
+          .in('id', subcategoryIds);
 
-        const [categoriesResult, subcategoriesResult] = await Promise.all([
-          supabase.from('categories').select('id, name').in('id', categoryIds),
-          supabase.from('subcategories').select('id, name').in('id', subcategoryIds)
-        ]);
-
-        const categoriesMap = categoriesResult.data?.reduce((acc, cat) => {
-          acc[cat.id] = cat.name;
-          return acc;
-        }, {} as Record<string, string>) || {};
-
-        const subcategoriesMap = subcategoriesResult.data?.reduce((acc, sub) => {
-          acc[sub.id] = sub.name;
-          return acc;
-        }, {} as Record<string, string>) || {};
+        if (subcatError) throw subcatError;
 
         const detailsMap: Record<string, { categoryName: string; subcategoryName: string }> = {};
         
         products?.forEach((product: any) => {
+          const subcategory = subcategoriesWithCategories?.find(sub => sub.id === product.subcategory_id);
           detailsMap[product.id] = {
-            categoryName: categoriesMap[product.category_id] || '',
-            subcategoryName: subcategoriesMap[product.subcategory_id] || ''
+            categoryName: subcategory?.categories?.name || '',
+            subcategoryName: subcategory?.name || ''
           };
         });
 
