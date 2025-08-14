@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, ShoppingCart, ChevronDown } from 'lucide-react';
 import { useCart, CartCustomization } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +29,17 @@ const CRUST_OPTIONS = [
   { id: 'cheddar', name: 'Cheddar', price: 5 },
   { id: 'chocolate', name: 'Chocolate', price: 6 },
 ];
+
+const EXTRAS_OPTIONS = [
+  { id: 'extra-queijo', name: 'Queijo Extra', price: 3 },
+  { id: 'bacon', name: 'Bacon', price: 4 },
+  { id: 'calabresa', name: 'Calabresa', price: 3 },
+  { id: 'frango', name: 'Frango', price: 4 },
+  { id: 'cogumelos', name: 'Cogumelos', price: 3 },
+  { id: 'azeitona', name: 'Azeitona', price: 2 },
+  { id: 'tomate-seco', name: 'Tomate Seco', price: 3 },
+  { id: 'rucula', name: 'Rúcula', price: 2 },
+];
 const Product = () => {
   const {
     id
@@ -43,6 +56,7 @@ const Product = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedCrust, setSelectedCrust] = useState('tradicional');
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   useEffect(() => {
     if (id) {
@@ -73,9 +87,14 @@ const Product = () => {
     
     const customizations: CartCustomization = {};
     
-    // Check if it's a pizza and add crust customization
-    if (isPizza() && selectedCrust !== 'tradicional') {
-      customizations.crust = selectedCrust;
+    // Check if it's a pizza and add customizations
+    if (isPizza()) {
+      if (selectedCrust !== 'tradicional') {
+        customizations.crust = selectedCrust;
+      }
+      if (selectedExtras.length > 0) {
+        customizations.extras = selectedExtras;
+      }
     }
     
     for (let i = 0; i < quantity; i++) {
@@ -102,9 +121,23 @@ const Product = () => {
     if (isPizza()) {
       const crust = CRUST_OPTIONS.find(c => c.id === selectedCrust);
       if (crust) price += crust.price;
+      
+      // Add extras price
+      selectedExtras.forEach(extraId => {
+        const extra = EXTRAS_OPTIONS.find(e => e.id === extraId);
+        if (extra) price += extra.price;
+      });
     }
     
     return price * quantity;
+  };
+
+  const toggleExtra = (extraId: string) => {
+    setSelectedExtras(prev => 
+      prev.includes(extraId) 
+        ? prev.filter(id => id !== extraId)
+        : [...prev, extraId]
+    );
   };
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -196,6 +229,46 @@ const Product = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Extras Selection */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Adicionais</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
+                        <span>
+                          {selectedExtras.length === 0
+                            ? "Selecione adicionais"
+                            : `${selectedExtras.length} adicional(is) selecionado(s)`
+                          }
+                        </span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-4" align="start">
+                      <div className="space-y-3">
+                        {EXTRAS_OPTIONS.map((extra) => (
+                          <div key={extra.id} className="flex items-center space-x-3">
+                            <Checkbox
+                              id={extra.id}
+                              checked={selectedExtras.includes(extra.id)}
+                              onCheckedChange={() => toggleExtra(extra.id)}
+                            />
+                            <Label htmlFor={extra.id} className="flex-1 flex justify-between">
+                              <span>{extra.name}</span>
+                              <span className="text-sm text-muted-foreground">
+                                +{formatPrice(extra.price)}
+                              </span>
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Notes */}
