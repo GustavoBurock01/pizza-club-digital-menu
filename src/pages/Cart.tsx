@@ -55,10 +55,12 @@ const Cart = () => {
           .from('products')
           .select(`
             id,
-            categories (
+            category_id,
+            subcategory_id,
+            categories!inner (
               name
             ),
-            subcategories (
+            subcategories!inner (
               name
             )
           `)
