@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import { Search, Clock, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -100,14 +102,23 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Meus Pedidos</h1>
-          <p className="text-muted-foreground">
-            Acompanhe o status e histórico dos seus pedidos
-          </p>
-        </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Meus Pedidos</h1>
+            </div>
+          </header>
+          <div className="flex-1 bg-gray-50 p-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-6">
+                <p className="text-muted-foreground">
+                  Acompanhe o status e histórico dos seus pedidos
+                </p>
+              </div>
 
         {/* Filters */}
         <Card className="mb-6">
@@ -231,9 +242,12 @@ const Orders = () => {
               );
             })}
           </div>
-        )}
+            )}
+            </div>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
