@@ -56,24 +56,37 @@ const Cart = () => {
           .select(`
             id,
             category_id,
-            subcategory_id,
-            categories!inner (
-              name
-            ),
-            subcategories!inner (
-              name
-            )
+            subcategory_id
           `)
           .in('id', productIds);
 
         if (error) throw error;
 
+        // Buscar categorias e subcategorias separadamente
+        const categoryIds = [...new Set(products?.map(p => p.category_id).filter(Boolean))];
+        const subcategoryIds = [...new Set(products?.map(p => p.subcategory_id).filter(Boolean))];
+
+        const [categoriesResult, subcategoriesResult] = await Promise.all([
+          supabase.from('categories').select('id, name').in('id', categoryIds),
+          supabase.from('subcategories').select('id, name').in('id', subcategoryIds)
+        ]);
+
+        const categoriesMap = categoriesResult.data?.reduce((acc, cat) => {
+          acc[cat.id] = cat.name;
+          return acc;
+        }, {} as Record<string, string>) || {};
+
+        const subcategoriesMap = subcategoriesResult.data?.reduce((acc, sub) => {
+          acc[sub.id] = sub.name;
+          return acc;
+        }, {} as Record<string, string>) || {};
+
         const detailsMap: Record<string, { categoryName: string; subcategoryName: string }> = {};
         
         products?.forEach((product: any) => {
           detailsMap[product.id] = {
-            categoryName: product.categories?.name || '',
-            subcategoryName: product.subcategories?.name || ''
+            categoryName: categoriesMap[product.category_id] || '',
+            subcategoryName: subcategoriesMap[product.subcategory_id] || ''
           };
         });
 
