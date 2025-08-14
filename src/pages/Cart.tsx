@@ -172,7 +172,7 @@ const Cart = () => {
                     <div className="flex-1">
                       {productDetails[item.productId] && (
                         <div className="text-xs text-muted-foreground mb-1">
-                          {productDetails[item.productId].categoryName} • {productDetails[item.productId].subcategoryName}
+                          {productDetails[item.productId].categoryName} - {productDetails[item.productId].subcategoryName}
                         </div>
                       )}
                       <h3 className="font-medium">{item.name}</h3>
