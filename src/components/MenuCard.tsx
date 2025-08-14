@@ -15,6 +15,8 @@ interface MenuItemProps {
   image: string;
   category: string;
   ingredients?: string[];
+  categoryId?: string;
+  subcategoryId?: string;
 }
 
 export const MenuCard = ({ 
@@ -24,7 +26,9 @@ export const MenuCard = ({
   price, 
   image, 
   category, 
-  ingredients = []
+  ingredients = [],
+  categoryId,
+  subcategoryId
 }: MenuItemProps) => {
   const [showIngredients, setShowIngredients] = useState(false);
   const { addItem } = useCart();
@@ -111,7 +115,13 @@ export const MenuCard = ({
             </Button>
             <Button 
               className="gradient-pizza text-white hover:opacity-90 transition-opacity"
-              onClick={() => navigate(`/produto/${id}`)}
+              onClick={() => {
+                const params = new URLSearchParams();
+                if (categoryId) params.set('categoryId', categoryId);
+                if (subcategoryId) params.set('subcategoryId', subcategoryId);
+                const queryString = params.toString();
+                navigate(`/produto/${id}${queryString ? `?${queryString}` : ''}`);
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Ver Produto

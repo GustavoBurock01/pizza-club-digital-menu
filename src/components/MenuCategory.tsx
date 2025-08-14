@@ -9,6 +9,8 @@ interface MenuItem {
   price: number;
   image: string;
   ingredients?: string[];
+  categoryId?: string;
+  subcategoryId?: string;
 }
 
 interface MenuCategoryProps {
@@ -60,6 +62,8 @@ export const MenuCategory = ({ title, items, icon }: MenuCategoryProps) => {
             image={item.image}
             category={title}
             ingredients={item.ingredients}
+            categoryId={item.categoryId}
+            subcategoryId={item.subcategoryId}
           />
         ))}
       </div>

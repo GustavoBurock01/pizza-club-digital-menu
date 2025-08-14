@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ShoppingCart, ChevronLeft } from "lucide-react";
 import { useMenu } from "@/hooks/useMenu";
 import { useCart } from "@/hooks/useCart";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { getItemCount } = useCart();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const {
     categories,
@@ -28,6 +29,16 @@ const Menu = () => {
     getCurrentCategoryName,
     getCurrentSubcategoryName
   } = useMenu();
+
+  // Restaurar estado da navegação baseado nos parâmetros da URL
+  useEffect(() => {
+    const categoryId = searchParams.get('categoryId');
+    const subcategoryId = searchParams.get('subcategoryId');
+    
+    if (categoryId && subcategoryId) {
+      handleSubcategorySelect(categoryId, subcategoryId);
+    }
+  }, [searchParams, handleSubcategorySelect]);
 
   // Filter products based on search term
   const filteredProducts = products.filter(product =>
@@ -91,7 +102,9 @@ const Menu = () => {
               items={filteredProducts.map(product => ({
                 ...product,
                 image: product.image_url || "",
-                category: getCurrentSubcategoryName()
+                category: getCurrentSubcategoryName(),
+                categoryId: selectedCategoryId,
+                subcategoryId: selectedSubcategoryId
               }))}
               icon="🍽️"
             />

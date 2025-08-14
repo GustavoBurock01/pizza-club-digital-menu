@@ -1,5 +1,5 @@
 
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -22,6 +22,7 @@ interface Product {
 const Product = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addItem, getItemCount } = useCart();
   const { toast } = useToast();
   
@@ -77,6 +78,19 @@ const Product = () => {
     });
   };
 
+  const handleBack = () => {
+    const categoryId = searchParams.get('categoryId');
+    const subcategoryId = searchParams.get('subcategoryId');
+    
+    if (categoryId && subcategoryId) {
+      // Volta para a subcategoria específica
+      navigate(`/menu?categoryId=${categoryId}&subcategoryId=${subcategoryId}`);
+    } else {
+      // Volta para o menu principal
+      navigate('/menu');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,7 +124,7 @@ const Product = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/menu')}
+                  onClick={handleBack}
                   className="flex items-center gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
