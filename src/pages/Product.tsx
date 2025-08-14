@@ -21,6 +21,8 @@ interface Product {
   image_url: string | null;
   ingredients: string[];
   category_id: string;
+  subcategory_id?: string;
+  subcategories?: { name: string };
 }
 
 const CRUST_OPTIONS = [
@@ -68,7 +70,7 @@ const Product = () => {
       const {
         data,
         error
-      } = await supabase.from('products').select('*, categories(name)').eq('id', id).single();
+      } = await supabase.from('products').select('*, categories(name), subcategories(name)').eq('id', id).single();
       if (error) throw error;
       setProduct(data);
     } catch (error: any) {
@@ -111,9 +113,11 @@ const Product = () => {
   };
 
   const isPizza = () => {
-    if (!product) return false;
-    return product.category_id === '0d3e70fa-f7cb-4676-a217-88afed30dc27' || // Pizzas Grandes
-           product.category_id === 'e2591c0d-5de4-48f0-bb60-9f07d692e24c';   // Pizzas Broto
+    if (!product || !product.subcategories) return false;
+    const subcategoryName = product.subcategories.name.toLowerCase();
+    return subcategoryName.includes('pizza') || 
+           subcategoryName.includes('grande') || 
+           subcategoryName.includes('broto');
   };
 
   const calculateTotalPrice = () => {
