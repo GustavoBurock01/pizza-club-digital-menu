@@ -1,7 +1,7 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -95,14 +95,18 @@ const Product = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1">
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b z-10 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="md:hidden" />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Produto</h1>
+            </div>
+          </header>
+          <div className="flex-1">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -112,7 +116,6 @@ const Product = () => {
                   <ArrowLeft className="h-4 w-4" />
                   Voltar
                 </Button>
-              </div>
               {getItemCount() > 0 && (
                 <Button 
                   onClick={() => navigate('/cart')}
@@ -123,10 +126,10 @@ const Product = () => {
                   ({getItemCount()})
                 </Button>
               )}
+              </div>
             </div>
-          </div>
 
-          <div className="max-w-2xl mx-auto p-4 pb-32">
+            <div className="max-w-2xl mx-auto p-4 pb-32">
             {/* Product Image */}
             <div className="aspect-square bg-gradient-to-br from-pizza-cream to-pizza-orange/20 flex items-center justify-center rounded-lg mb-6">
               {product.image_url ? (
@@ -197,7 +200,8 @@ const Product = () => {
               </Button>
             </div>
           </div>
-        </main>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

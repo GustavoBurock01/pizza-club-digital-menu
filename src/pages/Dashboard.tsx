@@ -1,5 +1,5 @@
 
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,12 +128,17 @@ const Dashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 p-6 space-y-6">
-          <div className="flex items-center gap-4 mb-6">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Dashboard</h1>
+            </div>
+          </header>
+          <div className="flex-1 p-6 space-y-6">
+            <div className="mb-6">
               <h1 className="text-3xl font-bold text-pizza-dark mb-2">
                 Bem-vindo, {userName}! 👋
               </h1>
@@ -144,7 +149,6 @@ const Dashboard = () => {
                 }
               </p>
             </div>
-          </div>
 
           {/* Banner de assinatura - só mostra se não tiver assinatura ativa */}
           {subscription?.status !== 'active' && (
@@ -314,7 +318,8 @@ const Dashboard = () => {
               </Card>
             </div>
           </div>
-        </main>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

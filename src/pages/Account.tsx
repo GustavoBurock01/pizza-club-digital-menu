@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { User, MapPin, Plus, Edit, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAddresses } from '@/hooks/useAddresses';
@@ -174,14 +174,17 @@ const Account = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1">
-          <header className="h-12 flex items-center border-b bg-background px-4">
-            <SidebarTrigger />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Minha Conta</h1>
+            </div>
           </header>
-          <div className="bg-gray-50 py-8">
-            <div className="max-w-4xl mx-auto px-4">
+          <div className="flex-1 bg-gray-50 p-6">
+            <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Minha Conta</h1>
           <p className="text-muted-foreground">
@@ -589,7 +592,7 @@ const Account = () => {
         </div>
             </div>
           </div>
-        </main>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

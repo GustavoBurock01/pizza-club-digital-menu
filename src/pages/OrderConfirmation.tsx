@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,9 +98,16 @@ const OrderConfirmation = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 p-6">
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Confirmação</h1>
+            </div>
+          </header>
+          <div className="flex-1 p-6">
           <div className="max-w-md mx-auto space-y-6">
             {/* Success Message */}
             <div className="text-center py-8">
@@ -202,7 +209,8 @@ const OrderConfirmation = () => {
               </p>
             </div>
           </div>
-        </main>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

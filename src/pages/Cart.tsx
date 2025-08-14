@@ -1,5 +1,5 @@
 
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,21 +22,25 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+        <div className="flex min-h-screen w-full">
           <AppSidebar />
-          <main className="flex-1 p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <SidebarTrigger className="md:hidden" />
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger className="-ml-1" />
+              <div className="ml-auto">
+                <h1 className="text-xl font-semibold">Carrinho</h1>
+              </div>
+            </header>
+            <div className="flex-1 p-6">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/menu')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 mb-6"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar
               </Button>
-            </div>
 
             <div className="max-w-2xl mx-auto text-center py-12">
               <div className="text-6xl mb-4">🛒</div>
@@ -51,7 +55,8 @@ const Cart = () => {
                 Ver Cardápio
               </Button>
             </div>
-          </main>
+            </div>
+          </SidebarInset>
         </div>
       </SidebarProvider>
     );
@@ -59,22 +64,28 @@ const Cart = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 p-6 pb-32">
-          <div className="flex items-center gap-4 mb-6">
-            <SidebarTrigger className="md:hidden" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/menu')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Button>
-            <h1 className="text-2xl font-bold">Sua Sacola</h1>
-          </div>
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Carrinho</h1>
+            </div>
+          </header>
+          <div className="flex-1 p-6 pb-32">
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/menu')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+              <h1 className="text-2xl font-bold">Sua Sacola</h1>
+            </div>
 
           <div className="max-w-2xl mx-auto space-y-6">
             {/* Cart Items */}
@@ -174,7 +185,8 @@ const Cart = () => {
               </Button>
             </div>
           </div>
-        </main>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

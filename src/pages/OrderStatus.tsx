@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -199,19 +201,29 @@ const OrderStatus = () => {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/orders')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar aos Pedidos
-          </Button>
-          <h1 className="text-2xl font-bold">Acompanhar Pedido</h1>
-        </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Status do Pedido</h1>
+            </div>
+          </header>
+          <div className="flex-1 bg-gray-50 p-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center gap-4 mb-6">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/orders')}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Voltar aos Pedidos
+                </Button>
+                <h1 className="text-2xl font-bold">Acompanhar Pedido</h1>
+              </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Order Status */}
@@ -362,10 +374,13 @@ const OrderStatus = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
         </div>
+            </div>
+            </div>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

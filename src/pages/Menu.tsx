@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
 import { MenuSearch } from "@/components/MenuSearch";
@@ -68,19 +68,25 @@ const Menu = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 p-6 space-y-6 pb-20">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-pizza-dark mb-2">
-                Cardápio 🍕
-              </h1>
-              <p className="text-muted-foreground">
-                {filteredProducts.length} produtos disponíveis
-              </p>
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-auto">
+              <h1 className="text-xl font-semibold">Cardápio</h1>
             </div>
+          </header>
+          <div className="flex-1 p-6 space-y-6 pb-20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-pizza-dark mb-2">
+                  Cardápio 🍕
+                </h1>
+                <p className="text-muted-foreground">
+                  {filteredProducts.length} produtos disponíveis
+                </p>
+              </div>
             {getItemCount() > 0 && (
               <Button 
                 onClick={() => navigate('/cart')}
@@ -108,7 +114,8 @@ const Menu = () => {
             }))}
             icon="🍽️"
           />
-        </main>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
