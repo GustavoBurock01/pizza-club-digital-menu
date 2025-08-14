@@ -114,26 +114,16 @@ const Product = () => {
 
   const isPizza = () => {
     if (!product) return false;
-    console.log('Product data:', product);
-    console.log('Category ID:', product.category_id);
-    console.log('Subcategory ID:', product.subcategory_id);
-    console.log('Subcategories:', product.subcategories);
     
-    // Check if product has subcategories and if it's a pizza
-    if (product.subcategories) {
-      const subcategoryName = product.subcategories.name.toLowerCase();
-      const isPizzaSubcategory = subcategoryName.includes('pizza') || 
-                                 subcategoryName.includes('grande') || 
-                                 subcategoryName.includes('broto');
-      console.log('Subcategory name:', subcategoryName, 'Is pizza:', isPizzaSubcategory);
-      return isPizzaSubcategory;
-    }
+    // IDs das subcategorias de pizza
+    const pizzaSubcategoryIds = [
+      '76016f75-cbd8-4d1c-97b1-ad06d865bb1b', // Salgadas (Pizzas Broto)
+      'e0c3a8f0-9c7a-4abe-8984-7917c32a09e9', // Doces (Pizzas Broto)
+      '9fb44275-cf01-4c29-a553-4e1950fe9114', // Salgadas (Pizzas Grandes)
+      '760f341a-a218-4ca3-952d-0a7cb65b84b4'  // Doces (Pizzas Grandes)
+    ];
     
-    // Fallback: check if product name indicates it's a pizza
-    const productName = product.name.toLowerCase();
-    const isPizzaProduct = productName.includes('pizza');
-    console.log('Product name:', productName, 'Is pizza product:', isPizzaProduct);
-    return isPizzaProduct;
+    return product.subcategory_id ? pizzaSubcategoryIds.includes(product.subcategory_id) : false;
   };
 
   const calculateTotalPrice = () => {
