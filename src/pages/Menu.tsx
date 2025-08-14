@@ -1,58 +1,35 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MenuCategory } from "@/components/MenuCategory";
 import { MenuSearch } from "@/components/MenuSearch";
+import { SubcategoryNavigation } from "@/components/SubcategoryNavigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShoppingCart } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Loader2, ShoppingCart, ChevronLeft } from "lucide-react";
+import { useMenu } from "@/hooks/useMenu";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string | null;
-  ingredients: string[];
-}
-
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
   const { getItemCount } = useCart();
   const navigate = useNavigate();
+  
+  const {
+    categories,
+    products,
+    loading,
+    currentView,
+    selectedCategoryId,
+    selectedSubcategoryId,
+    handleSubcategorySelect,
+    handleBackToCategories,
+    handleBackToSubcategories,
+    getCurrentCategoryName,
+    getCurrentSubcategoryName
+  } = useMenu();
 
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_available', true)
-        .order('order_position');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar produtos",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
+  // Filter products based on search term
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -65,6 +42,66 @@ const Menu = () => {
       </div>
     );
   }
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'categories':
+        return (
+          <SubcategoryNavigation
+            categories={categories}
+            onSubcategorySelect={handleSubcategorySelect}
+            onBackToCategories={handleBackToCategories}
+          />
+        );
+      
+      case 'subcategories':
+        return (
+          <SubcategoryNavigation
+            categories={categories}
+            onSubcategorySelect={handleSubcategorySelect}
+            onBackToCategories={handleBackToCategories}
+            selectedCategoryId={selectedCategoryId}
+          />
+        );
+      
+      case 'products':
+        return (
+          <div className="space-y-6">
+            {/* Navigation breadcrumbs */}
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={handleBackToSubcategories}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Voltar para {getCurrentCategoryName()}
+              </Button>
+            </div>
+
+            {/* Search */}
+            <MenuSearch
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
+
+            {/* Products */}
+            <MenuCategory
+              title={getCurrentSubcategoryName()}
+              items={filteredProducts.map(product => ({
+                ...product,
+                image: product.image_url || "",
+                category: getCurrentSubcategoryName()
+              }))}
+              icon="🍽️"
+            />
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -84,36 +121,26 @@ const Menu = () => {
                   Cardápio 🍕
                 </h1>
                 <p className="text-muted-foreground">
-                  {filteredProducts.length} produtos disponíveis
+                  {currentView === 'categories' 
+                    ? `${categories.length} categorias disponíveis`
+                    : currentView === 'subcategories' 
+                      ? `Subcategorias de ${getCurrentCategoryName()}`
+                      : `${filteredProducts.length} produtos disponíveis`
+                  }
                 </p>
               </div>
-            {getItemCount() > 0 && (
-              <Button 
-                onClick={() => navigate('/cart')}
-                className="gradient-pizza text-white relative"
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Carrinho ({getItemCount()})
-              </Button>
-            )}
-          </div>
+              {getItemCount() > 0 && (
+                <Button 
+                  onClick={() => navigate('/cart')}
+                  className="gradient-pizza text-white relative"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Carrinho ({getItemCount()})
+                </Button>
+              )}
+            </div>
 
-          {/* Search */}
-          <MenuSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
-
-          {/* Products */}
-          <MenuCategory
-            title="Produtos"
-            items={filteredProducts.map(product => ({
-              ...product,
-              image: product.image_url || "",
-              category: "Produtos"
-            }))}
-            icon="🍽️"
-          />
+            {renderContent()}
           </div>
         </SidebarInset>
       </div>
