@@ -158,7 +158,7 @@ const Dashboard = () => {
                   className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
                   onClick={() => navigate('/account')}
                 >
-                  Primeiro mês R$ 1,00
+                  Assinar por R$ 99,90/ano
                 </Button>
               </AlertDescription>
             </Alert>
@@ -250,7 +250,7 @@ const Dashboard = () => {
                     <CardTitle className="text-lg">Plano Atual</CardTitle>
                     <CardDescription>
                       {subscription?.status === 'active' 
-                        ? `${subscription.plan_name} - R$ ${subscription.plan_price.toFixed(2)}/mês`
+                        ? `${subscription.plan_name} - R$ ${subscription.plan_price.toFixed(2)}/ano`
                         : 'Nenhum plano ativo'
                       }
                     </CardDescription>
@@ -305,7 +305,7 @@ const Dashboard = () => {
                           className="bg-orange-500 hover:bg-orange-600 text-white"
                           onClick={() => navigate('/account')}
                         >
-                          Primeiro mês R$ 1,00
+                          Assinar por R$ 99,90/ano
                         </Button>
                       )}
                     </div>

@@ -41,8 +41,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planType } = await req.json();
-    logStep("Plan type received", { planType });
+    logStep("Creating checkout for annual plan");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -56,30 +55,12 @@ serve(async (req) => {
       logStep("Creating new customer");
     }
 
-    // Define pricing based on plan type
-    let priceData;
-    if (planType === 'trial') {
-      priceData = {
-        currency: "brl",
-        product_data: { name: "Pizza Club - Primeiro Mês (Trial)" },
-        unit_amount: 100, // R$ 1,00 em centavos
-        recurring: { interval: "month" },
-      };
-    } else {
-      priceData = {
-        currency: "brl",
-        product_data: { name: "Pizza Club - Assinatura Mensal" },
-        unit_amount: 990, // R$ 9,90 em centavos
-        recurring: { interval: "month" },
-      };
-    }
-
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: priceData,
+          price: "price_1RY6fuD0RLeJnccNlQvDI2ZG", // Pizza Club - Plano Anual R$ 99,90
           quantity: 1,
         },
       ],
@@ -88,7 +69,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard?canceled=true`,
       metadata: {
         user_id: user.id,
-        plan_type: planType || 'monthly'
+        plan_type: 'annual'
       }
     });
 

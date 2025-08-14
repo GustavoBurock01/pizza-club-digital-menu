@@ -102,7 +102,7 @@ const Index = () => {
       <section className="gradient-pizza text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <Badge className="bg-white text-pizza-red mb-6 text-sm px-4 py-2">
-            🎉 Primeiro mês por apenas R$ 1,00
+            🎉 Plano Anual por R$ 99,90
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             As Melhores Pizzas da Cidade
@@ -111,11 +111,11 @@ const Index = () => {
           </h1>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
             Acesse nosso cardápio exclusivo com mais de 50 sabores únicos, 
-            entrega grátis ilimitada e atendimento VIP por apenas R$ 9,90/mês
+            entrega grátis ilimitada e atendimento VIP por apenas R$ 99,90/ano
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-pizza-red hover:bg-gray-100 text-lg px-8 py-4" onClick={handleAuthNavigation}>
-              {user ? 'Acessar Dashboard' : 'Começar Agora - R$ 1,00'}
+              {user ? 'Acessar Dashboard' : 'Assinar por R$ 99,90/ano'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button size="lg" variant="outline" className="border-white hover:bg-white text-lg px-8 py-4 text-orange-600" onClick={() => navigate('/menu')}>
@@ -198,11 +198,11 @@ const Index = () => {
                   <CardTitle className="text-2xl">Plano Premium</CardTitle>
                 </div>
                 <div className="text-4xl font-bold mb-2">
-                  R$ 1,00
-                  <span className="text-lg font-normal">/primeiro mês</span>
+                  R$ 99,90
+                  <span className="text-lg font-normal">/ano</span>
                 </div>
                 <CardDescription className="text-white/80">
-                  Depois apenas R$ 9,90/mês
+                  Economia garantida no plano anual
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8">
@@ -215,7 +215,7 @@ const Index = () => {
                   ))}
                 </div>
                 <Button className="w-full gradient-pizza text-white text-lg py-6" onClick={handleAuthNavigation}>
-                  {user ? 'Acessar Minha Conta' : 'Assinar Agora - R$ 1,00'}
+                  {user ? 'Acessar Minha Conta' : 'Assinar por R$ 99,90/ano'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
@@ -286,7 +286,7 @@ const Index = () => {
             ao melhor cardápio de pizzas da cidade.
           </p>
           <Button size="lg" onClick={handleAuthNavigation} className="bg-white text-pizza-red hover:bg-gray-100 py-[16px] px-[32px] rounded-sm text-center text-sm">
-            {user ? 'Acessar Minha Conta' : 'Começar Minha Assinatura - R$ 1,00'}
+            {user ? 'Acessar Minha Conta' : 'Assinar por R$ 99,90/ano'}
             <Users className="ml-2 h-5 w-5" />
           </Button>
           <p className="text-sm text-white/80 mt-4">
