@@ -19,6 +19,28 @@ const Cart = () => {
     });
   };
 
+  const getCustomizationText = (item: any) => {
+    const customizations = [];
+    
+    if (item.customizations?.halfAndHalf) {
+      customizations.push(`Meio a meio: ${item.customizations.halfAndHalf.firstHalf} / ${item.customizations.halfAndHalf.secondHalf}`);
+    }
+    
+    if (item.customizations?.crust && item.customizations.crust !== 'tradicional') {
+      customizations.push(`Borda: ${item.customizations.crust}`);
+    }
+    
+    if (item.customizations?.extras && item.customizations.extras.length > 0) {
+      customizations.push(`Adicionais: ${item.customizations.extras.join(', ')}`);
+    }
+    
+    if (item.notes) {
+      customizations.push(`Observações: ${item.notes}`);
+    }
+    
+    return customizations.join(' • ');
+  };
+
   if (items.length === 0) {
     return (
       <SidebarProvider>
@@ -106,6 +128,11 @@ const Cart = () => {
                     
                     <div className="flex-1">
                       <h3 className="font-medium">{item.name}</h3>
+                      {getCustomizationText(item) && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {getCustomizationText(item)}
+                        </p>
+                      )}
                       
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
