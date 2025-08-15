@@ -4,14 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Clock, MapPin } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Clock, MapPin, Store, Truck } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const OrderReview = () => {
-  const { items, getSubtotal, getTotal, getItemCount } = useCart();
+  const { items, getSubtotal, getTotal, getItemCount, deliveryMethod, setDeliveryMethod } = useCart();
   const navigate = useNavigate();
   const [productDetails, setProductDetails] = useState<Record<string, { categoryName: string; subcategoryName: string }>>({});
 
@@ -202,7 +204,100 @@ const OrderReview = () => {
                 </CardContent>
               </Card>
 
-              {/* Delivery Info */}
+              {/* Delivery Method Selection */}
+              <Card className="border-2 border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span>Método de Recebimento</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={deliveryMethod}
+                    onValueChange={setDeliveryMethod}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
+                    <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label htmlFor="delivery" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Truck className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium">Entrega em casa</div>
+                          <div className="text-sm text-muted-foreground">Taxa de entrega grátis</div>
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="pickup" id="pickup" />
+                      <Label htmlFor="pickup" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <Store className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium">Retirar na loja</div>
+                          <div className="text-sm text-muted-foreground">Economize o tempo de entrega</div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+
+              {/* Delivery/Pickup Info */}
+              {deliveryMethod === 'delivery' ? (
+                <Card className="border-green-200 bg-green-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-green-800">Entrega Grátis</h3>
+                        <p className="text-sm text-green-600">Taxa de entrega cortesia da casa</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-green-200 bg-green-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <Store className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-green-800">Retirada na Loja</h3>
+                        <p className="text-sm text-green-600">Rua das Pizzas, 123 - Centro</p>
+                        <p className="text-xs text-green-500">Seg-Dom: 18h às 23h</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Estimated Time */}
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-blue-800">
+                        {deliveryMethod === 'delivery' ? 'Tempo de Entrega' : 'Tempo de Preparo'}
+                      </h3>
+                      <p className="text-sm text-blue-600">
+                        {deliveryMethod === 'delivery' ? 'Estimativa: 35-45 minutos' : 'Estimativa: 20-30 minutos'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Order Total */}
               <Card className="border-green-200 bg-green-50/50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -240,10 +335,12 @@ const OrderReview = () => {
                       <span>Subtotal ({getItemCount()} {getItemCount() === 1 ? 'item' : 'itens'})</span>
                       <span className="font-medium">{formatPrice(getSubtotal())}</span>
                     </div>
-                    <div className="flex justify-between text-lg">
-                      <span>Taxa de entrega</span>
-                      <span className="font-medium text-green-600">Grátis</span>
-                    </div>
+                    {deliveryMethod === 'delivery' && (
+                      <div className="flex justify-between text-lg">
+                        <span>Taxa de entrega</span>
+                        <span className="font-medium text-green-600">Grátis</span>
+                      </div>
+                    )}
                     <Separator />
                     <div className="flex justify-between text-2xl font-bold">
                       <span>Total</span>
@@ -258,10 +355,10 @@ const OrderReview = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64 shadow-lg">
               <div className="max-w-3xl mx-auto">
                 <Button 
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => navigate(deliveryMethod === 'delivery' ? '/checkout' : '/payment')}
                   className="w-full gradient-pizza text-white h-14 text-lg font-semibold"
                 >
-                  Continuar para Endereço • {formatPrice(getTotal())}
+                  {deliveryMethod === 'delivery' ? 'Continuar para Endereço' : 'Continuar para Pagamento'} • {formatPrice(getTotal())}
                 </Button>
               </div>
             </div>

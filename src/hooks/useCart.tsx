@@ -25,6 +25,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   deliveryFee: number;
+  deliveryMethod: 'delivery' | 'pickup';
   addItem: (product: any, customizations?: CartCustomization, notes?: string, quantity?: number) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
@@ -33,13 +34,15 @@ interface CartState {
   getTotal: () => number;
   getItemCount: () => number;
   setDeliveryFee: (fee: number) => void;
+  setDeliveryMethod: (method: 'delivery' | 'pickup') => void;
 }
 
 export const useCart = create<CartState>()(
   persist(
-    (set, get) => ({
-      items: [],
-      deliveryFee: 0,
+  (set, get) => ({
+    items: [],
+    deliveryFee: 0,
+    deliveryMethod: 'delivery' as 'delivery' | 'pickup',
 
       addItem: (product, customizations, notes, quantity = 1) => {
         // Check if item already exists with same product and customizations
@@ -124,6 +127,10 @@ export const useCart = create<CartState>()(
 
       setDeliveryFee: (fee) => {
         set({ deliveryFee: fee });
+      },
+      
+      setDeliveryMethod: (method: 'delivery' | 'pickup') => {
+        set({ deliveryMethod: method });
       },
     }),
     {
