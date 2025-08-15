@@ -253,10 +253,6 @@ const Cart = () => {
                   <span>Subtotal</span>
                   <span>{formatPrice(getSubtotal())}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Taxa de entrega</span>
-                  <span className="text-green-600">Grátis</span>
-                </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
