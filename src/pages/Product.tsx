@@ -159,6 +159,9 @@ const Product = () => {
     return price * quantity;
   };
 
+  // Calculate total price for display - this will force re-render when quantity changes
+  const totalPrice = calculateTotalPrice();
+
   const toggleExtra = (extraId: string) => {
     setSelectedExtras(prev => 
       prev.includes(extraId) 
@@ -347,7 +350,7 @@ const Product = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64">
             <div className="max-w-2xl mx-auto">
               <Button onClick={handleAddToCart} className="w-full gradient-pizza text-white h-12">
-                Adicionar ao Carrinho • {formatPrice(calculateTotalPrice())}
+                Adicionar ao Carrinho • {formatPrice(totalPrice)}
               </Button>
             </div>
           </div>
