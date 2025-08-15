@@ -126,6 +126,20 @@ const Product = () => {
     return product.subcategory_id ? pizzaSubcategoryIds.includes(product.subcategory_id) : false;
   };
 
+  const isDrinksCategory = () => {
+    if (!product) return false;
+    
+    // Check if product has subcategories and check the subcategory name
+    if (product.subcategories?.name) {
+      const drinksKeywords = ['bebida', 'água', 'suco', 'refrigerante', 'drink', 'agua'];
+      return drinksKeywords.some(keyword => 
+        product.subcategories!.name.toLowerCase().includes(keyword.toLowerCase())
+      );
+    }
+    
+    return false;
+  };
+
   const calculateTotalPrice = () => {
     if (!product) return 0;
     let price = product.price;
@@ -208,7 +222,7 @@ const Product = () => {
             </div>
 
             {/* Ingredients */}
-            {product.ingredients && product.ingredients.length > 0 && (
+            {product.ingredients && product.ingredients.length > 0 && !isDrinksCategory() && (
               <div className="mb-6">
                 <h3 className="font-medium mb-2">Ingredientes:</h3>
                 <p className="text-muted-foreground text-sm">
