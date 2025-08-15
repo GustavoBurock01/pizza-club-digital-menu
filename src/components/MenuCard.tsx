@@ -46,6 +46,13 @@ export const MenuCard = ({
     });
   };
 
+  const isDrinksCategory = () => {
+    const drinksKeywords = ['bebida', 'água', 'suco', 'refrigerante', 'drink', 'agua'];
+    return drinksKeywords.some(keyword => 
+      category.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
+
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       <div className="relative">
@@ -70,21 +77,23 @@ export const MenuCard = ({
           <CardTitle className="text-lg group-hover:text-pizza-red transition-colors">
             {name}
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowIngredients(!showIngredients)}
-            className="text-pizza-red hover:bg-pizza-red/10"
-          >
-            <Info className="h-4 w-4" />
-          </Button>
+          {!isDrinksCategory() && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowIngredients(!showIngredients)}
+              className="text-pizza-red hover:bg-pizza-red/10"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <CardDescription className="text-sm">
           {description}
         </CardDescription>
       </CardHeader>
 
-      {showIngredients && ingredients.length > 0 && (
+      {showIngredients && ingredients.length > 0 && !isDrinksCategory() && (
         <CardContent className="pt-0 pb-2">
           <div className="p-3 bg-pizza-cream rounded-lg">
             <p className="text-sm font-medium text-pizza-dark mb-2">Ingredientes:</p>
