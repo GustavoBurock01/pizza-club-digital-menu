@@ -99,9 +99,8 @@ const Product = () => {
       }
     }
     
-    for (let i = 0; i < quantity; i++) {
-      addItem(product, customizations, notes || undefined);
-    }
+    // Add item with the selected quantity
+    addItem(product, customizations, notes || undefined, quantity);
     
     toast({
       title: "Produto adicionado!",

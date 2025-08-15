@@ -25,7 +25,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   deliveryFee: number;
-  addItem: (product: any, customizations?: CartCustomization, notes?: string) => void;
+  addItem: (product: any, customizations?: CartCustomization, notes?: string, quantity?: number) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -41,21 +41,36 @@ export const useCart = create<CartState>()(
       items: [],
       deliveryFee: 0,
 
-      addItem: (product, customizations, notes) => {
-        const newItem: CartItem = {
-          id: `${product.id}-${Date.now()}`,
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: 1,
-          image: product.image_url,
-          customizations,
-          notes,
-        };
+      addItem: (product, customizations, notes, quantity = 1) => {
+        // Check if item already exists with same product and customizations
+        const existingItemIndex = get().items.findIndex(item => 
+          item.productId === product.id &&
+          JSON.stringify(item.customizations) === JSON.stringify(customizations) &&
+          item.notes === notes
+        );
 
-        set((state) => ({
-          items: [...state.items, newItem],
-        }));
+        if (existingItemIndex >= 0) {
+          // Update quantity of existing item
+          const items = [...get().items];
+          items[existingItemIndex].quantity += quantity;
+          set({ items });
+        } else {
+          // Create new item
+          const newItem: CartItem = {
+            id: `${product.id}-${Date.now()}`,
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: quantity,
+            image: product.image_url,
+            customizations,
+            notes,
+          };
+
+          set((state) => ({
+            items: [...state.items, newItem],
+          }));
+        }
       },
 
       removeItem: (itemId) => {
