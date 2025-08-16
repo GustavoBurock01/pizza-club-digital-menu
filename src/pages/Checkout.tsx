@@ -4,15 +4,15 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Minus, Plus, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { AddressSelector } from '@/components/AddressSelector';
+import { useAddresses } from '@/hooks/useAddresses';
 
 interface CustomerData {
   name: string;
@@ -24,10 +24,11 @@ interface CustomerData {
 }
 
 const Checkout = () => {
-  const { items, updateQuantity, removeItem, getSubtotal, getTotal } = useCart();
+  const { items, getSubtotal, getTotal } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { addresses } = useAddresses();
   
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: '',
@@ -37,6 +38,7 @@ const Checkout = () => {
     neighborhood: '',
     complement: ''
   });
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const formatPrice = (price: number) => {
@@ -51,8 +53,13 @@ const Checkout = () => {
   };
 
   const isFormValid = () => {
-    return customerData.name && 
-           customerData.phone && 
+    const hasContactInfo = customerData.name && customerData.phone;
+    
+    if (selectedAddressId) {
+      return hasContactInfo;
+    }
+    
+    return hasContactInfo && 
            customerData.street && 
            customerData.number && 
            customerData.neighborhood;
@@ -70,30 +77,35 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Create address
-      const { data: addressData, error: addressError } = await supabase
-        .from('addresses')
-        .insert({
-          user_id: user?.id,
-          street: customerData.street,
-          number: customerData.number,
-          neighborhood: customerData.neighborhood,
-          complement: customerData.complement,
-          city: 'Sua Cidade',
-          state: 'SP',
-          zip_code: '00000-000'
-        })
-        .select()
-        .single();
+      let addressId = selectedAddressId;
 
-      if (addressError) throw addressError;
+      // Create new address if not using existing one
+      if (!selectedAddressId) {
+        const { data: addressData, error: addressError } = await supabase
+          .from('addresses')
+          .insert({
+            user_id: user?.id,
+            street: customerData.street,
+            number: customerData.number,
+            neighborhood: customerData.neighborhood,
+            complement: customerData.complement,
+            city: 'Sua Cidade',
+            state: 'SP',
+            zip_code: '00000-000'
+          })
+          .select()
+          .single();
+
+        if (addressError) throw addressError;
+        addressId = addressData.id;
+      }
 
       // Create order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user?.id,
-          address_id: addressData.id,
+          address_id: addressId,
           total_amount: getTotal(),
           delivery_fee: 0,
           status: 'pending',
@@ -214,7 +226,7 @@ const Checkout = () => {
               <CardContent className="space-y-4">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="w-16 h-16 bg-gradient-to-br from-pizza-cream to-pizza-orange/20 rounded-lg flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center">
                       {item.image ? (
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
                       ) : (
@@ -225,37 +237,8 @@ const Checkout = () => {
                     <div className="flex-1">
                       <h3 className="font-medium">{item.name}</h3>
                       <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(item.id)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <span className="text-muted-foreground">Quantidade: {item.quantity}</span>
+                        <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
                       </div>
                     </div>
                   </div>
@@ -263,76 +246,13 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Customer Data */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados para Entrega</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Nome Completo *</Label>
-                    <Input
-                      id="name"
-                      value={customerData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Seu nome completo"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Telefone *</Label>
-                    <Input
-                      id="phone"
-                      value={customerData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="(11) 99999-9999"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="street">Rua *</Label>
-                    <Input
-                      id="street"
-                      value={customerData.street}
-                      onChange={(e) => handleInputChange('street', e.target.value)}
-                      placeholder="Nome da rua"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="number">Número *</Label>
-                    <Input
-                      id="number"
-                      value={customerData.number}
-                      onChange={(e) => handleInputChange('number', e.target.value)}
-                      placeholder="123"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="neighborhood">Bairro *</Label>
-                    <Input
-                      id="neighborhood"
-                      value={customerData.neighborhood}
-                      onChange={(e) => handleInputChange('neighborhood', e.target.value)}
-                      placeholder="Nome do bairro"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="complement">Complemento</Label>
-                    <Input
-                      id="complement"
-                      value={customerData.complement}
-                      onChange={(e) => handleInputChange('complement', e.target.value)}
-                      placeholder="Apto, casa, etc."
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Address Selector */}
+            <AddressSelector 
+              customerData={customerData}
+              onCustomerDataChange={handleInputChange}
+              selectedAddressId={selectedAddressId}
+              onAddressSelect={setSelectedAddressId}
+            />
 
             {/* Summary */}
             <Card>
