@@ -125,6 +125,20 @@ const Product = () => {
     return product.subcategory_id ? pizzaSubcategoryIds.includes(product.subcategory_id) : false;
   };
 
+  const isPizzaCategory = () => {
+    if (!product) return false;
+    
+    // IDs das subcategorias de pizza (Pizzas Grandes e Brotos)
+    const pizzaSubcategoryIds = [
+      '76016f75-cbd8-4d1c-97b1-ad06d865bb1b', // Salgadas (Pizzas Broto)
+      'e0c3a8f0-9c7a-4abe-8984-7917c32a09e9', // Doces (Pizzas Broto)
+      '9fb44275-cf01-4c29-a553-4e1950fe9114', // Salgadas (Pizzas Grandes)
+      '760f341a-a218-4ca3-952d-0a7cb65b84b4'  // Doces (Pizzas Grandes)
+    ];
+    
+    return product.subcategory_id ? pizzaSubcategoryIds.includes(product.subcategory_id) : false;
+  };
+
   const isDrinksCategory = () => {
     if (!product) return false;
     
@@ -217,7 +231,11 @@ const Product = () => {
             {/* Product Info */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-pizza-dark mb-2">{product.name}</h1>
-              <p className="text-muted-foreground mb-4">{product.description}</p>
+              {isPizzaCategory() && product.ingredients && product.ingredients.length > 0 ? (
+                <p className="text-muted-foreground mb-4">{product.ingredients.join(', ')}</p>
+              ) : (
+                <p className="text-muted-foreground mb-4">{product.description}</p>
+              )}
               <div className="text-3xl font-bold text-pizza-red">
                 {formatPrice(product.price)}
               </div>
