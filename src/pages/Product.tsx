@@ -241,15 +241,6 @@ const Product = () => {
               </div>
             </div>
 
-            {/* Ingredients */}
-            {product.ingredients && product.ingredients.length > 0 && !isDrinksCategory() && (
-              <div className="mb-6">
-                <h3 className="font-medium mb-2">Ingredientes:</h3>
-                <p className="text-muted-foreground text-sm">
-                  {product.ingredients.join(', ')}
-                </p>
-              </div>
-            )}
 
             {/* Pizza Customization */}
             {isPizza() && (
