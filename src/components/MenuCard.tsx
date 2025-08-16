@@ -53,6 +53,13 @@ export const MenuCard = ({
     );
   };
 
+  const isPizzaCategory = () => {
+    const pizzaKeywords = ['pizza', 'brot'];
+    return pizzaKeywords.some(keyword => 
+      category.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
+
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       <div className="relative">
@@ -89,7 +96,13 @@ export const MenuCard = ({
           )}
         </div>
         <CardDescription className="text-sm">
-          {description}
+          {isPizzaCategory() && ingredients.length > 0 ? (
+            <span className="text-muted-foreground">
+              {ingredients.join(', ')}
+            </span>
+          ) : (
+            description
+          )}
         </CardDescription>
       </CardHeader>
 
