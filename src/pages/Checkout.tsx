@@ -15,8 +15,6 @@ import { AddressSelector } from '@/components/AddressSelector';
 import { useAddresses } from '@/hooks/useAddresses';
 
 interface CustomerData {
-  name: string;
-  phone: string;
   street: string;
   number: string;
   neighborhood: string;
@@ -31,8 +29,6 @@ const Checkout = () => {
   const { addresses } = useAddresses();
   
   const [customerData, setCustomerData] = useState<CustomerData>({
-    name: '',
-    phone: '',
     street: '',
     number: '',
     neighborhood: '',
@@ -53,14 +49,11 @@ const Checkout = () => {
   };
 
   const isFormValid = () => {
-    const hasContactInfo = customerData.name && customerData.phone;
-    
     if (selectedAddressId) {
-      return hasContactInfo;
+      return true;
     }
     
-    return hasContactInfo && 
-           customerData.street && 
+    return customerData.street && 
            customerData.number && 
            customerData.neighborhood;
   };
@@ -109,8 +102,7 @@ const Checkout = () => {
           total_amount: getTotal(),
           delivery_fee: 0,
           status: 'pending',
-          payment_status: 'pending',
-          notes: `Cliente: ${customerData.name}, Telefone: ${customerData.phone}`
+          payment_status: 'pending'
         })
         .select()
         .single();

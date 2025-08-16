@@ -8,8 +8,6 @@ import { MapPin, Plus } from 'lucide-react';
 import { useAddresses } from '@/hooks/useAddresses';
 
 interface CustomerData {
-  name: string;
-  phone: string;
   street: string;
   number: string;
   neighborhood: string;
@@ -54,28 +52,6 @@ export const AddressSelector = ({
         <CardTitle>Dados para Entrega</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Contact Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
-          <div>
-            <Label htmlFor="name">Nome Completo *</Label>
-            <Input
-              id="name"
-              value={customerData.name}
-              onChange={(e) => onCustomerDataChange('name', e.target.value)}
-              placeholder="Seu nome completo"
-            />
-          </div>
-          <div>
-            <Label htmlFor="phone">Telefone *</Label>
-            <Input
-              id="phone"
-              value={customerData.phone}
-              onChange={(e) => onCustomerDataChange('phone', e.target.value)}
-              placeholder="(11) 99999-9999"
-            />
-          </div>
-        </div>
-
         {/* Address Selection */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
