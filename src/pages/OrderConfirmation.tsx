@@ -42,7 +42,7 @@ const OrderConfirmation = () => {
       setOrder(orderData);
 
       // Verificar status do pagamento
-      if (orderData.payment_status === 'approved') {
+      if (orderData.payment_status === 'approved' || orderData.payment_status === 'paid') {
         setPaymentStatus('approved');
         // Limpar carrinho apenas quando pagamento for aprovado
         clearCart();
