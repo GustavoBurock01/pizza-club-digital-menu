@@ -55,12 +55,30 @@ serve(async (req) => {
       logStep("Creating new customer");
     }
 
+    const { plan_type = 'monthly' } = await req.json() || {};
+    
+    // Get price ID based on plan type
+    let priceId;
+    if (plan_type === 'trial') {
+      priceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
+    } else if (plan_type === 'annual') {
+      priceId = "price_1RY6fuD0RLeJnccNlQvDI2ZG"; // Pizza Club - Plano Anual R$ 99,90
+    } else {
+      priceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
+    }
+
+    if (!priceId) {
+      throw new Error(`Price ID not configured for plan type: ${plan_type}`);
+    }
+
+    logStep("Creating checkout session", { plan_type, priceId });
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1RY6fuD0RLeJnccNlQvDI2ZG", // Pizza Club - Plano Anual R$ 99,90
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -69,7 +87,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard?canceled=true`,
       metadata: {
         user_id: user.id,
-        plan_type: 'annual'
+        plan_type: plan_type
       }
     });
 
