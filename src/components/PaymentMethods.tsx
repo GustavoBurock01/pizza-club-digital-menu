@@ -3,30 +3,57 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useMercadoPago, PaymentMethod } from '@/hooks/useMercadoPago';
 import { CreditCard, Smartphone, Banknote, Loader2 } from 'lucide-react';
+import { PixPayment } from './PixPayment';
+import { CardPayment } from './CardPayment';
+import { useNavigate } from 'react-router-dom';
 
 interface PaymentMethodsProps {
   orderId: string;
   totalAmount: number;
 }
 
+type PaymentMethod = 'pix' | 'credit_card' | 'cash';
+
 export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('pix');
-  const { createPayment, isLoading } = useMercadoPago();
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const navigate = useNavigate();
 
-  const handlePayment = async () => {
-    try {
-      if (selectedMethod === 'cash') {
-        // For cash payment, just redirect to success page
-        window.location.href = `/payment-success?order_id=${orderId}`;
-        return;
-      }
-      await createPayment(orderId, selectedMethod);
-    } catch (error) {
-      console.error('Payment failed:', error);
+  const handlePaymentMethodSelect = () => {
+    if (selectedMethod === 'cash') {
+      navigate(`/order-confirmation/${orderId}`);
+      return;
     }
+    
+    setShowPaymentForm(true);
   };
+
+  const handlePaymentSuccess = () => {
+    navigate(`/order-confirmation/${orderId}`);
+  };
+
+  if (showPaymentForm) {
+    if (selectedMethod === 'pix') {
+      return (
+        <PixPayment 
+          orderId={orderId}
+          totalAmount={totalAmount}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      );
+    }
+    
+    if (selectedMethod === 'credit_card') {
+      return (
+        <CardPayment 
+          orderId={orderId}
+          totalAmount={totalAmount}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      );
+    }
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -84,21 +111,11 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
         </RadioGroup>
 
         <Button 
-          onClick={handlePayment}
-          disabled={isLoading}
-          className="w-full"
+          onClick={handlePaymentMethodSelect}
+          className="w-full gradient-pizza"
           size="lg"
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processando...
-            </>
-          ) : selectedMethod === 'cash' ? (
-            'Confirmar Pedido (Dinheiro)'
-          ) : (
-            'Pagar com MercadoPago'
-          )}
+          {selectedMethod === 'cash' ? 'Confirmar Pedido' : `Pagar ${formatPrice(totalAmount)}`}
         </Button>
       </CardContent>
     </Card>
