@@ -25,6 +25,9 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { FastLink } from "@/components/FastLink";
+import { smartPreload } from "@/utils/routePreloader";
 
 const menuItems = [
   {
@@ -60,6 +63,11 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Preload baseado na jornada do usuário
+  useEffect(() => {
+    smartPreload.userJourney(location.pathname);
+  }, [location.pathname]);
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -84,17 +92,13 @@ export function AppSidebar() {
                     asChild 
                     isActive={location.pathname === item.url}
                   >
-                    <a 
-                      href={item.url} 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(item.url);
-                      }}
+                    <FastLink 
+                      to={item.url}
                       className="flex items-center gap-3"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </FastLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -108,12 +112,8 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a 
-                    href="/checkout" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/checkout');
-                    }}
+                  <FastLink 
+                    to="/cart"
                     className="flex items-center gap-3"
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -123,7 +123,7 @@ export function AppSidebar() {
                         {getItemCount()}
                       </Badge>
                     )}
-                  </a>
+                  </FastLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

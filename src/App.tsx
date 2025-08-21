@@ -7,8 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { lazy, Suspense } from "react";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { lazy, Suspense, useEffect } from "react";
+import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
+import { smartPreload } from "@/utils/routePreloader";
 
 // Core pages - não lazy loaded para evitar flash de loading na navegação principal
 import Index from "./pages/Index";
@@ -39,14 +40,20 @@ const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 
 // Configuração do QueryClient movida para @/config/queryClient
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+const App = () => {
+  // Preload de rotas críticas no mount
+  useEffect(() => {
+    smartPreload.preloadCritical();
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               <Route path="/" element={
                 <ProtectedRoute requireAuth={false}>
@@ -76,105 +83,105 @@ const App = () => (
               } />
               <Route path="/dashboard" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Dashboard />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/menu" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Menu />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/produto/:id" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Product />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/cart" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Cart />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-review" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <OrderReview />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/checkout" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Checkout />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/payment/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Payment />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-confirmation/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <OrderConfirmation />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/orders" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Orders />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/account" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Account />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <OrderStatus />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Admin />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/analytics" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/attendant" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AttendantDashboard />
                   </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/admin/settings" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Suspense fallback={<LoadingSpinner />}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminSettings />
                   </Suspense>
                 </ProtectedRoute>
@@ -186,6 +193,7 @@ const App = () => (
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
-);
+  );
+};
 
 export default App;
