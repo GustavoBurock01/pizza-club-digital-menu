@@ -81,16 +81,6 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
             </Label>
           </div>
 
-          <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="any" id="any" />
-            <Label htmlFor="any" className="flex-1 flex items-center space-x-3 cursor-pointer">
-              <div className="w-5 h-5 bg-gradient-to-r from-blue-600 to-green-600 rounded" />
-              <div>
-                <div className="font-medium">Qualquer método online</div>
-                <div className="text-sm text-muted-foreground">PIX, cartão ou outros</div>
-              </div>
-            </Label>
-          </div>
         </RadioGroup>
 
         <Button 
