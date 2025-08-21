@@ -122,7 +122,6 @@ export default function Analytics() {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [dateRange, setDateRange] = useState('30d');
   const [data, setData] = useState<AnalyticsData>({
     totalRevenue: 0,
@@ -147,39 +146,12 @@ export default function Analytics() {
     monthlyTrends: []
   });
 
+  // Load data on component mount and when date range changes
   useEffect(() => {
-    const checkAdminRole = async () => {
-      if (!user) return;
-
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile?.role !== 'admin') {
-          toast({
-            title: 'Acesso negado',
-            description: 'Você não tem permissão para acessar esta página.',
-            variant: 'destructive'
-          });
-          navigate('/dashboard');
-          return;
-        }
-
-        setIsAdmin(true);
-        await loadAnalyticsData();
-      } catch (error) {
-        console.error('Erro ao verificar permissões:', error);
-        navigate('/dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminRole();
-  }, [user, navigate, toast, dateRange]);
+    if (user) {
+      loadAnalyticsData().finally(() => setLoading(false));
+    }
+  }, [dateRange, user]);
 
   const getDateFilter = () => {
     const now = new Date();
@@ -460,10 +432,6 @@ export default function Analytics() {
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (

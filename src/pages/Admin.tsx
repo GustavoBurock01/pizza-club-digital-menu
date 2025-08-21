@@ -44,7 +44,6 @@ export default function Admin() {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<AdminStats>({
     totalOrders: 0,
     totalRevenue: 0,
@@ -71,42 +70,15 @@ export default function Admin() {
     is_available: true
   });
 
-  // Verificar se é admin
+  // Load data on component mount
   useEffect(() => {
-    const checkAdminRole = async () => {
-      if (!user) return;
-
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.role !== 'admin') {
-          toast({
-            title: 'Acesso negado',
-            description: 'Você não tem permissão para acessar esta página.',
-            variant: 'destructive'
-          });
-          navigate('/dashboard');
-          return;
-        }
-
-        setIsAdmin(true);
-        await loadData();
-      } catch (error) {
-        console.error('Erro ao verificar permissões:', error);
-        navigate('/dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminRole();
-  }, [user, navigate, toast]);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
+    setLoading(true);
     try {
       await Promise.all([
         loadStats(),
@@ -122,6 +94,8 @@ export default function Admin() {
         description: 'Erro ao carregar dados do painel.',
         variant: 'destructive'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -281,10 +255,6 @@ export default function Admin() {
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (
