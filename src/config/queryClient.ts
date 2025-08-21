@@ -8,10 +8,12 @@ export const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos (novo nome no React Query v5)
+      gcTime: 10 * 60 * 1000, // 10 minutos
+      networkMode: 'offlineFirst', // Priorizar cache quando offline
     },
     mutations: {
       retry: false,
+      networkMode: 'online',
     },
   },
 });

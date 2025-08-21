@@ -14,10 +14,20 @@ export const useMenuOptimized = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para categorias e subcategorias - cache de 5 minutos
+  // Query para categorias (cache agressivo para dados estáticos)
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: QUERY_KEYS.CATEGORIES,
     queryFn: async () => {
+      // Cache no localStorage para dados críticos
+      const cacheKey = 'categories_cache';
+      const cached = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+      
+      // Usar cache se menos de 1 hora
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 60 * 60 * 1000) {
+        return JSON.parse(cached);
+      }
+
       const [categoriesRes, subcategoriesRes, productCountsRes] = await Promise.all([
         supabase
           .from('categories')
@@ -46,7 +56,7 @@ export const useMenuOptimized = () => {
         return acc;
       }, {});
 
-      return categoriesRes.data.map(category => ({
+      const result = categoriesRes.data.map(category => ({
         ...category,
         subcategories: subcategoriesRes.data
           .filter(sub => sub.category_id === category.id)
@@ -55,13 +65,19 @@ export const useMenuOptimized = () => {
             product_count: subcategoryProductCounts[sub.id] || 0
           }))
       }));
+
+      // Armazenar no localStorage
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+      localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+
+      return result;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
   });
 
-  // Query para produtos de uma subcategoria específica - cache de 2 minutos
+  // Query para produtos de uma subcategoria específica - cache otimizado
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: [...QUERY_KEYS.PRODUCTS, selectedSubcategoryId],
     queryFn: async () => {
@@ -78,8 +94,8 @@ export const useMenuOptimized = () => {
       return data || [];
     },
     enabled: !!selectedSubcategoryId && currentView === 'products',
-    staleTime: 2 * 60 * 1000, // 2 minutos
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
   });
 
@@ -106,16 +122,20 @@ export const useMenuOptimized = () => {
     setCurrentView('subcategories');
   }, []);
 
-  // Nomes computados com useMemo para otimização
+  // Funções computadas com useMemo para otimização
   const getCurrentCategoryName = useMemo(() => {
-    const category = categories.find(cat => cat.id === selectedCategoryId);
-    return category?.name || "";
+    return () => {
+      const category = categories.find(cat => cat.id === selectedCategoryId);
+      return category?.name || "";
+    };
   }, [categories, selectedCategoryId]);
 
   const getCurrentSubcategoryName = useMemo(() => {
-    const category = categories.find(cat => cat.id === selectedCategoryId);
-    const subcategory = category?.subcategories.find(sub => sub.id === selectedSubcategoryId);
-    return subcategory?.name || "";
+    return () => {
+      const category = categories.find(cat => cat.id === selectedCategoryId);
+      const subcategory = category?.subcategories.find(sub => sub.id === selectedSubcategoryId);
+      return subcategory?.name || "";
+    };
   }, [categories, selectedCategoryId, selectedSubcategoryId]);
 
   // Função para invalidar cache quando necessário
