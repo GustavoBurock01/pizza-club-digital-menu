@@ -7,27 +7,35 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { lazy, Suspense } from "react";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+
+// Core pages - não lazy loaded para evitar flash de loading na navegação principal
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Menu from "./pages/Menu";
-import Product from "./pages/Product";
-import Cart from "./pages/Cart";
-import Orders from "./pages/Orders";
-import Account from "./pages/Account";
-import OrderReview from "./pages/OrderReview";
-import Checkout from "./pages/Checkout";
-import Payment from "./pages/Payment";
-import OrderConfirmation from "./pages/OrderConfirmation";
-import OrderStatus from "./pages/OrderStatus";
 import Loading from "./pages/Loading";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentFailure from "./pages/PaymentFailure";
-import Admin from "./pages/Admin";
-import Analytics from "./pages/Analytics";
-import AttendantDashboard from "./pages/AttendantDashboard";
-import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
+
+// Lazy loaded pages - code splitting para otimização
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Menu = lazy(() => import("./pages/Menu"));
+const Product = lazy(() => import("./pages/Product"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Account = lazy(() => import("./pages/Account"));
+const OrderReview = lazy(() => import("./pages/OrderReview"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Payment = lazy(() => import("./pages/Payment"));
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+const OrderStatus = lazy(() => import("./pages/OrderStatus"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentFailure = lazy(() => import("./pages/PaymentFailure"));
+
+// Admin pages - bundle separado
+const Admin = lazy(() => import("./pages/Admin"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -68,77 +76,107 @@ const App = () => (
               } />
               <Route path="/dashboard" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Dashboard />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Dashboard />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/menu" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Menu />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Menu />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/produto/:id" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Product />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Product />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/cart" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Cart />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Cart />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-review" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <OrderReview />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <OrderReview />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/checkout" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Checkout />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Checkout />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/payment/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Payment />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Payment />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-confirmation/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <OrderConfirmation />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <OrderConfirmation />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/orders" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <Orders />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Orders />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/account" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Account />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Account />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireSubscription={true}>
-                  <OrderStatus />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <OrderStatus />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Admin />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Admin />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/analytics" element={
                 <ProtectedRoute requireAuth={true}>
-                  <Analytics />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Analytics />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/attendant" element={
                 <ProtectedRoute requireAuth={true}>
-                  <AttendantDashboard />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <AttendantDashboard />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/admin/settings" element={
                 <ProtectedRoute requireAuth={true}>
-                  <AdminSettings />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <AdminSettings />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
