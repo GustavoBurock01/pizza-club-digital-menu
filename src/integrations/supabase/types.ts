@@ -248,6 +248,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -356,6 +363,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pix_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
             referencedColumns: ["id"]
           },
         ]
@@ -576,12 +590,71 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_stats_view: {
+        Row: {
+          avg_order_value: number | null
+          completed_orders: number | null
+          pending_orders: number | null
+          today_orders: number | null
+          total_orders: number | null
+          total_products: number | null
+          total_revenue: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
+      orders_with_details: {
+        Row: {
+          address_id: string | null
+          city: string | null
+          complement: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_fee: number | null
+          estimated_delivery_time: number | null
+          id: string | null
+          items_count: number | null
+          neighborhood: string | null
+          notes: string | null
+          number: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: string | null
+          reference_point: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          street: string | null
+          total_amount: number | null
+          total_items: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      refresh_admin_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
