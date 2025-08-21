@@ -590,6 +590,19 @@ export type Database = {
       }
     }
     Views: {
+      admin_stats_secure: {
+        Row: {
+          avg_order_value: number | null
+          completed_orders: number | null
+          pending_orders: number | null
+          today_orders: number | null
+          total_orders: number | null
+          total_products: number | null
+          total_revenue: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
       admin_stats_view: {
         Row: {
           avg_order_value: number | null
