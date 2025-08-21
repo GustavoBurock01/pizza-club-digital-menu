@@ -19,7 +19,20 @@ serve(async (req) => {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const pixKey = Deno.env.get('PIX_KEY')!;
+    const pixKey = Deno.env.get('PIX_KEY');
+    
+    if (!pixKey || pixKey.trim().length === 0) {
+      console.error('[PIX] PIX_KEY not configured or empty');
+      return new Response(
+        JSON.stringify({ error: 'PIX key not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    console.log('[PIX] PIX Key configured, length:', pixKey.length);
 
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -70,7 +83,7 @@ serve(async (req) => {
     
     // Generate PIX BR Code
     const pixData = {
-      pixKey: pixKey,
+      pixKey: pixKey.trim(),
       merchantName: "Pizza Club",
       merchantCity: "Sua Cidade",
       amount: parseFloat(order.total_amount),
@@ -78,60 +91,80 @@ serve(async (req) => {
       description: `Pedido ${order.id.substring(0, 8)}`
     };
 
-    const brCode = generateBRCode(pixData);
-    console.log('[PIX] BR Code generated:', brCode.substring(0, 50) + '...');
-
-    // Generate QR code data URL
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brCode)}`;
-
-    // Update order with PIX information
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({
-        payment_method: 'pix',
-        payment_status: 'pending'
-      })
-      .eq('id', orderId);
-
-    if (updateError) {
-      console.error('[PIX] Error updating order:', updateError);
-    }
-
-    // Store PIX transaction for verification
-    const { error: pixError } = await supabase
-      .from('pix_transactions')
-      .insert({
-        id: transactionId,
-        order_id: orderId,
-        user_id: user.id,
-        br_code: brCode,
-        amount: order.total_amount,
-        status: 'pending',
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-      });
-
-    if (pixError) {
-      console.error('[PIX] Error creating PIX transaction:', pixError);
-    }
-
-    const response = {
-      success: true,
-      transactionId,
-      brCode,
-      qrCodeUrl,
-      amount: formatCurrency(parseFloat(order.total_amount)),
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    };
-
-    console.log('[PIX] PIX payment created successfully');
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    try {
+      const brCode = generateBRCode(pixData);
+      console.log('[PIX] BR Code generated successfully, length:', brCode.length);
+      console.log('[PIX] BR Code sample:', brCode.substring(0, 100) + '...');
+      
+      // Validate BR Code format
+      if (!brCode.startsWith('00020101')) {
+        console.error('[PIX] Invalid BR Code format - wrong header');
+        throw new Error('Invalid BR Code format');
       }
-    );
+      
+      // Generate QR code data URL with a more reliable service
+      const qrCodeUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(brCode)}&choe=UTF-8`;
+      console.log('[PIX] QR Code URL generated');
+
+      // Update order with PIX information
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          payment_method: 'pix',
+          payment_status: 'pending'
+        })
+        .eq('id', orderId);
+
+      if (updateError) {
+        console.error('[PIX] Error updating order:', updateError);
+      }
+
+      // Store PIX transaction for verification
+      const { error: pixError } = await supabase
+        .from('pix_transactions')
+        .insert({
+          id: transactionId,
+          order_id: orderId,
+          user_id: user.id,
+          br_code: brCode,
+          amount: order.total_amount,
+          status: 'pending',
+          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+        });
+
+      if (pixError) {
+        console.error('[PIX] Error creating PIX transaction:', pixError);
+      }
+
+      const response = {
+        success: true,
+        transactionId,
+        brCode,
+        qrCodeUrl,
+        amount: formatCurrency(parseFloat(order.total_amount)),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+      };
+
+      console.log('[PIX] PIX payment created successfully');
+
+      return new Response(
+        JSON.stringify(response),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+
+    } catch (brCodeError) {
+      console.error('[PIX] Error generating BR Code:', brCodeError);
+      return new Response(
+        JSON.stringify({ error: `BR Code generation failed: ${brCodeError.message}` }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
   } catch (error) {
     console.error('[PIX] Error creating PIX payment:', error);

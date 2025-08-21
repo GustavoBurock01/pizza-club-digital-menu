@@ -10,55 +10,80 @@ interface PixData {
 export function generateBRCode(pixData: PixData): string {
   const { pixKey, merchantName, merchantCity, amount, transactionId, description } = pixData;
   
+  console.log('[PIX-UTILS] Generating BR Code with data:', {
+    pixKey: pixKey.substring(0, 5) + '...',
+    merchantName,
+    merchantCity, 
+    amount,
+    transactionId
+  });
+  
+  // Validate PIX key format
+  if (!pixKey || pixKey.length === 0) {
+    throw new Error('PIX key is required');
+  }
+  
   // EMV format for PIX
   let payload = '';
   
   // Payload Format Indicator
   payload += '000201';
   
-  // Point of Initiation Method
+  // Point of Initiation Method (12 = static QR code)
   payload += '010212';
   
-  // Merchant Account Information
-  const merchantInfo = `0014br.gov.bcb.pix01${pixKey.length.toString().padStart(2, '0')}${pixKey}`;
-  payload += `26${merchantInfo.length.toString().padStart(2, '0')}${merchantInfo}`;
+  // Merchant Account Information (tag 26)
+  // This is the most critical part - must follow exact PIX standard
+  const pixKeyFormatted = pixKey.trim();
+  const merchantAccountInfo = `0014br.gov.bcb.pix01${pixKeyFormatted.length.toString().padStart(2, '0')}${pixKeyFormatted}`;
+  const merchantAccountLength = merchantAccountInfo.length.toString().padStart(2, '0');
+  payload += `26${merchantAccountLength}${merchantAccountInfo}`;
   
-  // Merchant Category Code
+  console.log('[PIX-UTILS] Merchant account info:', merchantAccountInfo);
+  
+  // Merchant Category Code (0000 = not specified)
   payload += '52040000';
   
-  // Transaction Currency (BRL)
+  // Transaction Currency (986 = BRL)
   payload += '5303986';
   
   // Transaction Amount
-  const amountStr = amount.toFixed(2);
-  payload += `54${amountStr.length.toString().padStart(2, '0')}${amountStr}`;
+  if (amount > 0) {
+    const amountStr = amount.toFixed(2);
+    payload += `54${amountStr.length.toString().padStart(2, '0')}${amountStr}`;
+    console.log('[PIX-UTILS] Amount formatted:', amountStr);
+  }
   
-  // Country Code
+  // Country Code (BR)
   payload += '5802BR';
   
-  // Merchant Name
-  const merchantNameEncoded = merchantName.substring(0, 25);
-  payload += `59${merchantNameEncoded.length.toString().padStart(2, '0')}${merchantNameEncoded}`;
+  // Merchant Name (max 25 chars)
+  const merchantNameSafe = merchantName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').substring(0, 25);
+  payload += `59${merchantNameSafe.length.toString().padStart(2, '0')}${merchantNameSafe}`;
   
-  // Merchant City
-  const merchantCityEncoded = merchantCity.substring(0, 15);
-  payload += `60${merchantCityEncoded.length.toString().padStart(2, '0')}${merchantCityEncoded}`;
+  // Merchant City (max 15 chars) 
+  const merchantCitySafe = merchantCity.normalize('NFD').replace(/[\u0300-\u036f]/g, '').substring(0, 15);
+  payload += `60${merchantCitySafe.length.toString().padStart(2, '0')}${merchantCitySafe}`;
   
-  // Additional Data Field Template
+  // Additional Data Field Template (tag 62) - optional but recommended
   if (description || transactionId) {
     let additionalData = '';
     
+    // Transaction ID (tag 05)
     if (transactionId) {
       const txId = transactionId.substring(0, 25);
       additionalData += `05${txId.length.toString().padStart(2, '0')}${txId}`;
     }
     
+    // Description (tag 02)
     if (description) {
-      const desc = description.substring(0, 25);
+      const desc = description.normalize('NFD').replace(/[\u0300-\u036f]/g, '').substring(0, 25);
       additionalData += `02${desc.length.toString().padStart(2, '0')}${desc}`;
     }
     
-    payload += `62${additionalData.length.toString().padStart(2, '0')}${additionalData}`;
+    if (additionalData) {
+      payload += `62${additionalData.length.toString().padStart(2, '0')}${additionalData}`;
+    }
   }
   
   // CRC16 placeholder
@@ -67,6 +92,9 @@ export function generateBRCode(pixData: PixData): string {
   // Calculate CRC16
   const crc = calculateCRC16(payload);
   payload += crc;
+  
+  console.log('[PIX-UTILS] Final BR Code length:', payload.length);
+  console.log('[PIX-UTILS] BR Code preview:', payload.substring(0, 100) + '...');
   
   return payload;
 }

@@ -61,12 +61,30 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   const createPixPayment = async () => {
     try {
       setLoading(true);
+      console.log('[PIX-COMPONENT] Starting PIX payment creation for order:', orderId);
       
       const { data, error } = await supabase.functions.invoke('create-pix-payment', {
         body: { orderId }
       });
 
-      if (error) throw error;
+      console.log('[PIX-COMPONENT] Supabase function response:', { data, error });
+
+      if (error) {
+        console.error('[PIX-COMPONENT] Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.brCode) {
+        console.error('[PIX-COMPONENT] Invalid response data:', data);
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      console.log('[PIX-COMPONENT] PIX data received:', {
+        transactionId: data.transactionId,
+        amount: data.amount,
+        brCodeLength: data.brCode?.length,
+        qrCodeUrl: data.qrCodeUrl
+      });
 
       setPixData(data);
       toast({
@@ -74,7 +92,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         description: "Escaneie o QR Code ou copie o código PIX.",
       });
     } catch (error: any) {
-      console.error('Error creating PIX payment:', error);
+      console.error('[PIX-COMPONENT] Error creating PIX payment:', error);
       setPaymentStatus('error');
       toast({
         title: "Erro ao gerar PIX",
