@@ -70,14 +70,25 @@ export default function Admin() {
     is_available: true
   });
 
-  // Load data on component mount
   useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+    let isMounted = true;
+    
+    const initializeData = async () => {
+      if (user && isMounted) {
+        await loadData();
+      }
+    };
+
+    initializeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // Usar user.id ao invés de user para evitar re-renders desnecessários
 
   const loadData = async () => {
+    if (loading) return; // Prevenir chamadas concorrentes
+    
     setLoading(true);
     try {
       await Promise.all([
@@ -100,72 +111,98 @@ export default function Admin() {
   };
 
   const loadStats = async () => {
-    const [ordersRes, productsRes, usersRes] = await Promise.all([
-      supabase.from('orders').select('total_amount, status'),
-      supabase.from('products').select('id'),
-      supabase.from('profiles').select('id')
-    ]);
+    try {
+      const [ordersRes, productsRes, usersRes] = await Promise.all([
+        supabase.from('orders').select('total_amount, status'),
+        supabase.from('products').select('id'),
+        supabase.from('profiles').select('id')
+      ]);
 
-    const orders = ordersRes.data || [];
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
-    const pendingOrders = orders.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length;
-    const completedOrders = orders.filter(o => o.status === 'delivered').length;
+      const orders = ordersRes.data || [];
+      const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+      const pendingOrders = orders.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length;
+      const completedOrders = orders.filter(o => o.status === 'delivered').length;
 
-    setStats({
-      totalOrders: orders.length,
-      totalRevenue,
-      totalProducts: productsRes.data?.length || 0,
-      totalUsers: usersRes.data?.length || 0,
-      pendingOrders,
-      completedOrders
-    });
+      setStats({
+        totalOrders: orders.length,
+        totalRevenue,
+        totalProducts: productsRes.data?.length || 0,
+        totalUsers: usersRes.data?.length || 0,
+        pendingOrders,
+        completedOrders
+      });
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    }
   };
 
   const loadOrders = async () => {
-    const { data } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        profiles!orders_user_id_fkey(full_name, email),
-        addresses(street, number, neighborhood),
-        order_items(quantity, products(name))
-      `)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles!orders_user_id_fkey(full_name, email),
+          addresses(street, number, neighborhood),
+          order_items(quantity, products(name))
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    setOrders(data || []);
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+    }
   };
 
   const loadProducts = async () => {
-    const { data } = await supabase
-      .from('products')
-      .select(`
-        *,
-        categories(name),
-        subcategories(name)
-      `)
-      .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories(name),
+          subcategories(name)
+        `)
+        .order('name');
 
-    setProducts(data || []);
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+    }
   };
 
   const loadUsers = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    setUsers(data || []);
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+    }
   };
 
   const loadCategories = async () => {
-    const [catRes, subRes] = await Promise.all([
-      supabase.from('categories').select('*').order('name'),
-      supabase.from('subcategories').select('*').order('name')
-    ]);
+    try {
+      const [catRes, subRes] = await Promise.all([
+        supabase.from('categories').select('*').order('name'),
+        supabase.from('subcategories').select('*').order('name')
+      ]);
 
-    setCategories(catRes.data || []);
-    setSubcategories(subRes.data || []);
+      if (catRes.error) throw catRes.error;
+      if (subRes.error) throw subRes.error;
+
+      setCategories(catRes.data || []);
+      setSubcategories(subRes.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled') => {
@@ -182,7 +219,8 @@ export default function Admin() {
         description: 'Status do pedido atualizado com sucesso.'
       });
 
-      loadOrders();
+      // Recarregar apenas os pedidos ao invés de tudo
+      await loadOrders();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast({
