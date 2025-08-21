@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,33 +34,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Defer role checking and redirect
-          setTimeout(async () => {
-            if (mounted) {
-              console.log('User signed in:', session.user.email);
-              
-              // Check if user is admin and redirect accordingly
-              try {
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('role')
-                  .eq('id', session.user.id)
-                  .single();
-
-                if (profile?.role === 'admin') {
-                  // Admin users should go to admin page
-                  window.location.href = '/admin';
-                } else {
-                  // Regular users go to dashboard
-                  if (window.location.pathname === '/auth') {
-                    window.location.href = '/dashboard';
-                  }
-                }
-              } catch (error) {
-                console.error('Error checking role:', error);
-              }
-            }
-          }, 0);
+          console.log('User signed in:', session.user.email);
+          // Não fazer redirecionamento automático aqui
+          // Deixar os componentes de rota cuidarem disso
         }
         
         if (event === 'SIGNED_OUT') {
@@ -170,12 +145,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Verificar se é admin e redirecionar após login bem-sucedido
+      if (data.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+          if (profile?.role === 'admin') {
+            // Admin vai para página admin
+            setTimeout(() => {
+              window.location.href = '/admin';
+            }, 100);
+          } else {
+            // Usuário regular vai para dashboard
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 100);
+          }
+        } catch (roleError) {
+          console.error('Error checking role:', roleError);
+          // Se não conseguir verificar o role, vai para dashboard
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 100);
+        }
+      }
 
       toast({
         title: "Login realizado com sucesso!",

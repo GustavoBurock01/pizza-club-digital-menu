@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -9,7 +8,7 @@ interface AdminRouteProps {
 
 export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const location = useLocation();
 
   // Show loading while checking authentication and admin status
@@ -18,7 +17,7 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p>Verificando permissões...</p>
+          <p>Verificando permissões de administrador...</p>
         </div>
       </div>
     );

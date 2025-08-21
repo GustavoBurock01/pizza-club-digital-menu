@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface UserRouteProps {
   children: React.ReactNode;
@@ -9,40 +8,11 @@ interface UserRouteProps {
 
 export const UserRoute = ({ children }: UserRouteProps) => {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const location = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkRole = async () => {
-      if (!user) {
-        setIsChecking(false);
-        return;
-      }
-
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        setIsAdmin(profile?.role === 'admin');
-      } catch (error) {
-        console.error('Error checking role:', error);
-        setIsAdmin(false);
-      } finally {
-        setIsChecking(false);
-      }
-    };
-
-    if (!authLoading) {
-      checkRole();
-    }
-  }, [user, authLoading]);
 
   // Show loading while checking
-  if (isChecking || authLoading) {
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
