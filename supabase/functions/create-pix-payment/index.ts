@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
-import { generateBRCode } from './pix-utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,14 +18,14 @@ serve(async (req) => {
   }
 
   try {
-    // Check if PIX_KEY_PROD is configured
-    const pixKey = Deno.env.get('PIX_KEY_PROD');
-    if (!pixKey) {
-      console.error('[PIX] PIX_KEY_PROD not configured');
+    // Check MercadoPago access token
+    const mercadoPagoToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN_PROD');
+    if (!mercadoPagoToken) {
+      console.error('[PIX] MERCADOPAGO_ACCESS_TOKEN_PROD not configured');
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'PIX configuration not available' 
+          error: 'MercadoPago token não configurado' 
         }),
         { 
           status: 500, 
@@ -38,7 +37,6 @@ serve(async (req) => {
     // Verify user authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('[PIX] No authorization header');
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -91,7 +89,6 @@ serve(async (req) => {
     
     const { orderId } = JSON.parse(body);
     if (!orderId) {
-      console.error('[PIX] No orderId provided');
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -104,9 +101,9 @@ serve(async (req) => {
       );
     }
 
-    console.log('[PIX] Looking for order:', orderId);
+    console.log('[PIX] Processing PIX for order:', orderId);
 
-    // Get order details using service role client (bypasses RLS)
+    // Get order details using service role client
     const supabaseServiceClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -116,16 +113,15 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', orderId)
-      .eq('user_id', user.id) // Still check user ownership
+      .eq('user_id', user.id)
       .single();
 
     if (orderError || !order) {
-      console.error('[PIX] Order not found or error:', orderError);
+      console.error('[PIX] Order not found:', orderError);
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Order not found',
-          details: orderError?.message 
+          error: 'Order not found' 
         }),
         { 
           status: 404, 
@@ -136,50 +132,57 @@ serve(async (req) => {
 
     console.log('[PIX] Order found:', { id: order.id, amount: order.total_amount });
 
-    // Generate transaction ID
-    const transactionId = `PIX-${Date.now()}-${order.id.slice(-8)}`;
+    // Get user profile for payment details
+    const { data: profile } = await supabaseServiceClient
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-    // Prepare PIX data
-    const pixData = {
-      pixKey: pixKey,
-      merchantName: 'Rei da Pizza',
-      merchantCity: 'São Paulo',
-      amount: parseFloat(order.total_amount),
-      transactionId,
-      description: `Pedido #${order.id.slice(-8)}`
+    // Create PIX payment with MercadoPago API
+    const paymentData = {
+      transaction_amount: parseFloat(order.total_amount),
+      description: `Pedido PizzaClub #${order.id.slice(-8)}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: profile?.email || user.email,
+        first_name: profile?.full_name?.split(' ')[0] || 'Cliente',
+        last_name: profile?.full_name?.split(' ').slice(1).join(' ') || 'PizzaClub',
+        identification: {
+          type: 'CPF',
+          number: profile?.cpf?.replace(/\D/g, '') || '00000000000'
+        }
+      },
+      external_reference: order.id,
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     };
 
-    console.log('[PIX] Generating PIX with data:', pixData);
+    console.log('[PIX] Creating MercadoPago payment:', {
+      amount: paymentData.transaction_amount,
+      description: paymentData.description,
+      external_reference: paymentData.external_reference
+    });
 
-    // Generate PIX BR Code
-    const brCode = generateBRCode(pixData);
-    console.log('[PIX] BR Code generated:', brCode.substring(0, 50) + '...');
+    // Call MercadoPago API
+    const mercadoPagoResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${mercadoPagoToken}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': `pix-${order.id}-${Date.now()}`
+      },
+      body: JSON.stringify(paymentData)
+    });
 
-    // Generate QR Code URL
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(brCode)}`;
+    const mercadoPagoResult = await mercadoPagoResponse.json();
 
-    // Calculate expiration time (30 minutes from now)
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
-    // Store PIX transaction in database
-    const { error: insertError } = await supabaseServiceClient
-      .from('pix_transactions')
-      .insert({
-        id: transactionId,
-        order_id: order.id,
-        user_id: user.id,
-        amount: parseFloat(order.total_amount),
-        br_code: brCode,
-        status: 'pending',
-        expires_at: expiresAt
-      });
-
-    if (insertError) {
-      console.error('[PIX] Error storing PIX transaction:', insertError);
+    if (!mercadoPagoResponse.ok) {
+      console.error('[PIX] MercadoPago API error:', mercadoPagoResult);
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Failed to store transaction' 
+          error: 'Erro ao criar pagamento PIX',
+          details: mercadoPagoResult.message || 'Erro na API do MercadoPago'
         }),
         { 
           status: 500, 
@@ -188,17 +191,67 @@ serve(async (req) => {
       );
     }
 
-    console.log('[PIX] PIX payment created successfully');
+    console.log('[PIX] MercadoPago payment created:', {
+      id: mercadoPagoResult.id,
+      status: mercadoPagoResult.status,
+      qr_code: mercadoPagoResult.point_of_interaction?.transaction_data?.qr_code ? 'Generated' : 'Not available'
+    });
+
+    // Extract PIX data from MercadoPago response
+    const pixData = mercadoPagoResult.point_of_interaction?.transaction_data;
+    
+    if (!pixData || !pixData.qr_code) {
+      console.error('[PIX] No PIX data received from MercadoPago:', mercadoPagoResult);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'PIX não foi gerado pelo MercadoPago',
+          details: 'Dados PIX não encontrados na resposta'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Store PIX transaction in database
+    const transactionId = `MP-${mercadoPagoResult.id}`;
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    const { error: insertError } = await supabaseServiceClient
+      .from('pix_transactions')
+      .insert({
+        id: transactionId,
+        order_id: order.id,
+        user_id: user.id,
+        amount: parseFloat(order.total_amount),
+        br_code: pixData.qr_code,
+        status: 'pending',
+        expires_at: expiresAt
+      });
+
+    if (insertError) {
+      console.error('[PIX] Error storing PIX transaction:', insertError);
+    }
+
+    // Generate QR Code image URL
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(pixData.qr_code)}`;
+
+    console.log('[PIX] Real MercadoPago PIX created successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
         pixData: {
           transactionId,
-          brCode,
+          brCode: pixData.qr_code,
           qrCodeUrl,
+          qrCodeBase64: pixData.qr_code_base64 || null,
           amount: parseFloat(order.total_amount).toFixed(2),
-          expiresAt
+          expiresAt,
+          mercadoPagoId: mercadoPagoResult.id,
+          ticketUrl: pixData.ticket_url || null
         }
       }),
       { 
