@@ -25,7 +25,10 @@ serve(async (req) => {
     if (!pixKey || pixKey.trim().length === 0) {
       console.error('[PIX] PIX_KEY_PROD not configured or empty');
       return new Response(
-        JSON.stringify({ error: 'PIX key not configured' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'PIX key not configured. Please contact support.' 
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
