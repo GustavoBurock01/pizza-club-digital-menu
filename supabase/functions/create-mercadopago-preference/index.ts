@@ -94,11 +94,11 @@ serve(async (req) => {
       back_urls: {
         success: `${req.headers.get('origin')}/payment-success?order_id=${orderId}`,
         failure: `${req.headers.get('origin')}/payment-failure?order_id=${orderId}`,
-        pending: `${req.headers.get('origin')}/payment-pending?order_id=${orderId}`
+        pending: `${req.headers.get('origin')}/order-status/${orderId}`
       },
       auto_return: 'approved',
       external_reference: orderId,
-      notification_url: `${req.headers.get('origin')}/api/mercadopago-webhook`,
+      notification_url: `https://xpgsfovrxguphlvncgwn.supabase.co/functions/v1/mercadopago-webhook`,
       payer: {
         email: user.email
       }

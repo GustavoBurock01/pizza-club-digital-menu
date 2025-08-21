@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Smartphone, Banknote, Loader2 } from 'lucide-react';
 import { PixPayment } from './PixPayment';
-import { CardPayment } from './CardPayment';
+import { RealCardPayment } from './RealCardPayment';
 import { useNavigate } from 'react-router-dom';
 
 interface PaymentMethodsProps {
@@ -46,7 +46,7 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
     
     if (selectedMethod === 'credit_card') {
       return (
-        <CardPayment 
+        <RealCardPayment 
           orderId={orderId}
           totalAmount={totalAmount}
           onPaymentSuccess={handlePaymentSuccess}
