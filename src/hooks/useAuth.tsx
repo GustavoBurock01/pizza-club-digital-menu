@@ -165,17 +165,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           const userRole = profile?.role || 'customer';
 
-          if (userRole === 'admin') {
-            // Admin vai para dashboard admin completo
-            setTimeout(() => {
-              window.location.href = '/admin/full';
-            }, 100);
-          } else {
-            // Usuário regular vai para dashboard
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 100);
-          }
+          // Redirecionamento centralizado baseado no role
+          setTimeout(() => {
+            switch (userRole) {
+              case 'admin':
+                window.location.href = '/admin';
+                break;
+              case 'attendant':
+                window.location.href = '/attendant';
+                break;
+              default:
+                window.location.href = '/dashboard';
+                break;
+            }
+          }, 100);
         } catch (roleError) {
           console.error('Error checking user role:', roleError);
           // Se não conseguir verificar o role, vai para dashboard

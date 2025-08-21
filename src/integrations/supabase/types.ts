@@ -661,6 +661,18 @@ export type Database = {
           total_users: number
         }[]
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      has_any_role: {
+        Args: { required_roles: string[] }
+        Returns: boolean
+      }
+      has_role: {
+        Args: { required_role: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_id?: string }
         Returns: boolean

@@ -3,13 +3,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-interface UserRouteProps {
+interface AttendantRouteProps {
   children: React.ReactNode;
 }
 
-export const UserRoute = ({ children }: UserRouteProps) => {
+export const AttendantRoute = ({ children }: AttendantRouteProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { role, loading: roleLoading } = useRole();
+  const { hasAnyRole, loading: roleLoading } = useRole();
   const location = useLocation();
 
   // Show loading while checking
@@ -18,7 +18,7 @@ export const UserRoute = ({ children }: UserRouteProps) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="mt-4">Carregando...</p>
+          <p className="mt-4">Verificando permissões de atendente...</p>
         </div>
       </div>
     );
@@ -29,15 +29,10 @@ export const UserRoute = ({ children }: UserRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Redirect based on role
-  if (role === 'admin') {
-    return <Navigate to="/admin" replace />;
+  // Only allow admin and attendant access
+  if (!hasAnyRole(['admin', 'attendant'])) {
+    return <Navigate to="/dashboard" replace />;
   }
 
-  if (role === 'attendant') {
-    return <Navigate to="/attendant" replace />;
-  }
-
-  // Allow access for customers
   return <>{children}</>;
 };

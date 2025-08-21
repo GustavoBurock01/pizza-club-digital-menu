@@ -3,11 +3,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-interface UserRouteProps {
+interface CustomerRouteProps {
   children: React.ReactNode;
 }
 
-export const UserRoute = ({ children }: UserRouteProps) => {
+export const CustomerRoute = ({ children }: CustomerRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { role, loading: roleLoading } = useRole();
   const location = useLocation();
@@ -18,7 +18,7 @@ export const UserRoute = ({ children }: UserRouteProps) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="mt-4">Carregando...</p>
+          <p className="mt-4">Verificando permissões...</p>
         </div>
       </div>
     );

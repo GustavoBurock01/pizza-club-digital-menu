@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminStatus } from '@/hooks/useAdminStatus';
+import { useRole } from '@/hooks/useRole';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -8,16 +9,16 @@ interface AdminRouteProps {
 
 export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminStatus();
+  const { isAdmin, loading: roleLoading } = useRole();
   const location = useLocation();
 
   // Show loading while checking authentication and admin status
-  if (authLoading || adminLoading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p>Verificando permissões de administrador...</p>
+          <LoadingSpinner />
+          <p className="mt-4">Verificando permissões de administrador...</p>
         </div>
       </div>
     );

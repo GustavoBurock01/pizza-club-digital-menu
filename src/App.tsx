@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { UserRoute } from "@/components/UserRoute";
+import { CustomerRoute } from "@/components/routes/CustomerRoute";
+import { AttendantRoute } from "@/components/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
@@ -76,101 +78,110 @@ const App = () => {
                   <PaymentSuccess />
                 </ProtectedRoute>
               } />
-              {/* User Routes - Only for regular users (not admins) */}
+              {/* Customer Routes - Only for regular users (not admins/attendants) */}
               <Route path="/dashboard" element={
-                <UserRoute>
+                <CustomerRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Dashboard />
                   </Suspense>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/menu" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Menu />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/produto/:id" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Product />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/cart" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Cart />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/order-review" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <OrderReview />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/checkout" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Checkout />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/payment/:orderId" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Payment />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/order-confirmation/:orderId" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <OrderConfirmation />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/orders" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Orders />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/account" element={
-                <UserRoute>
+                <CustomerRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Account />
                   </Suspense>
-                </UserRoute>
+                </CustomerRoute>
               } />
               <Route path="/order-status/:orderId" element={
-                <UserRoute>
+                <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <OrderStatus />
                     </Suspense>
                   </ProtectedRoute>
-                </UserRoute>
+                </CustomerRoute>
+              } />
+              
+              {/* Attendant Routes - Only for attendants and admins */}
+              <Route path="/attendant" element={
+                <AttendantRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </AttendantRoute>
               } />
               
               {/* Admin Routes - Only for admin users */}
@@ -192,13 +203,6 @@ const App = () => {
                 <AdminRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />
-                  </Suspense>
-                </AdminRoute>
-              } />
-              <Route path="/attendant" element={
-                <AdminRoute>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
                   </Suspense>
                 </AdminRoute>
               } />

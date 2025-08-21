@@ -73,12 +73,9 @@ interface Customer {
 }
 
 export default function AttendantDashboard() {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [isAttendant, setIsAttendant] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [beverages, setBeverages] = useState<Beverage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -86,57 +83,29 @@ export default function AttendantDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [orderFilter, setOrderFilter] = useState('all');
 
-  // Verificar se é atendente ou admin
+  // Carregar dados automaticamente
   useEffect(() => {
-    const checkRole = async () => {
-      if (!user) return;
-
+    const loadData = async () => {
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile || !['admin', 'attendant'].includes(profile.role)) {
-          toast({
-            title: 'Acesso negado',
-            description: 'Você não tem permissão para acessar esta página.',
-            variant: 'destructive'
-          });
-          navigate('/dashboard');
-          return;
-        }
-
-        setIsAttendant(true);
-        await loadData();
+        await Promise.all([
+          loadOrders(),
+          loadBeverages(),
+          loadCustomers()
+        ]);
       } catch (error) {
-        console.error('Erro ao verificar permissões:', error);
-        navigate('/dashboard');
+        console.error('Erro ao carregar dados:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao carregar dados do painel.',
+          variant: 'destructive'
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    checkRole();
-  }, [user, navigate, toast]);
-
-  const loadData = async () => {
-    try {
-      await Promise.all([
-        loadOrders(),
-        loadBeverages(),
-        loadCustomers()
-      ]);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar dados do painel.',
-        variant: 'destructive'
-      });
-    }
-  };
+    loadData();
+  }, [toast]);
 
   const loadOrders = async () => {
     const { data } = await supabase
@@ -246,10 +215,6 @@ export default function AttendantDashboard() {
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  if (!isAttendant) {
-    return null;
   }
 
   return (
