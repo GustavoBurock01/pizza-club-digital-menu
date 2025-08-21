@@ -19,10 +19,10 @@ serve(async (req) => {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const pixKey = Deno.env.get('PIX_KEY');
+    const pixKey = Deno.env.get('PIX_KEY_PROD');
     
     if (!pixKey || pixKey.trim().length === 0) {
-      console.error('[PIX] PIX_KEY not configured or empty');
+      console.error('[PIX] PIX_KEY_PROD not configured or empty');
       return new Response(
         JSON.stringify({ error: 'PIX key not configured' }),
         { 
