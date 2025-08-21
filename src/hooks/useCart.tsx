@@ -1,26 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface CartCustomization {
-  halfAndHalf?: {
-    firstHalf: string;
-    secondHalf: string;
-  };
-  crust?: string;
-  extras?: string[];
-}
-
-export interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string;
-  customizations?: CartCustomization;
-  notes?: string;
-}
+import { CartCustomization, CartItem } from '@/types';
 
 interface CartState {
   items: CartItem[];

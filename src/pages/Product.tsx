@@ -10,20 +10,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Minus, Plus, ShoppingCart, ChevronDown } from 'lucide-react';
-import { useCart, CartCustomization } from '@/hooks/useCart';
+import { useCart } from '@/hooks/useCart';
+import { CartCustomization, Product as ProductType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string | null;
-  ingredients: string[];
-  category_id: string;
-  subcategory_id?: string;
-  subcategories?: { name: string };
-}
+import { supabase } from '@/services/supabase';
 
 const CRUST_OPTIONS = [
   { id: 'tradicional', name: 'Tradicional', price: 0 },
@@ -54,7 +44,7 @@ const Product = () => {
   const {
     toast
   } = useToast();
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<ProductType | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedCrust, setSelectedCrust] = useState('tradicional');

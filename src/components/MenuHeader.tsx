@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
 import { CartDrawer } from "./CartDrawer";
-import { CurrentView } from "@/hooks/useMenu";
+import { CurrentView } from "@/types";
 
 interface MenuHeaderProps {
   currentView: CurrentView;

@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { useCart, CartCustomization } from '@/hooks/useCart';
+import { useCart } from '@/hooks/useCart';
+import { CartCustomization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface PizzaCustomizerProps {

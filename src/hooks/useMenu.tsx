@@ -1,37 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/supabase";
 import { useToast } from "@/hooks/use-toast";
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string | null;
-  ingredients: string[];
-}
-
-export interface Subcategory {
-  id: string;
-  name: string;
-  description: string | null;
-  category_id: string;
-  order_position: number | null;
-  is_active: boolean | null;
-  created_at: string | null;
-  product_count: number;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  subcategories: Subcategory[];
-}
-
-export type CurrentView = 'categories' | 'subcategories' | 'products';
+import { Product, Category, Subcategory, CurrentView } from '@/types';
 
 export const useMenu = () => {
   const [categories, setCategories] = useState<Category[]>([]);

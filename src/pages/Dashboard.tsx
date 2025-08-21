@@ -11,23 +11,10 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/supabase";
+import { RecentOrder } from "@/types";
+import { formatCurrency, formatDateTime } from "@/utils/formatting";
 import { useToast } from "@/hooks/use-toast";
-
-interface RecentOrder {
-  id: string;
-  created_at: string;
-  total_amount: number;
-  status: string;
-  order_items: {
-    product_id: string;
-    quantity: number;
-    customizations: any;
-    products: {
-      name: string;
-    };
-  }[];
-}
 
 const Dashboard = () => {
   const { subscription, createCheckout } = useSubscription();

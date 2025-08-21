@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { AdminStats, Order, Product, User } from '@/types';
+import { formatCurrency, formatDateTime } from '@/utils/formatting';
+import { getOrderStatusText, getPaymentStatusText, getOrderStatusColor, getPaymentStatusColor } from '@/utils/helpers';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,47 +36,7 @@ import {
   Filter
 } from 'lucide-react';
 
-interface AdminStats {
-  totalOrders: number;
-  totalRevenue: number;
-  totalProducts: number;
-  totalUsers: number;
-  pendingOrders: number;
-  completedOrders: number;
-}
-
-interface Order {
-  id: string;
-  user_id: string;
-  total_amount: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-  profiles: { full_name: string; email: string };
-  addresses: { street: string; number: string; neighborhood: string };
-  order_items: { quantity: number; products: { name: string } }[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  is_available: boolean;
-  category_id: string;
-  subcategory_id: string;
-  categories: { name: string };
-  subcategories: { name: string };
-}
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone: string;
-  role: string;
-  created_at: string;
-}
+// Tipagens já estão centralizadas em @/types
 
 export default function Admin() {
   const { user } = useAuth();
@@ -314,35 +277,7 @@ export default function Admin() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(dateString));
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      preparing: 'bg-orange-100 text-orange-800',
-      ready: 'bg-green-100 text-green-800',
-      delivering: 'bg-purple-100 text-purple-800',
-      delivered: 'bg-emerald-100 text-emerald-800',
-      cancelled: 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
+  // Funções de formatação foram movidas para @/utils
 
   if (loading) {
     return <LoadingSpinner />;
@@ -473,11 +408,11 @@ export default function Admin() {
                             {formatCurrency(order.total_amount)}
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(order.status)}>
-                              {order.status}
+                            <Badge className={getOrderStatusColor(order.status)}>
+                              {getOrderStatusText(order.status)}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(order.created_at)}</TableCell>
+                          <TableCell>{formatDateTime(order.created_at)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Dialog>
@@ -749,7 +684,7 @@ export default function Admin() {
                               {userItem.role}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(userItem.created_at)}</TableCell>
+                          <TableCell>{formatDateTime(userItem.created_at)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

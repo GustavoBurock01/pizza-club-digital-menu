@@ -7,16 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Clock, Home, Utensils } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
+import { Order } from '@/types';
 
-interface Order {
-  id: string;
-  total_amount: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-  notes: string;
-}
+// Interface movida para @/types
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
