@@ -35,32 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
-          
-          // Garantir que o perfil do usuário existe
-          setTimeout(async () => {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('id', session.user.id)
-                .maybeSingle();
-
-              if (!profile) {
-                await supabase
-                  .from('profiles')
-                  .insert({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    full_name: session.user.user_metadata?.full_name || session.user.email || '',
-                    phone: session.user.user_metadata?.phone || null,
-                    cpf: session.user.user_metadata?.cpf || null,
-                    role: 'customer'
-                  });
-              }
-            } catch (error) {
-              console.error('Error ensuring user profile:', error);
-            }
-          }, 100);
+          // O trigger handle_new_user cria automaticamente o perfil
         }
         
         if (event === 'SIGNED_OUT') {
@@ -176,35 +151,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Verificar se é admin e redirecionar após login bem-sucedido
+      // Verificar role e redirecionar após login bem-sucedido
       if (data.user) {
         try {
-          // Primeiro, garantir que o usuário existe na tabela profiles
-          const { data: profile, error: profileError } = await supabase
+          // Aguardar um pouco para o trigger criar o perfil
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', data.user.id)
             .maybeSingle();
 
-          // Se o usuário não existe, criar profile
-          if (!profile && !profileError) {
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: data.user.id,
-                email: data.user.email || '',
-                full_name: data.user.user_metadata?.full_name || data.user.email || '',
-                phone: data.user.user_metadata?.phone || null,
-                cpf: data.user.user_metadata?.cpf || null,
-                role: 'customer' // Padrão é customer
-              });
-
-            if (insertError) {
-              console.error('Error creating user profile:', insertError);
-            }
-          }
-
-          // Agora verificar o role para redirecionamento
           const userRole = profile?.role || 'customer';
 
           if (userRole === 'admin') {
@@ -219,7 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }, 100);
           }
         } catch (roleError) {
-          console.error('Error checking/creating user role:', roleError);
+          console.error('Error checking user role:', roleError);
           // Se não conseguir verificar o role, vai para dashboard
           setTimeout(() => {
             window.location.href = '/dashboard';
