@@ -15,6 +15,7 @@ import { supabase } from "@/services/supabase";
 import { RecentOrder } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils/formatting";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const { subscription, createCheckout } = useSubscription();
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
 
@@ -119,7 +121,7 @@ const Dashboard = () => {
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
+            {isMobile && <SidebarTrigger className="-ml-1" />}
             <div className="ml-auto">
               <h1 className="text-xl font-semibold">Dashboard</h1>
             </div>
