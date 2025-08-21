@@ -52,7 +52,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         const remaining = Math.max(0, expiresAt - now);
         setTimeLeft(remaining);
         
-        if (remaining === 0 && paymentStatus === 'pending') {
+        if (remaining === 0) {
           console.log('[PIX-COMPONENT] PIX expired, updating status');
           setPaymentStatus('expired');
         }
@@ -65,7 +65,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         clearInterval(timer);
       };
     }
-  }, [pixData, paymentStatus]);
+  }, [pixData]); // Removed paymentStatus dependency to prevent loop
 
   const createPixPayment = async () => {
     try {
@@ -118,12 +118,19 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
 
     try {
       setPaymentStatus('checking');
+      console.log('[PIX-COMPONENT] Checking payment status for transaction:', pixData.transactionId);
       
       const { data, error } = await supabase.functions.invoke('check-pix-status', {
         body: { transactionId: pixData.transactionId }
       });
 
-      if (error) throw error;
+      console.log('[PIX-COMPONENT] Payment status response:', { data, error });
+
+      if (error) {
+        console.error('[PIX-COMPONENT] Error checking payment status:', error);
+        setPaymentStatus('pending'); // Return to pending on error
+        return;
+      }
 
       if (data.status === 'paid') {
         setPaymentStatus('success');
@@ -138,7 +145,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         setPaymentStatus('pending');
       }
     } catch (error) {
-      console.error('Error checking payment status:', error);
+      console.error('[PIX-COMPONENT] Error checking payment status:', error);
       setPaymentStatus('pending');
     }
   };
