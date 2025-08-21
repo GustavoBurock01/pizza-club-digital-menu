@@ -1,4 +1,4 @@
-// ===== CONFIGURAÇÃO CENTRALIZADA DO REACT QUERY =====
+// ===== CONFIGURAÇÃO OTIMIZADA DO REACT QUERY PARA PERFORMANCE =====
 
 import { QueryClient } from '@tanstack/react-query';
 
@@ -7,9 +7,12 @@ export const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos
-      networkMode: 'offlineFirst', // Priorizar cache quando offline
+      staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
+      gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+      networkMode: 'offlineFirst',
+      // Configurações de performance
+      refetchOnMount: false, // Evitar refetch desnecessário
+      refetchOnReconnect: 'always', // Apenas quando reconectar
     },
     mutations: {
       retry: false,
@@ -18,28 +21,74 @@ export const queryClient = new QueryClient({
   },
 });
 
-// ===== FUNÇÕES DE INVALIDAÇÃO =====
+// ===== CACHE LAYERS ESTRATÉGICOS =====
+export const CACHE_STRATEGIES = {
+  // Cache ultra-longo para dados estáticos (24h)
+  STATIC: {
+    staleTime: 24 * 60 * 60 * 1000, // 24 horas
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 dias
+  },
+  // Cache longo para dados semi-estáticos (1h)
+  SEMI_STATIC: {
+    staleTime: 60 * 60 * 1000, // 1 hora
+    gcTime: 6 * 60 * 60 * 1000, // 6 horas
+  },
+  // Cache médio para dados dinâmicos (5min)
+  DYNAMIC: {
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
+  },
+  // Cache curto para dados críticos (30s)
+  CRITICAL: {
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 2 * 60 * 1000, // 2 minutos
+  },
+};
+
+// ===== FUNÇÕES DE INVALIDAÇÃO OTIMIZADAS =====
 export const invalidateQueries = {
   all: () => queryClient.invalidateQueries(),
+  
+  // Invalidação granular para performance
   menu: () => {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
-    queryClient.invalidateQueries({ queryKey: ['subcategories'] });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.removeQueries({ queryKey: ['products'], exact: false });
   },
+  
   orders: () => {
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
   },
-  admin: () => {
-    queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+  
+  // Pré-loading estratégico
+  preloadMenu: async () => {
+    await queryClient.prefetchQuery({
+      queryKey: ['categories'],
+      staleTime: CACHE_STRATEGIES.STATIC.staleTime,
+    });
   },
-  user: () => {
-    queryClient.invalidateQueries({ queryKey: ['user'] });
-    queryClient.invalidateQueries({ queryKey: ['profile'] });
-    queryClient.invalidateQueries({ queryKey: ['addresses'] });
-    queryClient.invalidateQueries({ queryKey: ['subscription'] });
+  
+  // Background refresh
+  backgroundRefresh: () => {
+    queryClient.refetchQueries({ 
+      queryKey: ['orders'],
+      type: 'active',
+    });
+  },
+};
+
+// ===== PERFORMANCE MONITORING =====
+export const performanceMonitor = {
+  startTime: Date.now(),
+  
+  logQueryPerformance: (queryKey: any[], duration: number) => {
+    if (duration > 1000) { // Log se demorar mais que 1s
+      console.warn(`🐌 Slow query detected: ${JSON.stringify(queryKey)} took ${duration}ms`);
+    }
+  },
+  
+  trackCacheHit: (queryKey: any[], fromCache: boolean) => {
+    const prefix = fromCache ? '⚡ Cache HIT' : '🌐 Network fetch';
+    console.log(`${prefix}: ${JSON.stringify(queryKey)}`);
   },
 };

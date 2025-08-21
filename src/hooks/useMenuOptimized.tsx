@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/services/supabase';
 import { QUERY_KEYS } from '@/services/supabase';
+import { CACHE_STRATEGIES } from '@/config/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Category, Subcategory, CurrentView } from '@/types';
 
-// ===== HOOK OTIMIZADO PARA MENU COM REACT QUERY =====
+// ===== HOOK SUPER OTIMIZADO PARA MENU =====
 
 export const useMenuOptimized = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -13,30 +14,37 @@ export const useMenuOptimized = () => {
   const [currentView, setCurrentView] = useState<CurrentView>('categories');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Cache de performance para evitar re-computação
+  const computeCache = useRef(new Map());
 
-  // Query para categorias (cache agressivo para dados estáticos)
+  // Query para categorias com cache ultra-agressivo (dados estáticos)
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: QUERY_KEYS.CATEGORIES,
     queryFn: async () => {
-      // Cache no localStorage para dados críticos
-      const cacheKey = 'categories_cache';
+      console.log('🌐 Fetching categories from network');
+      
+      // Multi-layer cache strategy
+      const cacheKey = 'categories_v2';
       const cached = localStorage.getItem(cacheKey);
       const cacheTime = localStorage.getItem(`${cacheKey}_time`);
       
-      // Usar cache se menos de 1 hora
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 60 * 60 * 1000) {
+      // Cache de 6 horas para dados estáticos
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 6 * 60 * 60 * 1000) {
+        console.log('⚡ Using localStorage cache for categories');
         return JSON.parse(cached);
       }
 
+      // Batch todas as queries necessárias em uma só chamada
       const [categoriesRes, subcategoriesRes, productCountsRes] = await Promise.all([
         supabase
           .from('categories')
-          .select('*')
+          .select('id, name, description, icon, order_position, is_active')
           .eq('is_active', true)
           .order('order_position'),
         supabase
           .from('subcategories')
-          .select('*')
+          .select('id, name, description, category_id, order_position, is_active')
           .eq('is_active', true)
           .order('order_position'),
         supabase
@@ -49,58 +57,81 @@ export const useMenuOptimized = () => {
       if (subcategoriesRes.error) throw subcategoriesRes.error;
       if (productCountsRes.error) throw productCountsRes.error;
 
-      const subcategoryProductCounts = productCountsRes.data.reduce((acc: Record<string, number>, product) => {
+      // Computação otimizada usando Map para O(1) lookup
+      const subcategoryProductCounts = new Map();
+      productCountsRes.data.forEach(product => {
         if (product.subcategory_id) {
-          acc[product.subcategory_id] = (acc[product.subcategory_id] || 0) + 1;
+          subcategoryProductCounts.set(
+            product.subcategory_id,
+            (subcategoryProductCounts.get(product.subcategory_id) || 0) + 1
+          );
         }
-        return acc;
-      }, {});
+      });
+
+      // Agrupar subcategorias por categoria para evitar filter repetido
+      const subcategoriesByCategory = new Map();
+      subcategoriesRes.data.forEach(sub => {
+        if (!subcategoriesByCategory.has(sub.category_id)) {
+          subcategoriesByCategory.set(sub.category_id, []);
+        }
+        subcategoriesByCategory.get(sub.category_id).push({
+          ...sub,
+          product_count: subcategoryProductCounts.get(sub.id) || 0
+        });
+      });
 
       const result = categoriesRes.data.map(category => ({
         ...category,
-        subcategories: subcategoriesRes.data
-          .filter(sub => sub.category_id === category.id)
-          .map(sub => ({
-            ...sub,
-            product_count: subcategoryProductCounts[sub.id] || 0
-          }))
+        subcategories: subcategoriesByCategory.get(category.id) || []
       }));
 
-      // Armazenar no localStorage
+      // Armazenar no localStorage para próximas sessões
       localStorage.setItem(cacheKey, JSON.stringify(result));
       localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
 
+      console.log('✅ Categories cached successfully');
       return result;
     },
-    staleTime: 30 * 60 * 1000, // 30 minutos
-    gcTime: 60 * 60 * 1000, // 1 hora
+    ...CACHE_STRATEGIES.STATIC, // Cache de 24h
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
-  // Query para produtos de uma subcategoria específica - cache otimizado
+  // Query para produtos com cache inteligente
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: [...QUERY_KEYS.PRODUCTS, selectedSubcategoryId],
     queryFn: async () => {
       if (!selectedSubcategoryId) return [];
       
+      console.log('🌐 Fetching products for subcategory:', selectedSubcategoryId);
+      
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, description, price, image_url, ingredients, is_available, order_position, subcategory_id')
         .eq('subcategory_id', selectedSubcategoryId)
         .eq('is_available', true)
         .order('order_position');
 
       if (error) throw error;
+      
+      console.log('✅ Products fetched successfully');
       return data || [];
     },
     enabled: !!selectedSubcategoryId && currentView === 'products',
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    ...CACHE_STRATEGIES.SEMI_STATIC, // Cache de 1h
     refetchOnWindowFocus: false,
   });
 
-  // Handlers otimizados com useCallback
+  // Handlers otimizados com useCallback e cache
   const handleSubcategorySelect = useCallback((categoryId: string, subcategoryId: string) => {
+    // Pré-carregar produtos em background se possível
+    if (subcategoryId) {
+      queryClient.prefetchQuery({
+        queryKey: [...QUERY_KEYS.PRODUCTS, subcategoryId],
+        staleTime: CACHE_STRATEGIES.SEMI_STATIC.staleTime,
+      });
+    }
+
     setSelectedCategoryId(categoryId);
     
     if (subcategoryId) {
@@ -109,7 +140,7 @@ export const useMenuOptimized = () => {
     } else {
       setCurrentView('subcategories');
     }
-  }, []);
+  }, [queryClient]);
 
   const handleBackToCategories = useCallback(() => {
     setSelectedCategoryId("");
@@ -122,29 +153,63 @@ export const useMenuOptimized = () => {
     setCurrentView('subcategories');
   }, []);
 
-  // Funções computadas com useMemo para otimização
+  // Funções computadas com cache agressivo
   const getCurrentCategoryName = useMemo(() => {
     return () => {
+      const cacheKey = `category_name_${selectedCategoryId}`;
+      
+      if (computeCache.current.has(cacheKey)) {
+        return computeCache.current.get(cacheKey);
+      }
+
       const category = categories.find(cat => cat.id === selectedCategoryId);
-      return category?.name || "";
+      const result = category?.name || "";
+      
+      computeCache.current.set(cacheKey, result);
+      return result;
     };
   }, [categories, selectedCategoryId]);
 
   const getCurrentSubcategoryName = useMemo(() => {
     return () => {
+      const cacheKey = `subcategory_name_${selectedCategoryId}_${selectedSubcategoryId}`;
+      
+      if (computeCache.current.has(cacheKey)) {
+        return computeCache.current.get(cacheKey);
+      }
+
       const category = categories.find(cat => cat.id === selectedCategoryId);
       const subcategory = category?.subcategories.find(sub => sub.id === selectedSubcategoryId);
-      return subcategory?.name || "";
+      const result = subcategory?.name || "";
+      
+      computeCache.current.set(cacheKey, result);
+      return result;
     };
   }, [categories, selectedCategoryId, selectedSubcategoryId]);
 
-  // Função para invalidar cache quando necessário
+  // Background refresh para manter dados atualizados
   const refreshData = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES });
     if (selectedSubcategoryId) {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.PRODUCTS, selectedSubcategoryId] });
     }
+    
+    // Limpar cache computacional
+    computeCache.current.clear();
   }, [queryClient, selectedSubcategoryId]);
+
+  // Preloading estratégico
+  const preloadNextSubcategory = useCallback((categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category && category.subcategories.length > 0) {
+      // Pré-carregar produtos da primeira subcategoria
+      const firstSubcategory = category.subcategories[0];
+      queryClient.prefetchQuery({
+        queryKey: [...QUERY_KEYS.PRODUCTS, firstSubcategory.id],
+        staleTime: CACHE_STRATEGIES.SEMI_STATIC.staleTime,
+      });
+    }
+  }, [categories, queryClient]);
 
   return {
     categories,
@@ -159,5 +224,6 @@ export const useMenuOptimized = () => {
     getCurrentCategoryName,
     getCurrentSubcategoryName,
     refreshData,
+    preloadNextSubcategory,
   };
 };

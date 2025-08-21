@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { Copy, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
+
+// ===== COMPONENTE PIX OTIMIZADO PARA PERFORMANCE =====
 
 interface PixPaymentProps {
   orderId: string;
@@ -27,142 +29,185 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'expired' | 'error'>('pending');
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const { toast } = useToast();
+  
+  // Refs para controle de intervalos e evitar memory leaks
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isUnmountedRef = useRef(false);
+
+  // Polling inteligente - aumenta intervalo progressivamente
+  const [pollingInterval, setPollingInterval] = useState(5000); // Começa com 5s
+  const maxPollingInterval = 30000; // Máximo 30s
 
   useEffect(() => {
     createPixPayment();
-  }, [orderId]); // Single call on mount
+    
+    return () => {
+      isUnmountedRef.current = true;
+      clearAllIntervals();
+    };
+  }, [orderId]);
 
+  // Função para limpar todos os intervalos
+  const clearAllIntervals = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  }, []);
+
+  // Polling otimizado com backoff exponencial
   useEffect(() => {
     if (pixData && paymentStatus === 'pending') {
-      console.log('[PIX-COMPONENT] Starting payment status polling');
-      const interval = setInterval(checkPaymentStatus, 5000);
+      console.log('[PIX-OPTIMIZED] Starting intelligent polling with interval:', pollingInterval);
+      
+      pollingIntervalRef.current = setInterval(() => {
+        if (isUnmountedRef.current) return;
+        
+        checkPaymentStatus();
+        
+        // Aumentar intervalo progressivamente para reduzir carga
+        setPollingInterval(prev => Math.min(prev + 2000, maxPollingInterval));
+      }, pollingInterval);
+
       return () => {
-        console.log('[PIX-COMPONENT] Cleaning up payment status polling');
-        clearInterval(interval);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
       };
     }
-  }, [pixData, paymentStatus]);
+  }, [pixData, paymentStatus, pollingInterval]);
 
+  // Timer otimizado
   useEffect(() => {
-    if (pixData) {
-      console.log('[PIX-COMPONENT] Setting up timer for PIX expiration');
+    if (pixData && paymentStatus !== 'success' && paymentStatus !== 'expired') {
       const expiresAt = new Date(pixData.expiresAt).getTime();
+      
       const updateTimer = () => {
+        if (isUnmountedRef.current) return;
+        
         const now = Date.now();
         const remaining = Math.max(0, expiresAt - now);
         setTimeLeft(remaining);
         
         if (remaining === 0) {
-          console.log('[PIX-COMPONENT] PIX expired, updating status');
+          console.log('[PIX-OPTIMIZED] PIX expired');
           setPaymentStatus('expired');
+          clearAllIntervals();
         }
       };
       
       updateTimer();
-      const timer = setInterval(updateTimer, 1000);
+      timerIntervalRef.current = setInterval(updateTimer, 1000);
+      
       return () => {
-        console.log('[PIX-COMPONENT] Cleaning up timer');
-        clearInterval(timer);
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
       };
     }
-  }, [pixData]); // Removed paymentStatus dependency to prevent loop
+  }, [pixData, paymentStatus]);
 
   const createPixPayment = async () => {
-    // Reset state for new PIX generation
+    // Reset state
     setPixData(null);
     setPaymentStatus('pending');
+    setPollingInterval(5000); // Reset intervalo
+    clearAllIntervals();
     
     try {
       setLoading(true);
-      setPaymentStatus('pending');
-      console.log('[PIX-COMPONENT] Starting PIX payment creation for order:', orderId);
+      console.log('[PIX-OPTIMIZED] Creating PIX payment for order:', orderId);
       
       const { data, error } = await supabase.functions.invoke('create-pix-payment', {
         body: { orderId }
       });
 
-      console.log('[PIX-COMPONENT] Supabase function response:', { data, error });
+      if (isUnmountedRef.current) return;
 
       if (error) {
-        console.error('[PIX-COMPONENT] Supabase function error:', error);
+        console.error('[PIX-OPTIMIZED] Supabase function error:', error);
         throw new Error(error.message || 'Erro na comunicação com o servidor');
       }
 
-      if (!data) {
-        console.error('[PIX-COMPONENT] No data received from server');
-        throw new Error('Nenhum dado recebido do servidor');
-      }
-
-      if (!data.success) {
-        console.error('[PIX-COMPONENT] Server returned error:', data);
-        throw new Error(data.error || 'Erro desconhecido do servidor');
-      }
-
-      if (!data.pixData || !data.pixData.brCode) {
-        console.error('[PIX-COMPONENT] Invalid response data - missing pixData:', data);
+      if (!data?.success || !data.pixData?.brCode) {
+        console.error('[PIX-OPTIMIZED] Invalid response data:', data);
         throw new Error('Código PIX não foi gerado corretamente');
       }
 
-      console.log('[PIX-COMPONENT] PIX created successfully:', data.pixData);
+      console.log('[PIX-OPTIMIZED] PIX created successfully');
       setPixData(data.pixData);
       setPaymentStatus('pending');
+      
       toast({
         title: "PIX gerado com sucesso!",
         description: "Escaneie o QR Code ou copie o código PIX.",
       });
     } catch (error: any) {
-      console.error('[PIX-COMPONENT] Error creating PIX payment:', error);
-      setPaymentStatus('error');
+      if (isUnmountedRef.current) return;
       
-      let errorMessage = 'Erro inesperado. Tente novamente.';
-      if (error.message) {
-        errorMessage = error.message;
-      }
+      console.error('[PIX-OPTIMIZED] Error creating PIX:', error);
+      setPaymentStatus('error');
       
       toast({
         title: "Erro ao gerar PIX",
-        description: errorMessage,
+        description: error.message || 'Erro inesperado. Tente novamente.',
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (!isUnmountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const checkPaymentStatus = async () => {
-    if (!pixData || paymentStatus !== 'pending') return;
+    if (!pixData || paymentStatus !== 'pending' || isUnmountedRef.current) return;
 
     try {
       setPaymentStatus('checking');
-      console.log('[PIX-COMPONENT] Checking payment status for transaction:', pixData.transactionId);
+      console.log('[PIX-OPTIMIZED] Checking payment status (interval:', pollingInterval, 'ms)');
       
       const { data, error } = await supabase.functions.invoke('check-pix-status', {
         body: { transactionId: pixData.transactionId }
       });
 
-      console.log('[PIX-COMPONENT] Payment status response:', { data, error });
+      if (isUnmountedRef.current) return;
 
       if (error) {
-        console.error('[PIX-COMPONENT] Error checking payment status:', error);
-        setPaymentStatus('pending'); // Return to pending on error
+        console.error('[PIX-OPTIMIZED] Error checking payment:', error);
+        setPaymentStatus('pending');
         return;
       }
 
       if (data.status === 'paid') {
+        console.log('[PIX-OPTIMIZED] Payment confirmed!');
         setPaymentStatus('success');
+        clearAllIntervals();
+        
         toast({
           title: "Pagamento confirmado!",
           description: "Seu pedido foi aprovado com sucesso.",
         });
+        
         onPaymentSuccess();
       } else if (data.status === 'expired') {
         setPaymentStatus('expired');
+        clearAllIntervals();
       } else {
         setPaymentStatus('pending');
       }
     } catch (error) {
-      console.error('[PIX-COMPONENT] Error checking payment status:', error);
-      setPaymentStatus('pending');
+      if (!isUnmountedRef.current) {
+        console.error('[PIX-OPTIMIZED] Error checking payment:', error);
+        setPaymentStatus('pending');
+      }
     }
   };
 
@@ -247,12 +292,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
           <p className="text-muted-foreground mb-4">
             Não foi possível gerar o código PIX. Tente novamente.
           </p>
-          <Button 
-            onClick={() => {
-              setPixData(null);
-              createPixPayment();
-            }}
-          >
+          <Button onClick={createPixPayment}>
             Tentar novamente
           </Button>
         </CardContent>
@@ -281,20 +321,17 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
       <CardContent className="space-y-6">
         {paymentStatus !== 'success' && paymentStatus !== 'expired' && (
           <>
-            {/* QR Code */}
+            {/* QR Code otimizado */}
             <div className="text-center">
               <div className="bg-white p-4 rounded-lg inline-block border">
                 <img 
                   src={pixData.qrCodeUrl} 
                   alt="QR Code PIX" 
                   className="w-48 h-48 mx-auto"
+                  loading="lazy"
                   onError={(e) => {
-                    console.error('[PIX-COMPONENT] QR Code image failed to load:', pixData.qrCodeUrl);
-                    // Fallback: hide the image and show text
+                    console.error('[PIX-OPTIMIZED] QR Code failed to load');
                     e.currentTarget.style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log('[PIX-COMPONENT] QR Code image loaded successfully');
                   }}
                 />
               </div>
@@ -328,6 +365,10 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Após o pagamento, a confirmação pode levar alguns segundos.
+                <br />
+                <span className="text-xs">
+                  (Verificando a cada {Math.round(pollingInterval/1000)}s)
+                </span>
               </p>
             </div>
           </>
@@ -354,12 +395,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
             <p className="text-muted-foreground mb-4">
               O código PIX expirou. Gere um novo código para continuar.
             </p>
-            <Button 
-              onClick={() => {
-                setPixData(null);
-                createPixPayment();
-              }}
-            >
+            <Button onClick={createPixPayment}>
               Gerar novo PIX
             </Button>
           </div>
