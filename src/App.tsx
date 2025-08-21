@@ -57,16 +57,8 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
             <Routes>
-              <Route path="/" element={
-                <ProtectedRoute requireAuth={false}>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              <Route path="/auth" element={
-                <ProtectedRoute requireAuth={false}>
-                  <Auth />
-                </ProtectedRoute>
-              } />
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/loading" element={<Loading />} />
               <Route path="/payment-success" element={
                 <ProtectedRoute requireAuth={true}>

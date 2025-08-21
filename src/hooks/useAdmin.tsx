@@ -19,15 +19,19 @@ export const useAdmin = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAdminRole = async () => {
       if (authLoading) return;
       
       if (!user) {
-        setAdminState({
-          role: '',
-          isAdmin: false,
-          isLoading: false
-        });
+        if (isMounted) {
+          setAdminState({
+            role: '',
+            isAdmin: false,
+            isLoading: false
+          });
+        }
         return;
       }
 
@@ -36,37 +40,47 @@ export const useAdmin = () => {
           .from('profiles')
           .select('role')
           .eq('id', user.id)
-          .single();
+          .maybeSingle(); // Usar maybeSingle para evitar erros se não encontrar
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error checking admin role:', error);
+          if (isMounted) {
+            setAdminState({
+              role: '',
+              isAdmin: false,
+              isLoading: false
+            });
+          }
+          return;
+        }
 
         const isAdmin = profile?.role === 'admin';
         
-        setAdminState({
-          role: profile?.role || '',
-          isAdmin,
-          isLoading: false
-        });
-
-        if (!isAdmin) {
-          toast({
-            title: 'Acesso negado',
-            description: 'Você não tem permissão de administrador.',
-            variant: 'destructive'
+        if (isMounted) {
+          setAdminState({
+            role: profile?.role || 'customer',
+            isAdmin,
+            isLoading: false
           });
         }
       } catch (error) {
-        console.error('Erro ao verificar role do admin:', error);
-        setAdminState({
-          role: '',
-          isAdmin: false,
-          isLoading: false
-        });
+        console.error('Error checking admin role:', error);
+        if (isMounted) {
+          setAdminState({
+            role: '',
+            isAdmin: false,
+            isLoading: false
+          });
+        }
       }
     };
 
     checkAdminRole();
-  }, [user, authLoading, toast]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, authLoading, toast]); // Usar user.id ao invés de user para evitar re-renders
 
   return adminState;
 };
