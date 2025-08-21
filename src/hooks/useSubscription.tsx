@@ -111,7 +111,7 @@ export const useSubscription = () => {
     }
   };
 
-  const createCheckout = async (planType: 'trial' | 'monthly' | 'annual' = 'monthly') => {
+  const createCheckout = async () => {
     if (!user || !session) {
       toast({
         title: "Erro",
@@ -123,7 +123,7 @@ export const useSubscription = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { plan_type: planType },
+        body: {},
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

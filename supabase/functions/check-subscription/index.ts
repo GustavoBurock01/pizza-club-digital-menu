@@ -100,9 +100,6 @@ serve(async (req) => {
       } else if (amount === 990) {
         planName = "Mensal";
         planPrice = 9.90;
-      } else if (amount === 9990) {
-        planName = "Anual";
-        planPrice = 99.90;
       }
       
       logStep("Determined subscription plan", { priceId, amount, planName, planPrice });
