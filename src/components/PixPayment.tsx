@@ -246,6 +246,14 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
                   src={pixData.qrCodeUrl} 
                   alt="QR Code PIX" 
                   className="w-48 h-48 mx-auto"
+                  onError={(e) => {
+                    console.error('[PIX-COMPONENT] QR Code image failed to load:', pixData.qrCodeUrl);
+                    // Fallback: hide the image and show text
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('[PIX-COMPONENT] QR Code image loaded successfully');
+                  }}
                 />
               </div>
               <p className="text-sm text-muted-foreground mt-2">

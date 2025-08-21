@@ -102,9 +102,9 @@ serve(async (req) => {
         throw new Error('Invalid BR Code format');
       }
       
-      // Generate QR code data URL with a more reliable service
-      const qrCodeUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(brCode)}&choe=UTF-8`;
-      console.log('[PIX] QR Code URL generated');
+      // Generate QR code using a more reliable service
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(brCode)}&format=png`;
+      console.log('[PIX] QR Code URL generated:', qrCodeUrl.substring(0, 100) + '...');
 
       // Update order with PIX information
       const { error: updateError } = await supabase
