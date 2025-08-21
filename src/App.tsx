@@ -25,6 +25,8 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import Admin from "./pages/Admin";
 import Analytics from "./pages/Analytics";
+import AttendantDashboard from "./pages/AttendantDashboard";
+import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 // Configuração do QueryClient movida para @/config/queryClient
@@ -127,6 +129,16 @@ const App = () => (
               <Route path="/analytics" element={
                 <ProtectedRoute requireAuth={true}>
                   <Analytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/attendant" element={
+                <ProtectedRoute requireAuth={true}>
+                  <AttendantDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <ProtectedRoute requireAuth={true}>
+                  <AdminSettings />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
