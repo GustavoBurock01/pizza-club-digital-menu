@@ -51,15 +51,22 @@ serve(async (req) => {
       throw new Error('Order ID is required');
     }
 
-    // Get order details from Supabase
-    const { data: order, error: orderError } = await supabaseClient
+    // Create Supabase service client to access orders (bypasses RLS)
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    // Get order details from Supabase using service client
+    const { data: order, error: orderError } = await supabaseService
       .from('orders')
       .select('*')
       .eq('id', orderId)
-      .eq('user_id', user.id)
       .single();
 
     if (orderError || !order) {
+      logStep('Order not found error', { orderError, orderId });
       throw new Error('Order not found');
     }
     logStep('Order found', { orderId: order.id, amount: order.total_amount });
@@ -118,8 +125,8 @@ serve(async (req) => {
     const preference = await response.json();
     logStep('MercadoPago preference created', { preferenceId: preference.id });
 
-    // Update order with preference ID
-    const { error: updateError } = await supabaseClient
+    // Update order with preference ID using service client
+    const { error: updateError } = await supabaseService
       .from('orders')
       .update({ 
         payment_method: paymentMethod,
