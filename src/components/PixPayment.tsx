@@ -68,26 +68,46 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   }, [pixData]); // Removed paymentStatus dependency to prevent loop
 
   const createPixPayment = async () => {
-    if (loading || pixData) return; // Prevent multiple calls
+    if (pixData) return; // Prevent multiple calls if PIX already generated
     
     try {
       setLoading(true);
+      setPaymentStatus('pending');
       console.log('[PIX-COMPONENT] Starting PIX payment creation for order:', orderId);
       
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const { data, error } = await supabase.functions.invoke('create-pix-payment', {
-        body: { orderId }
+        body: { orderId },
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      
+      clearTimeout(timeoutId);
 
       console.log('[PIX-COMPONENT] Supabase function response:', { data, error });
 
       if (error) {
         console.error('[PIX-COMPONENT] Supabase function error:', error);
-        throw error;
+        throw new Error(error.message || 'Erro na comunicação com o servidor');
       }
 
-      if (!data || !data.brCode) {
-        console.error('[PIX-COMPONENT] Invalid response data:', data);
-        throw new Error('Resposta inválida do servidor');
+      if (!data) {
+        console.error('[PIX-COMPONENT] No data received from server');
+        throw new Error('Nenhum dado recebido do servidor');
+      }
+
+      if (!data.success) {
+        console.error('[PIX-COMPONENT] Server returned error:', data);
+        throw new Error(data.error || 'Erro desconhecido do servidor');
+      }
+
+      if (!data.brCode) {
+        console.error('[PIX-COMPONENT] Invalid response data - missing brCode:', data);
+        throw new Error('Código PIX não foi gerado corretamente');
       }
 
       console.log('[PIX-COMPONENT] PIX data received:', {
@@ -98,6 +118,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
       });
 
       setPixData(data);
+      setPaymentStatus('pending');
       toast({
         title: "PIX gerado com sucesso!",
         description: "Escaneie o QR Code ou copie o código PIX.",
@@ -105,9 +126,19 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
     } catch (error: any) {
       console.error('[PIX-COMPONENT] Error creating PIX payment:', error);
       setPaymentStatus('error');
+      
+      // Handle different types of errors
+      let errorMessage = 'Erro inesperado. Tente novamente.';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Timeout na geração do PIX. Verifique sua conexão.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro ao gerar PIX",
-        description: error.message || "Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
