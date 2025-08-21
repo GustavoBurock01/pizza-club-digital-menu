@@ -210,9 +210,14 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-            <span>Gerando PIX...</span>
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <RefreshCw className="w-8 h-8 animate-spin text-pizza-red" />
+            <div className="text-center">
+              <span className="text-lg font-medium">Gerando PIX...</span>
+              <p className="text-sm text-muted-foreground mt-2">
+                Aguarde alguns segundos
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -15,6 +15,7 @@ serve(async (req) => {
 
   try {
     console.log('[PIX] Creating PIX payment...');
+    const startTime = Date.now();
 
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -40,6 +41,8 @@ serve(async (req) => {
     // Parse request body
     const { orderId } = await req.json();
     console.log('[PIX] Processing order:', orderId);
+    const parseTime = Date.now();
+    console.log('[PIX] Request parsed in:', parseTime - startTime, 'ms');
 
     // Get user from JWT token
     const authHeader = req.headers.get('Authorization')!;
@@ -104,36 +107,37 @@ serve(async (req) => {
       
       // Generate QR code using Google Charts (mais confiável)
       const qrCodeUrl = `https://chart.googleapis.com/chart?chs=256x256&cht=qr&chl=${encodeURIComponent(brCode)}&choe=UTF-8&chld=M|0`;
-      console.log('[PIX] QR Code URL generated successfully');
+      // Parallel operations for better performance
+      const [updateResult, pixResult] = await Promise.all([
+        // Update order with PIX information
+        supabase
+          .from('orders')
+          .update({
+            payment_method: 'pix',
+            payment_status: 'pending'
+          })
+          .eq('id', orderId),
+        
+        // Store PIX transaction for verification
+        supabase
+          .from('pix_transactions')
+          .insert({
+            id: transactionId,
+            order_id: orderId,
+            user_id: user.id,
+            br_code: brCode,
+            amount: order.total_amount,
+            status: 'pending',
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+          })
+      ]);
 
-      // Update order with PIX information
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          payment_method: 'pix',
-          payment_status: 'pending'
-        })
-        .eq('id', orderId);
-
-      if (updateError) {
-        console.error('[PIX] Error updating order:', updateError);
+      if (updateResult.error) {
+        console.error('[PIX] Error updating order:', updateResult.error);
       }
 
-      // Store PIX transaction for verification
-      const { error: pixError } = await supabase
-        .from('pix_transactions')
-        .insert({
-          id: transactionId,
-          order_id: orderId,
-          user_id: user.id,
-          br_code: brCode,
-          amount: order.total_amount,
-          status: 'pending',
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-        });
-
-      if (pixError) {
-        console.error('[PIX] Error creating PIX transaction:', pixError);
+      if (pixResult.error) {
+        console.error('[PIX] Error creating PIX transaction:', pixResult.error);
       }
 
       const response = {
@@ -145,7 +149,8 @@ serve(async (req) => {
         expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
       };
 
-      console.log('[PIX] PIX payment created successfully');
+      const endTime = Date.now();
+      console.log('[PIX] PIX payment created successfully in:', endTime - startTime, 'ms');
 
       return new Response(
         JSON.stringify(response),
