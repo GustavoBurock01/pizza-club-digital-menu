@@ -196,8 +196,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      // Verificar se há uma sessão ativa antes de tentar fazer logout
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Se não há sessão, apenas limpar o estado local
+        console.log('No active session found, clearing local state');
+        setSession(null);
+        setUser(null);
+        
+        toast({
+          title: "Logout realizado com sucesso!",
+          description: "Até a próxima!",
+        });
+        return;
+      }
+
+      // Só fazer logout se há uma sessão ativa
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      if (error) {
+        // Se o erro for de sessão não encontrada, ignorar e limpar estado local
+        if (error.message.includes('session') || error.message.includes('Session')) {
+          console.log('Session already invalid, clearing local state');
+          setSession(null);
+          setUser(null);
+          
+          toast({
+            title: "Logout realizado com sucesso!",
+            description: "Até a próxima!",
+          });
+          return;
+        }
+        throw error;
+      }
       
       toast({
         title: "Logout realizado com sucesso!",
@@ -205,10 +237,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } catch (error: any) {
       console.error('Sign out error:', error);
+      
+      // Mesmo com erro, limpar estado local para garantir logout
+      setSession(null);
+      setUser(null);
+      
       toast({
-        title: "Erro ao fazer logout",
-        description: error.message,
-        variant: "destructive",
+        title: "Logout realizado",
+        description: "Sessão encerrada.",
       });
     }
   };
