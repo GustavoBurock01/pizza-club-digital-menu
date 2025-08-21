@@ -80,3 +80,12 @@ verify_jwt = true
 
 [functions.mercadopago-webhook]
 verify_jwt = false
+
+[functions.create-pix-payment]
+verify_jwt = true
+
+[functions.check-pix-status]
+verify_jwt = true
+
+[functions.process-card-payment]
+verify_jwt = true

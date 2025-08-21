@@ -116,6 +116,8 @@ serve(async (req) => {
       
       // Generate QR code using Google Charts (mais confiável)
       const qrCodeUrl = `https://chart.googleapis.com/chart?chs=256x256&cht=qr&chl=${encodeURIComponent(brCode)}&choe=UTF-8&chld=M|0`;
+      console.log('[PIX] QR Code URL generated successfully');
+
       // Parallel operations for better performance
       const [updateResult, pixResult] = await Promise.all([
         // Update order with PIX information
