@@ -35,10 +35,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Defer any additional data fetching
-          setTimeout(() => {
+          // Defer role checking and redirect
+          setTimeout(async () => {
             if (mounted) {
               console.log('User signed in:', session.user.email);
+              
+              // Check if user is admin and redirect accordingly
+              try {
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .single();
+
+                if (profile?.role === 'admin') {
+                  // Admin users should go to admin page
+                  window.location.href = '/admin';
+                } else {
+                  // Regular users go to dashboard
+                  if (window.location.pathname === '/auth') {
+                    window.location.href = '/dashboard';
+                  }
+                }
+              } catch (error) {
+                console.error('Error checking role:', error);
+              }
             }
           }, 0);
         }
