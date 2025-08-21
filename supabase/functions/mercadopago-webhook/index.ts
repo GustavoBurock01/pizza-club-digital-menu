@@ -72,12 +72,12 @@ serve(async (req) => {
       switch (payment.status) {
         case 'approved':
           orderStatus = 'confirmed';
-          paymentStatus = 'paid';
+          paymentStatus = 'approved';  // Mudando para 'approved'
           break;
         case 'rejected':
         case 'cancelled':
           orderStatus = 'cancelled';
-          paymentStatus = 'failed';
+          paymentStatus = 'rejected';  // Mudando para 'rejected'
           break;
         case 'pending':
         case 'in_process':

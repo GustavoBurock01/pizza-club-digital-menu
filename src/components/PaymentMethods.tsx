@@ -30,6 +30,8 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
   };
 
   const handlePaymentSuccess = () => {
+    // Não limpar carrinho aqui - só após pagamento aprovado
+    // Redirecionar para order-confirmation que irá verificar status
     navigate(`/order-confirmation/${orderId}`);
   };
 
