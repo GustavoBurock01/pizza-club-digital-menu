@@ -147,7 +147,7 @@ const Dashboard = () => {
                 </span>
                 <Button 
                   className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                  onClick={createCheckout}
+                  onClick={() => createCheckout('annual')}
                 >
                   Assinar por R$ 99,90/ano
                 </Button>
@@ -250,7 +250,7 @@ const Dashboard = () => {
                     <CardContent className="pt-0">
                       <Button 
                         className="w-full gradient-pizza text-white"
-                        onClick={createCheckout}
+                        onClick={() => createCheckout('annual')}
                       >
                         Ativar Assinatura
                       </Button>
@@ -294,7 +294,7 @@ const Dashboard = () => {
                       {subscription?.status !== 'active' && (
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={createCheckout}
+                          onClick={() => createCheckout('annual')}
                         >
                           Assinar por R$ 99,90/ano
                         </Button>
