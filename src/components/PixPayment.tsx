@@ -92,21 +92,21 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
     try {
       setPaymentStatus('checking');
       
-      const { data: order, error } = await supabase
-        .from('orders')
-        .select('payment_status')
-        .eq('id', orderId)
-        .single();
+      const { data, error } = await supabase.functions.invoke('check-pix-status', {
+        body: { transactionId: pixData.transactionId }
+      });
 
       if (error) throw error;
 
-      if (order.payment_status === 'paid') {
+      if (data.status === 'paid') {
         setPaymentStatus('success');
         toast({
           title: "Pagamento confirmado!",
           description: "Seu pedido foi aprovado com sucesso.",
         });
         onPaymentSuccess();
+      } else if (data.status === 'expired') {
+        setPaymentStatus('expired');
       } else {
         setPaymentStatus('pending');
       }
