@@ -590,19 +590,6 @@ export type Database = {
       }
     }
     Views: {
-      admin_stats_secure: {
-        Row: {
-          avg_order_value: number | null
-          completed_orders: number | null
-          pending_orders: number | null
-          today_orders: number | null
-          total_orders: number | null
-          total_products: number | null
-          total_revenue: number | null
-          total_users: number | null
-        }
-        Relationships: []
-      }
       admin_stats_view: {
         Row: {
           avg_order_value: number | null
@@ -661,6 +648,19 @@ export type Database = {
       }
     }
     Functions: {
+      get_admin_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_order_value: number
+          completed_orders: number
+          pending_orders: number
+          today_orders: number
+          total_orders: number
+          total_products: number
+          total_revenue: number
+          total_users: number
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
