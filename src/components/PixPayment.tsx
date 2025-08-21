@@ -68,25 +68,18 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   }, [pixData]); // Removed paymentStatus dependency to prevent loop
 
   const createPixPayment = async () => {
-    if (pixData) return; // Prevent multiple calls if PIX already generated
+    // Reset state for new PIX generation
+    setPixData(null);
+    setPaymentStatus('pending');
     
     try {
       setLoading(true);
       setPaymentStatus('pending');
       console.log('[PIX-COMPONENT] Starting PIX payment creation for order:', orderId);
       
-      // Add timeout to prevent infinite loading
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
       const { data, error } = await supabase.functions.invoke('create-pix-payment', {
-        body: { orderId },
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        body: { orderId }
       });
-      
-      clearTimeout(timeoutId);
 
       console.log('[PIX-COMPONENT] Supabase function response:', { data, error });
 
@@ -110,12 +103,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         throw new Error('Código PIX não foi gerado corretamente');
       }
 
-      console.log('[PIX-COMPONENT] PIX data received:', {
-        transactionId: data.transactionId,
-        amount: data.amount,
-        brCodeLength: data.brCode?.length,
-        qrCodeUrl: data.qrCodeUrl
-      });
+      console.log('[PIX-COMPONENT] PIX data received successfully');
 
       setPixData(data);
       setPaymentStatus('pending');
@@ -127,12 +115,8 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
       console.error('[PIX-COMPONENT] Error creating PIX payment:', error);
       setPaymentStatus('error');
       
-      // Handle different types of errors
       let errorMessage = 'Erro inesperado. Tente novamente.';
-      
-      if (error.name === 'AbortError') {
-        errorMessage = 'Timeout na geração do PIX. Verifique sua conexão.';
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
       
@@ -264,7 +248,12 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
           <p className="text-muted-foreground mb-4">
             Não foi possível gerar o código PIX. Tente novamente.
           </p>
-          <Button onClick={createPixPayment}>
+          <Button 
+            onClick={() => {
+              setPixData(null);
+              createPixPayment();
+            }}
+          >
             Tentar novamente
           </Button>
         </CardContent>
@@ -366,7 +355,12 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
             <p className="text-muted-foreground mb-4">
               O código PIX expirou. Gere um novo código para continuar.
             </p>
-            <Button onClick={createPixPayment}>
+            <Button 
+              onClick={() => {
+                setPixData(null);
+                createPixPayment();
+              }}
+            >
               Gerar novo PIX
             </Button>
           </div>
