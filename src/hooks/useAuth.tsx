@@ -162,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .maybeSingle();
 
           if (profile?.role === 'admin') {
-            // Admin vai para página admin
+            // Admin vai para dashboard admin
             setTimeout(() => {
               window.location.href = '/admin';
             }, 100);

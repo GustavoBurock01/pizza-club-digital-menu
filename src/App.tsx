@@ -36,6 +36,7 @@ const PaymentFailure = lazy(() => import("./pages/PaymentFailure"));
 
 // Admin pages - bundle separado
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
@@ -174,6 +175,13 @@ const App = () => {
               
               {/* Admin Routes - Only for admin users */}
               <Route path="/admin" element={
+                <AdminRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AdminDashboard />
+                  </Suspense>
+                </AdminRoute>
+              } />
+              <Route path="/admin/full" element={
                 <AdminRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Admin />
