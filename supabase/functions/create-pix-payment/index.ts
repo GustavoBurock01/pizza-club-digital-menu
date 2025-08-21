@@ -83,7 +83,12 @@ serve(async (req) => {
     console.log('[PIX] User authenticated:', user.id);
 
     // Parse request body
-    const { orderId } = await req.json();
+    const body = await req.text();
+    if (!body.trim()) {
+      throw new Error('Empty request body');
+    }
+    
+    const { orderId } = JSON.parse(body);
     if (!orderId) {
       console.error('[PIX] No orderId provided');
       return new Response(

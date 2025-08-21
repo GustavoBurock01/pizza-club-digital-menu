@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { validateCPF } from '@/utils/validation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,19 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
 
   const loadMercadoPagoSDK = async () => {
     try {
+      // Get payment configuration from secure endpoint
+      const { data: config, error } = await supabase.functions.invoke('get-payment-config');
+      
+      if (error || !config?.mercadoPagoPublicKey) {
+        console.error('Error getting payment config:', error);
+        toast({
+          title: "Erro de configuração",
+          description: "Não foi possível carregar as configurações de pagamento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Load MercadoPago SDK
       const script = document.createElement('script');
       script.src = 'https://sdk.mercadopago.com/js/v2';
@@ -62,21 +76,29 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
       
       script.onload = async () => {
         try {
-          // Initialize with public key from environment
-          const publicKey = 'APP_USR-e59b4f5b-c9ba-4cd4-a899-19c4fa0ed9ab'; // Production public key
-          const mp = new window.MercadoPago(publicKey, {
+          const mp = new window.MercadoPago(config.mercadoPagoPublicKey, {
             locale: 'pt-BR'
           });
           setMercadoPago(mp);
           console.log('MercadoPago SDK loaded successfully');
         } catch (error) {
           console.error('Error initializing MercadoPago:', error);
+          toast({
+            title: "Erro de inicialização",
+            description: "Erro ao inicializar sistema de pagamento.",
+            variant: "destructive",
+          });
         }
       };
       
       document.head.appendChild(script);
     } catch (error) {
       console.error('Error loading MercadoPago SDK:', error);
+      toast({
+        title: "Erro de carregamento",
+        description: "Erro ao carregar sistema de pagamento.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -100,10 +122,12 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
       newErrors.holderEmail = 'Email válido é obrigatório';
     }
 
-    // Document validation (CPF)
+    // Document validation (CPF) - Use proper validation
     const document = cardData.holderDocument.replace(/\D/g, '');
     if (!document || document.length !== 11) {
       newErrors.holderDocument = 'CPF deve ter 11 dígitos';
+    } else if (!validateCPF(cardData.holderDocument)) {
+      newErrors.holderDocument = 'CPF inválido';
     }
 
     // Expiry validation

@@ -8,24 +8,36 @@ export const validateEmail = (email: string): boolean => {
 export const validateCPF = (cpf: string): boolean => {
   const cleaned = cpf.replace(/\D/g, '');
   
+  // Basic length and format validation
   if (cleaned.length !== 11) return false;
   if (/^(\d)\1{10}$/.test(cleaned)) return false;
 
+  // Invalid CPF numbers
+  const invalidCPFs = [
+    '00000000000', '11111111111', '22222222222', '33333333333',
+    '44444444444', '55555555555', '66666666666', '77777777777',
+    '88888888888', '99999999999'
+  ];
+  
+  if (invalidCPFs.includes(cleaned)) return false;
+
+  // First verification digit
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     sum += parseInt(cleaned.charAt(i)) * (10 - i);
   }
-  let checkDigit = 11 - (sum % 11);
-  if (checkDigit === 10 || checkDigit === 11) checkDigit = 0;
-  if (checkDigit !== parseInt(cleaned.charAt(9))) return false;
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleaned.charAt(9))) return false;
 
+  // Second verification digit
   sum = 0;
   for (let i = 0; i < 10; i++) {
     sum += parseInt(cleaned.charAt(i)) * (11 - i);
   }
-  checkDigit = 11 - (sum % 11);
-  if (checkDigit === 10 || checkDigit === 11) checkDigit = 0;
-  if (checkDigit !== parseInt(cleaned.charAt(10))) return false;
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleaned.charAt(10))) return false;
 
   return true;
 };
