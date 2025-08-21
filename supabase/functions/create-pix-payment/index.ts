@@ -1,17 +1,17 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { generateBRCode, formatCurrency } from './pix-utils.ts'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { generateBRCode } from './pix-utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 console.log('[PIX] Function loaded successfully');
 
 serve(async (req) => {
   console.log('[PIX] Request received:', req.method, req.url);
-  
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('[PIX] CORS preflight request');
@@ -26,7 +26,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'PIX_KEY_PROD not configured. Please configure the secret first.' 
+          error: 'PIX configuration not available' 
         }),
         { 
           status: 500, 
@@ -35,14 +35,14 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate user
+    // Verify user authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('[PIX] No authorization header');
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Authorization required' 
+          error: 'Authentication required' 
         }),
         { 
           status: 401, 
@@ -51,12 +51,13 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
+    // Initialize Supabase client for auth verification
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
       {
         auth: {
+          autoRefreshToken: false,
           persistSession: false,
         },
       }
@@ -103,22 +104,28 @@ serve(async (req) => {
       );
     }
 
-    console.log('[PIX] Processing PIX for order:', orderId);
+    console.log('[PIX] Looking for order:', orderId);
 
-    // Fetch order details
-    const { data: order, error: orderError } = await supabaseClient
+    // Get order details using service role client (bypasses RLS)
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: order, error: orderError } = await supabaseServiceClient
       .from('orders')
       .select('*')
       .eq('id', orderId)
-      .eq('user_id', user.id)
+      .eq('user_id', user.id) // Still check user ownership
       .single();
 
     if (orderError || !order) {
-      console.error('[PIX] Order not found:', orderError);
+      console.error('[PIX] Order not found or error:', orderError);
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Order not found' 
+          error: 'Order not found',
+          details: orderError?.message 
         }),
         { 
           status: 404, 
@@ -130,63 +137,83 @@ serve(async (req) => {
     console.log('[PIX] Order found:', { id: order.id, amount: order.total_amount });
 
     // Generate transaction ID
-    const transactionId = `PIX-${orderId}-${Date.now()}`;
-    
-    // Generate PIX BR Code
+    const transactionId = `PIX-${Date.now()}-${order.id.slice(-8)}`;
+
+    // Prepare PIX data
     const pixData = {
       pixKey: pixKey,
-      merchantName: 'PizzaClub',
-      merchantCity: 'Sao Paulo',
-      amount: order.total_amount,
-      transactionId: transactionId,
-      description: `Pedido ${orderId.substring(0, 8)}`
+      merchantName: 'Rei da Pizza',
+      merchantCity: 'São Paulo',
+      amount: parseFloat(order.total_amount),
+      transactionId,
+      description: `Pedido #${order.id.slice(-8)}`
     };
 
-    console.log('[PIX] Generating BR Code with data:', {
-      merchantName: pixData.merchantName,
-      merchantCity: pixData.merchantCity,
-      amount: pixData.amount,
-      transactionId: pixData.transactionId
-    });
+    console.log('[PIX] Generating PIX with data:', pixData);
 
+    // Generate PIX BR Code
     const brCode = generateBRCode(pixData);
-    
-    // Generate QR Code URL (using a QR code service)
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(brCode)}`;
-    
-    // Set expiration time (15 minutes from now)
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    console.log('[PIX] BR Code generated:', brCode.substring(0, 50) + '...');
 
-    console.log('[PIX] PIX payment created successfully:', {
-      transactionId,
-      amount: formatCurrency(order.total_amount),
-      expiresAt
-    });
+    // Generate QR Code URL
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(brCode)}`;
 
-    // Return PIX data
-    const response = {
-      success: true,
-      transactionId,
-      brCode,
-      qrCodeUrl,
-      amount: formatCurrency(order.total_amount),
-      expiresAt
-    };
+    // Calculate expiration time (30 minutes from now)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    // Store PIX transaction in database
+    const { error: insertError } = await supabaseServiceClient
+      .from('pix_transactions')
+      .insert({
+        id: transactionId,
+        order_id: order.id,
+        user_id: user.id,
+        amount: parseFloat(order.total_amount),
+        br_code: brCode,
+        status: 'pending',
+        expires_at: expiresAt
+      });
+
+    if (insertError) {
+      console.error('[PIX] Error storing PIX transaction:', insertError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Failed to store transaction' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('[PIX] PIX payment created successfully');
 
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        success: true,
+        pixData: {
+          transactionId,
+          brCode,
+          qrCodeUrl,
+          amount: parseFloat(order.total_amount).toFixed(2),
+          expiresAt
+        }
+      }),
       { 
-        status: 200,
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[PIX] Error processing request:', error);
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'Internal server error' 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
       }),
       { 
         status: 500, 
@@ -194,4 +221,4 @@ serve(async (req) => {
       }
     );
   }
-})
+});

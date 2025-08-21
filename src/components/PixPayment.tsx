@@ -98,14 +98,13 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         throw new Error(data.error || 'Erro desconhecido do servidor');
       }
 
-      if (!data.brCode) {
-        console.error('[PIX-COMPONENT] Invalid response data - missing brCode:', data);
+      if (!data.pixData || !data.pixData.brCode) {
+        console.error('[PIX-COMPONENT] Invalid response data - missing pixData:', data);
         throw new Error('Código PIX não foi gerado corretamente');
       }
 
-      console.log('[PIX-COMPONENT] PIX data received successfully');
-
-      setPixData(data);
+      console.log('[PIX-COMPONENT] PIX created successfully:', data.pixData);
+      setPixData(data.pixData);
       setPaymentStatus('pending');
       toast({
         title: "PIX gerado com sucesso!",
