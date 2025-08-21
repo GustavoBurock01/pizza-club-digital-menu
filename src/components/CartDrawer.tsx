@@ -1,5 +1,5 @@
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
@@ -47,12 +47,15 @@ export const CartDrawer = () => {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
+      <SheetContent className="w-full sm:max-w-lg" aria-labelledby="cart-sheet-title" aria-describedby="cart-sheet-description">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle id="cart-sheet-title" className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             Seu Carrinho
           </SheetTitle>
+          <SheetDescription id="cart-sheet-description">
+            Revise os itens no seu carrinho e finalize o pedido quando estiver pronto.
+          </SheetDescription>
         </SheetHeader>
         
         <div className="flex flex-col h-full">

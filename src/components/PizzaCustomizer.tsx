@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -114,9 +114,12 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-labelledby="pizza-dialog-title" aria-describedby="pizza-dialog-description">
         <DialogHeader>
-          <DialogTitle>Personalizar {product.name}</DialogTitle>
+          <DialogTitle id="pizza-dialog-title">Personalizar {product.name}</DialogTitle>
+          <DialogDescription id="pizza-dialog-description">
+            Escolha o tipo de massa, ingredientes extras e outras opções para personalizar sua pizza.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">

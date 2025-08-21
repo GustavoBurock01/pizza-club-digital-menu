@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Edit } from 'lucide-react';
@@ -17,9 +17,12 @@ export const AddressConfirmation = ({ isOpen, onClose, onContinue }: AddressConf
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-labelledby="address-dialog-title" aria-describedby="address-dialog-description">
         <DialogHeader>
-          <DialogTitle className="text-center">Seu endereço está certo?</DialogTitle>
+          <DialogTitle id="address-dialog-title" className="text-center">Seu endereço está certo?</DialogTitle>
+          <DialogDescription id="address-dialog-description">
+            Verifique se o endereço de entrega está correto antes de continuar com o pedido.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
