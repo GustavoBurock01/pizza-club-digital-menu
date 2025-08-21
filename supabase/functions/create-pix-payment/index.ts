@@ -55,7 +55,10 @@ serve(async (req) => {
     if (userError || !user) {
       console.error('[PIX] Authentication error:', userError);
       return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Authentication required. Please log in again.' 
+        }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -74,7 +77,10 @@ serve(async (req) => {
     if (orderError || !order) {
       console.error('[PIX] Order not found:', orderError);
       return new Response(
-        JSON.stringify({ error: 'Order not found' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Order not found. Please try again.' 
+        }),
         { 
           status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -166,7 +172,10 @@ serve(async (req) => {
     } catch (brCodeError) {
       console.error('[PIX] Error generating BR Code:', brCodeError);
       return new Response(
-        JSON.stringify({ error: `BR Code generation failed: ${brCodeError.message}` }),
+        JSON.stringify({ 
+          success: false,
+          error: `PIX generation failed: ${brCodeError.message}` 
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -177,7 +186,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('[PIX] Error creating PIX payment:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        success: false,
+        error: 'Internal server error. Please try again.' 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
