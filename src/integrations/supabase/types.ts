@@ -481,7 +481,7 @@ export type Database = {
         | "cancelled"
       payment_method: "credit_card" | "debit_card" | "pix" | "cash"
       subscription_status: "active" | "inactive" | "pending" | "cancelled"
-      user_role: "customer" | "admin" | "seller"
+      user_role: "customer" | "admin" | "seller" | "attendant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -620,7 +620,7 @@ export const Constants = {
       ],
       payment_method: ["credit_card", "debit_card", "pix", "cash"],
       subscription_status: ["active", "inactive", "pending", "cancelled"],
-      user_role: ["customer", "admin", "seller"],
+      user_role: ["customer", "admin", "seller", "attendant"],
     },
   },
 } as const
