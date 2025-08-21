@@ -34,13 +34,18 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
 
   useEffect(() => {
     if (pixData && paymentStatus === 'pending') {
+      console.log('[PIX-COMPONENT] Starting payment status polling');
       const interval = setInterval(checkPaymentStatus, 5000);
-      return () => clearInterval(interval);
+      return () => {
+        console.log('[PIX-COMPONENT] Cleaning up payment status polling');
+        clearInterval(interval);
+      };
     }
   }, [pixData, paymentStatus]);
 
   useEffect(() => {
     if (pixData) {
+      console.log('[PIX-COMPONENT] Setting up timer for PIX expiration');
       const expiresAt = new Date(pixData.expiresAt).getTime();
       const updateTimer = () => {
         const now = Date.now();
@@ -48,13 +53,17 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
         setTimeLeft(remaining);
         
         if (remaining === 0 && paymentStatus === 'pending') {
+          console.log('[PIX-COMPONENT] PIX expired, updating status');
           setPaymentStatus('expired');
         }
       };
       
       updateTimer();
       const timer = setInterval(updateTimer, 1000);
-      return () => clearInterval(timer);
+      return () => {
+        console.log('[PIX-COMPONENT] Cleaning up timer');
+        clearInterval(timer);
+      };
     }
   }, [pixData, paymentStatus]);
 

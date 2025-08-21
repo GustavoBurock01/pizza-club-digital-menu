@@ -20,7 +20,7 @@ serve(async (req) => {
     logStep('Card payment processing started');
 
     // Get MercadoPago credentials
-    const mercadopagoAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    const mercadopagoAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN_PROD');
     if (!mercadopagoAccessToken) {
       throw new Error('MercadoPago access token not configured');
     }

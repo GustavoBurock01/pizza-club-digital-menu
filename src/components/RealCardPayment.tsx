@@ -62,8 +62,9 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
       
       script.onload = async () => {
         try {
-          // Initialize with public key (you should get this from your environment)
-          const mp = new window.MercadoPago('YOUR_PUBLIC_KEY', {
+          // Initialize with public key from environment
+          const publicKey = 'APP_USR-e59b4f5b-c9ba-4cd4-a899-19c4fa0ed9ab'; // Production public key
+          const mp = new window.MercadoPago(publicKey, {
             locale: 'pt-BR'
           });
           setMercadoPago(mp);
