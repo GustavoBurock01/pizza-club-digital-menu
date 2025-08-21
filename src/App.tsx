@@ -22,6 +22,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderStatus from "./pages/OrderStatus";
 import Loading from "./pages/Loading";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
 import Admin from "./pages/Admin";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
@@ -49,6 +50,16 @@ const App = () => (
               } />
               <Route path="/loading" element={<Loading />} />
               <Route path="/payment-success" element={
+                <ProtectedRoute requireAuth={true}>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="/payment-failure" element={
+                <ProtectedRoute requireAuth={true}>
+                  <PaymentFailure />
+                </ProtectedRoute>
+              } />
+              <Route path="/payment-pending" element={
                 <ProtectedRoute requireAuth={true}>
                   <PaymentSuccess />
                 </ProtectedRoute>
