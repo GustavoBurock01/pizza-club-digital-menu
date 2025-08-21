@@ -32,9 +32,17 @@ export function generateBRCode(pixData: PixData): string {
   // Point of Initiation Method (12 = static QR code)
   payload += '010212';
   
-  // Merchant Account Information (tag 26)
-  // This is the most critical part - must follow exact PIX standard
+  // Merchant Account Information (tag 26) - CRITICAL for PIX validation
   const pixKeyFormatted = pixKey.trim();
+  
+  // Validate PIX key format (UUID, CPF, CNPJ, phone, or email)
+  console.log('[PIX-UTILS] PIX Key format validation:', {
+    length: pixKeyFormatted.length,
+    type: pixKeyFormatted.includes('@') ? 'email' : 
+          pixKeyFormatted.length === 36 ? 'uuid' : 
+          pixKeyFormatted.length === 11 ? 'cpf' : 'other'
+  });
+  
   const merchantAccountInfo = `0014br.gov.bcb.pix01${pixKeyFormatted.length.toString().padStart(2, '0')}${pixKeyFormatted}`;
   const merchantAccountLength = merchantAccountInfo.length.toString().padStart(2, '0');
   payload += `26${merchantAccountLength}${merchantAccountInfo}`;

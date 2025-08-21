@@ -30,7 +30,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
 
   useEffect(() => {
     createPixPayment();
-  }, [orderId]);
+  }, [orderId]); // Single call on mount
 
   useEffect(() => {
     if (pixData && paymentStatus === 'pending') {
@@ -68,6 +68,8 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   }, [pixData]); // Removed paymentStatus dependency to prevent loop
 
   const createPixPayment = async () => {
+    if (loading || pixData) return; // Prevent multiple calls
+    
     try {
       setLoading(true);
       console.log('[PIX-COMPONENT] Starting PIX payment creation for order:', orderId);
