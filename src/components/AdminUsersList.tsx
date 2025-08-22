@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AdminUser } from '@/hooks/useAdminData';
+import { AdminCustomer } from '@/hooks/useAdminCustomers';
 import { formatDateTime } from '@/utils/formatting';
 
 interface AdminUsersListProps {
-  users: AdminUser[];
+  users: AdminCustomer[];
 }
 
 export const AdminUsersList = ({ users }: AdminUsersListProps) => {

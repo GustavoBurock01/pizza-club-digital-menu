@@ -2,11 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Order } from '@/hooks/useAdminData';
+import { AdminOrder } from '@/hooks/useAdminOrders';
 import { formatCurrency, formatDateTime } from '@/utils/formatting';
 
 interface AdminOrdersTableProps {
-  orders: Order[];
+  orders: AdminOrder[];
   onUpdateStatus: (orderId: string, status: string) => void;
 }
 

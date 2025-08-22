@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Product } from '@/hooks/useAdminData';
+import { AdminProduct } from '@/hooks/useAdminProducts';
 import { formatCurrency } from '@/utils/formatting';
 
 interface AdminProductsListProps {
-  products: Product[];
+  products: AdminProduct[];
 }
 
 export const AdminProductsList = ({ products }: AdminProductsListProps) => {

@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdminStats } from '@/hooks/useAdminData';
+import { AdminOverviewStats } from '@/hooks/useAdminOverview';
 import { formatCurrency } from '@/utils/formatting';
 import { Package, Users, ShoppingCart, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
 interface AdminStatsCardsProps {
-  stats: AdminStats;
+  stats: AdminOverviewStats;
 }
 
 export const AdminStatsCards = ({ stats }: AdminStatsCardsProps) => {
@@ -46,7 +46,7 @@ export const AdminStatsCards = ({ stats }: AdminStatsCardsProps) => {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalUsers}</div>
+          <div className="text-2xl font-bold">{stats.totalCustomers}</div>
         </CardContent>
       </Card>
 
