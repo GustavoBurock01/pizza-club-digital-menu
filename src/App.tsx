@@ -37,8 +37,10 @@ const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentFailure = lazy(() => import("./pages/PaymentFailure"));
 
 // Admin pages - bundle separado
-const Admin = lazy(() => import("./pages/Admin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminOrders = lazy(() => import("./pages/AdminOrders"));
+const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
+const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
@@ -192,14 +194,28 @@ const App = () => {
                   </Suspense>
                 </AdminRoute>
               } />
-              <Route path="/admin/full" element={
+              <Route path="/admin/orders" element={
                 <AdminRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Admin />
+                    <AdminOrders />
                   </Suspense>
                 </AdminRoute>
               } />
-              <Route path="/analytics" element={
+              <Route path="/admin/customers" element={
+                <AdminRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AdminCustomers />
+                  </Suspense>
+                </AdminRoute>
+              } />
+              <Route path="/admin/products" element={
+                <AdminRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AdminProducts />
+                  </Suspense>
+                </AdminRoute>
+              } />
+              <Route path="/admin/analytics" element={
                 <AdminRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />

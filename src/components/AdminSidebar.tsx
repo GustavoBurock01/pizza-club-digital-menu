@@ -21,22 +21,22 @@ const items = [
   },
   {
     title: "Pedidos",
-    url: "/admin?tab=orders",
+    url: "/admin/orders",
     icon: ShoppingCart,
   },
   {
     title: "Produtos",
-    url: "/admin?tab=products", 
+    url: "/admin/products", 
     icon: Package,
   },
   {
-    title: "Usuários",
-    url: "/admin?tab=users",
+    title: "Clientes",
+    url: "/admin/customers",
     icon: Users,
   },
   {
     title: "Analytics",
-    url: "/analytics",
+    url: "/admin/analytics",
     icon: BarChart3,
   },
   {
@@ -57,10 +57,7 @@ export function AdminSidebar() {
   const { signOut } = useAuth();
   
   const isActive = (url: string) => {
-    if (url === "/admin") {
-      return location.pathname === "/admin" && !location.search;
-    }
-    return location.pathname + location.search === url;
+    return location.pathname === url;
   };
 
   const handleSignOut = async () => {
