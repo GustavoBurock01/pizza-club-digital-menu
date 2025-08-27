@@ -67,42 +67,6 @@ export type Database = {
           },
         ]
       }
-      beverages: {
-        Row: {
-          category: string
-          created_at: string
-          id: string
-          is_available: boolean | null
-          min_stock_alert: number | null
-          name: string
-          price: number
-          stock_quantity: number
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          id?: string
-          is_available?: boolean | null
-          min_stock_alert?: number | null
-          name: string
-          price: number
-          stock_quantity?: number
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          id?: string
-          is_available?: boolean | null
-          min_stock_alert?: number | null
-          name?: string
-          price?: number
-          stock_quantity?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       categories: {
         Row: {
           created_at: string | null
@@ -130,54 +94,6 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           order_position?: number | null
-        }
-        Relationships: []
-      }
-      coupons: {
-        Row: {
-          code: string
-          created_at: string
-          description: string | null
-          discount_type: string
-          discount_value: number
-          id: string
-          is_active: boolean | null
-          max_uses: number | null
-          min_order_value: number | null
-          updated_at: string
-          used_count: number | null
-          valid_from: string
-          valid_until: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          description?: string | null
-          discount_type: string
-          discount_value: number
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          min_order_value?: number | null
-          updated_at?: string
-          used_count?: number | null
-          valid_from?: string
-          valid_until: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          description?: string | null
-          discount_type?: string
-          discount_value?: number
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          min_order_value?: number | null
-          updated_at?: string
-          used_count?: number | null
-          valid_from?: string
-          valid_until?: string
         }
         Relationships: []
       }
@@ -319,57 +235,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pix_transactions: {
-        Row: {
-          amount: number
-          br_code: string
-          created_at: string
-          expires_at: string
-          id: string
-          order_id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          br_code: string
-          created_at?: string
-          expires_at: string
-          id: string
-          order_id: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          br_code?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          order_id?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pix_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pix_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders_with_details"
             referencedColumns: ["id"]
           },
         ]
@@ -557,36 +422,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      system_settings: {
-        Row: {
-          category: string
-          created_at: string
-          description: string | null
-          id: string
-          key: string
-          updated_at: string
-          value: Json
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          key: string
-          updated_at?: string
-          value: Json
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          key?: string
-          updated_at?: string
-          value?: Json
-        }
-        Relationships: []
       }
     }
     Views: {
