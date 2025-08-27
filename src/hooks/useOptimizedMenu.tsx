@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMenuStore } from '@/stores/simpleStore';
 import { useEffect, useMemo } from 'react';
-import { QUERY_KEYS } from '@/services/supabase';
 import { debounce } from '@/utils/performance';
 
 // ===== FETCH FUNCTIONS =====
@@ -62,7 +61,7 @@ export const useOptimizedMenu = () => {
     isLoading: categoriesLoading,
     refetch: refetchCategories
   } = useQuery({
-    queryKey: QUERY_KEYS.CATEGORIES,
+    queryKey: ['categories'],
     queryFn: fetchCategories,
     staleTime: 1000 * 60 * 30, // 30 minutes
     gcTime: 1000 * 60 * 60, // 1 hour
@@ -73,7 +72,7 @@ export const useOptimizedMenu = () => {
     isLoading: productsLoading,
     refetch: refetchProducts
   } = useQuery({
-    queryKey: [...QUERY_KEYS.PRODUCTS, selectedSubcategoryId || 'none'],
+    queryKey: ['products', selectedSubcategoryId || 'none'],
     queryFn: () => selectedSubcategoryId ? fetchProducts(selectedSubcategoryId) : Promise.resolve([]),
     enabled: !!selectedSubcategoryId,
     staleTime: 1000 * 60 * 10, // 10 minutes

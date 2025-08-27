@@ -1,4 +1,4 @@
-import { useAdminOverviewOptimized } from '@/hooks/useAdminOverviewOptimized';
+import { useAdminData } from '@/hooks/useAdminData';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { formatCurrency } from '@/utils/formatting';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const { stats, loading, refreshStats } = useAdminOverviewOptimized();
+  const { stats, loading, refreshStats } = useAdminData();
   const navigate = useNavigate();
 
   if (loading) {
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold">Dashboard Administrativo</h1>
               <p className="text-muted-foreground">Visão geral do negócio e principais métricas</p>
             </div>
-            <Button onClick={refreshStats} variant="outline" size="sm">
+            <Button onClick={() => refreshStats()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
                 <p className="text-xs text-muted-foreground">
                   {formatCurrency(stats.averageOrderValue)} ticket médio
                 </p>
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Total:</span>
-                    <span className="font-medium">{stats.totalCustomers}</span>
+                    <span className="font-medium">{stats.totalUsers}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Ticket Médio:</span>

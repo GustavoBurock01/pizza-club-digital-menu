@@ -1,7 +1,7 @@
 // ===== MANAGER REAL-TIME UNIFICADO =====
 
 import { supabase } from '@/integrations/supabase/client';
-import { useGlobalStore } from '@/stores/globalStore';
+// Manager real-time simples - não usa store global
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 class RealtimeManager {
@@ -72,43 +72,18 @@ class RealtimeManager {
   }
 
   private handleOrderUpdate(payload: any) {
-    const store = useGlobalStore.getState();
-    
-    switch (payload.eventType) {
-      case 'INSERT':
-        store.addOrder(payload.new);
-        break;
-      case 'UPDATE':
-        store.updateOrder(payload.new.id, payload.new);
-        break;
-      case 'DELETE':
-        // Handle order deletion if needed
-        break;
-    }
-
-    // Trigger admin stats refresh if needed
-    store.refreshStats();
+    // Log para debugging
+    console.log('Order update:', payload);
   }
 
   private handleOrderItemUpdate(payload: any) {
-    // Refresh related order data
-    const store = useGlobalStore.getState();
-    store.refreshStats();
+    // Log para debugging  
+    console.log('Order item update:', payload);
   }
 
   private handleProductUpdate(payload: any) {
-    const store = useGlobalStore.getState();
-    
-    switch (payload.eventType) {
-      case 'UPDATE':
-        // Update product in menu if it's currently loaded
-        const products = store.products;
-        const updatedProducts = products.map(product => 
-          product.id === payload.new.id ? { ...product, ...payload.new } : product
-        );
-        store.setProducts(updatedProducts);
-        break;
-    }
+    // Log para debugging
+    console.log('Product update:', payload);
   }
 
   private handleConnectionError() {
