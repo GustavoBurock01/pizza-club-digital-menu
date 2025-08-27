@@ -5,7 +5,7 @@ import { OptimizedMenuContent } from "@/components/OptimizedMenuContent";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useMenuOptimized } from "@/hooks/useMenuOptimized";
-import { useCart } from "@/hooks/useCart";
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from "react-router-dom";
 import { MenuSkeleton, CategorySkeleton } from "@/components/MenuSkeleton";
 import { FixedCartFooter } from "@/components/FixedCartFooter";
@@ -14,7 +14,7 @@ import { FixedCartFooter } from "@/components/FixedCartFooter";
 
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { getItemCount } = useCart();
+  const { getItemCount } = useUnifiedStore();
   const navigate = useNavigate();
   
   const {

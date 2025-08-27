@@ -1,14 +1,30 @@
-// ===== STORE SIMPLES PARA REESTRUTURAÇÃO =====
+// ===== STORE UNIFICADO - SINGLE SOURCE OF TRUTH =====
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { CartItem, CartCustomization } from '@/types';
 
-// ===== CART STORE =====
-interface CartState {
-  items: any[];
+// ===== UNIFIED STORE =====
+interface UnifiedState {
+  // Cart State
+  items: CartItem[];
   deliveryFee: number;
   deliveryMethod: 'delivery' | 'pickup';
-  addItem: (product: any, customizations?: any, notes?: string, quantity?: number) => void;
+  
+  // Menu State
+  categories: any[];
+  products: any[];
+  selectedCategoryId: string | null;
+  selectedSubcategoryId: string | null;
+  currentView: 'categories' | 'subcategories' | 'products';
+  searchTerm: string;
+  isLoading: boolean;
+  
+  // Real-time State
+  isConnected: boolean;
+  
+  // Cart Actions
+  addItem: (product: any, customizations?: CartCustomization, notes?: string, quantity?: number) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -17,15 +33,41 @@ interface CartState {
   getItemCount: () => number;
   setDeliveryFee: (fee: number) => void;
   setDeliveryMethod: (method: 'delivery' | 'pickup') => void;
+  
+  // Menu Actions
+  setCategories: (categories: any[]) => void;
+  setProducts: (products: any[]) => void;
+  setSelectedCategory: (id: string | null) => void;
+  setSelectedSubcategory: (id: string | null) => void;
+  setCurrentView: (view: 'categories' | 'subcategories' | 'products') => void;
+  setSearchTerm: (term: string) => void;
+  setLoading: (loading: boolean) => void;
+  
+  // Real-time Actions
+  setConnected: (connected: boolean) => void;
 }
 
-export const useCartStore = create<CartState>()(
+export const useUnifiedStore = create<UnifiedState>()(
   persist(
     (set, get) => ({
+      // Cart Initial State
       items: [],
       deliveryFee: 0,
       deliveryMethod: 'delivery',
+      
+      // Menu Initial State
+      categories: [],
+      products: [],
+      selectedCategoryId: null,
+      selectedSubcategoryId: null,
+      currentView: 'categories',
+      searchTerm: '',
+      isLoading: false,
+      
+      // Real-time Initial State
+      isConnected: false,
 
+      // Cart Actions
       addItem: (product, customizations, notes, quantity = 1) => {
         const existingItemIndex = get().items.findIndex(item => 
           item.productId === product.id &&
@@ -38,7 +80,7 @@ export const useCartStore = create<CartState>()(
           items[existingItemIndex].quantity += quantity;
           set({ items });
         } else {
-          const newItem = {
+          const newItem: CartItem = {
             id: `${product.id}-${Date.now()}`,
             productId: product.id,
             name: product.name,
@@ -109,56 +151,35 @@ export const useCartStore = create<CartState>()(
       setDeliveryMethod: (method) => {
         set({ deliveryMethod: method });
       },
+
+      // Menu Actions
+      setCategories: (categories) => set({ categories }),
+      setProducts: (products) => set({ products }),
+      setSelectedCategory: (id) => set({ selectedCategoryId: id }),
+      setSelectedSubcategory: (id) => set({ selectedSubcategoryId: id }),
+      setCurrentView: (view) => set({ currentView: view }),
+      setSearchTerm: (term) => set({ searchTerm: term }),
+      setLoading: (loading) => set({ isLoading: loading }),
+
+      // Real-time Actions
+      setConnected: (connected) => set({ isConnected: connected }),
     }),
     {
-      name: 'cart-store-simple',
+      name: 'unified-store',
+      partialize: (state) => ({
+        items: state.items,
+        deliveryFee: state.deliveryFee,
+        deliveryMethod: state.deliveryMethod,
+        selectedCategoryId: state.selectedCategoryId,
+        selectedSubcategoryId: state.selectedSubcategoryId,
+        currentView: state.currentView,
+      })
     }
   )
 );
 
-// ===== MENU STORE =====
-interface MenuState {
-  categories: any[];
-  products: any[];
-  selectedCategoryId: string | null;
-  selectedSubcategoryId: string | null;
-  currentView: 'categories' | 'subcategories' | 'products';
-  searchTerm: string;
-  isLoading: boolean;
-  setCategories: (categories: any[]) => void;
-  setProducts: (products: any[]) => void;
-  setSelectedCategory: (id: string | null) => void;
-  setSelectedSubcategory: (id: string | null) => void;
-  setCurrentView: (view: 'categories' | 'subcategories' | 'products') => void;
-  setSearchTerm: (term: string) => void;
-  setLoading: (loading: boolean) => void;
-}
-
-export const useMenuStore = create<MenuState>((set) => ({
-  categories: [],
-  products: [],
-  selectedCategoryId: null,
-  selectedSubcategoryId: null,
-  currentView: 'categories',
-  searchTerm: '',
-  isLoading: false,
-
-  setCategories: (categories) => set({ categories }),
-  setProducts: (products) => set({ products }),
-  setSelectedCategory: (id) => set({ selectedCategoryId: id }),
-  setSelectedSubcategory: (id) => set({ selectedSubcategoryId: id }),
-  setCurrentView: (view) => set({ currentView: view }),
-  setSearchTerm: (term) => set({ searchTerm: term }),
-  setLoading: (loading) => set({ isLoading: loading }),
-}));
-
-// ===== REAL-TIME SIMPLE =====
-interface RealtimeState {
-  isConnected: boolean;
-  setConnected: (connected: boolean) => void;
-}
-
-export const useRealtimeStore = create<RealtimeState>((set) => ({
-  isConnected: false,
-  setConnected: (connected) => set({ isConnected: connected }),
-}));
+// ===== BACKWARD COMPATIBILITY EXPORTS =====
+// Para manter compatibilidade com código existente
+export const useCartStore = useUnifiedStore;
+export const useMenuStore = useUnifiedStore;
+export const useRealtimeStore = useUnifiedStore;

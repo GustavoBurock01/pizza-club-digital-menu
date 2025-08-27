@@ -3,11 +3,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescri
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from 'react-router-dom';
 
 export const CartDrawer = () => {
-  const { items, removeItem, updateQuantity, getSubtotal, getTotal, getItemCount, deliveryFee, clearCart } = useCart();
+  const { items, removeItem, updateQuantity, getSubtotal, getTotal, getItemCount, deliveryFee, clearCart } = useUnifiedStore();
   const navigate = useNavigate();
 
   const formatPrice = (price: number) => {

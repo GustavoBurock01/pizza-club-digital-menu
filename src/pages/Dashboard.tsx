@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShoppingCart, Repeat, Sparkles, Clock, Crown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useCart } from "@/hooks/useCart";
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -19,7 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const { subscription, createCheckout } = useSubscription();
-  const { addItem } = useCart();
+  const { addItem } = useUnifiedStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useToast } from '@/hooks/use-toast';
 
 const SUGGESTIONS = [
@@ -27,7 +27,7 @@ const SUGGESTIONS = [
 ];
 
 export const CartSuggestions = () => {
-  const { addItem } = useCart();
+  const { addItem } = useUnifiedStore();
   const { toast } = useToast();
 
   const formatPrice = (price: number) => {

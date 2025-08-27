@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Minus, Plus, X } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Cart = () => {
-  const { items, updateQuantity, removeItem, getSubtotal, getTotal } = useCart();
+  const { items, updateQuantity, removeItem, getSubtotal, getTotal } = useUnifiedStore();
   const navigate = useNavigate();
   const [productDetails, setProductDetails] = useState<Record<string, { categoryName: string; subcategoryName: string }>>({});
 
@@ -266,10 +266,10 @@ const Cart = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:left-64">
             <div className="max-w-2xl mx-auto">
               <Button 
-                onClick={() => navigate('/order-review')}
+                onClick={() => navigate('/express-checkout')}
                 className="w-full gradient-pizza text-white h-12"
               >
-                Finalizar Pedido • {formatPrice(getTotal())}
+                Checkout Express • {formatPrice(getTotal())}
               </Button>
             </div>
           </div>

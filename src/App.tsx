@@ -37,8 +37,8 @@ const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const Analytics = lazy(() => import("./pages/Analytics"));
-const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
-const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+
+
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -139,14 +139,6 @@ const App = () => {
                 </CustomerRoute>
               } />
               
-              {/* Attendant Routes - Only for attendants and admins */}
-              <Route path="/attendant" element={
-                <AttendantRoute>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
-                  </Suspense>
-                </AttendantRoute>
-              } />
               
               {/* Admin Routes - Only for admin users */}
               <Route path="/admin" element={
@@ -181,13 +173,6 @@ const App = () => {
                 <AdminRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />
-                  </Suspense>
-                </AdminRoute>
-              } />
-              <Route path="/admin/settings" element={
-                <AdminRoute>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminSettings />
                   </Suspense>
                 </AdminRoute>
               } />

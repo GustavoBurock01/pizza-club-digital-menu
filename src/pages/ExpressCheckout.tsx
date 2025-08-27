@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCartStore } from '@/stores/simpleStore';
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +28,7 @@ interface CustomerData {
 }
 
 const ExpressCheckout = () => {
-  const { items, getSubtotal, getTotal, clearCart } = useCartStore();
+  const { items, getSubtotal, getTotal, clearCart } = useUnifiedStore();
   const { user } = useAuth();
   const { addresses } = useAddresses();
   const { toast } = useToast();

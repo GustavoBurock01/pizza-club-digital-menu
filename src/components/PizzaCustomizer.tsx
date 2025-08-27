@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { useCart } from '@/hooks/useCart';
+import { useUnifiedStore } from '@/stores/simpleStore';
 import { CartCustomization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,7 +45,7 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
   
-  const { addItem } = useCart();
+  const { addItem } = useUnifiedStore();
   const { toast } = useToast();
 
   const handleExtraChange = (extra: string, checked: boolean) => {

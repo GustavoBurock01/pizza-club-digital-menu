@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Info, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '@/hooks/useCart';
+import { useUnifiedStore } from '@/stores/simpleStore';
 
 interface MenuItemProps {
   id: string;
@@ -27,7 +27,7 @@ export const MenuCard = ({
   ingredients = []
 }: MenuItemProps) => {
   const [showIngredients, setShowIngredients] = useState(false);
-  const { addItem } = useCart();
+  const { addItem } = useUnifiedStore();
   const navigate = useNavigate();
 
   const formatPrice = (price: number) => {

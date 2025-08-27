@@ -1,29 +1,32 @@
-// ===== MANAGER REAL-TIME UNIFICADO =====
+// ===== REAL-TIME MANAGER INTELIGENTE E UNIFICADO =====
 
 import { supabase } from '@/integrations/supabase/client';
-// Manager real-time simples - não usa store global
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-class RealtimeManager {
-  private static instance: RealtimeManager;
+type EventCallback = (payload: any) => void;
+
+class UnifiedRealtimeManager {
+  private static instance: UnifiedRealtimeManager;
   private channel: RealtimeChannel | null = null;
   private isConnected: boolean = false;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000;
+  private eventCallbacks: Map<string, EventCallback[]> = new Map();
 
-  static getInstance(): RealtimeManager {
-    if (!RealtimeManager.instance) {
-      RealtimeManager.instance = new RealtimeManager();
+  static getInstance(): UnifiedRealtimeManager {
+    if (!UnifiedRealtimeManager.instance) {
+      UnifiedRealtimeManager.instance = new UnifiedRealtimeManager();
     }
-    return RealtimeManager.instance;
+    return UnifiedRealtimeManager.instance;
   }
 
+  // ===== CONNECTION MANAGEMENT =====
   connect() {
     if (this.isConnected) return;
 
     this.channel = supabase
-      .channel('unified-updates')
+      .channel('unified-realtime-updates')
       .on(
         'postgres_changes',
         {
@@ -31,7 +34,7 @@ class RealtimeManager {
           schema: 'public',
           table: 'orders'
         },
-        (payload) => this.handleOrderUpdate(payload)
+        (payload) => this.handleEvent('orders', payload)
       )
       .on(
         'postgres_changes',
@@ -40,7 +43,7 @@ class RealtimeManager {
           schema: 'public',
           table: 'order_items'
         },
-        (payload) => this.handleOrderItemUpdate(payload)
+        (payload) => this.handleEvent('order_items', payload)
       )
       .on(
         'postgres_changes',
@@ -49,13 +52,23 @@ class RealtimeManager {
           schema: 'public',
           table: 'products'
         },
-        (payload) => this.handleProductUpdate(payload)
+        (payload) => this.handleEvent('products', payload)
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => this.handleEvent('profiles', payload)
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          console.log('✅ Real-time conectado');
+          console.log('🔗 Real-time conectado - Sistema unificado ativo');
+          this.handleEvent('connection', { status: 'connected' });
         } else if (status === 'CHANNEL_ERROR') {
           this.handleConnectionError();
         }
@@ -67,27 +80,50 @@ class RealtimeManager {
       supabase.removeChannel(this.channel);
       this.channel = null;
       this.isConnected = false;
+      this.handleEvent('connection', { status: 'disconnected' });
       console.log('🔌 Real-time desconectado');
     }
   }
 
-  private handleOrderUpdate(payload: any) {
-    // Log para debugging
-    console.log('Order update:', payload);
+  // ===== EVENT MANAGEMENT =====
+  private handleEvent(eventType: string, payload: any) {
+    const callbacks = this.eventCallbacks.get(eventType) || [];
+    callbacks.forEach(callback => {
+      try {
+        callback(payload);
+      } catch (error) {
+        console.error(`Error in real-time callback for ${eventType}:`, error);
+      }
+    });
   }
 
-  private handleOrderItemUpdate(payload: any) {
-    // Log para debugging  
-    console.log('Order item update:', payload);
+  subscribe(eventType: string, callback: EventCallback) {
+    if (!this.eventCallbacks.has(eventType)) {
+      this.eventCallbacks.set(eventType, []);
+    }
+    this.eventCallbacks.get(eventType)!.push(callback);
+
+    // Auto-connect se não estiver conectado
+    if (!this.isConnected) {
+      this.connect();
+    }
+
+    // Return unsubscribe function
+    return () => {
+      const callbacks = this.eventCallbacks.get(eventType);
+      if (callbacks) {
+        const index = callbacks.indexOf(callback);
+        if (index > -1) {
+          callbacks.splice(index, 1);
+        }
+      }
+    };
   }
 
-  private handleProductUpdate(payload: any) {
-    // Log para debugging
-    console.log('Product update:', payload);
-  }
-
+  // ===== CONNECTION ERROR HANDLING =====
   private handleConnectionError() {
     this.isConnected = false;
+    this.handleEvent('connection', { status: 'error' });
     
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
@@ -101,25 +137,52 @@ class RealtimeManager {
       }, delay);
     } else {
       console.error('❌ Máximo de tentativas de reconexão excedido');
+      this.handleEvent('connection', { status: 'failed' });
     }
   }
 
+  // ===== GETTERS =====
   getConnectionStatus(): boolean {
     return this.isConnected;
   }
+
+  getSubscriberCount(): number {
+    let total = 0;
+    this.eventCallbacks.forEach(callbacks => {
+      total += callbacks.length;
+    });
+    return total;
+  }
 }
 
-export const realtimeManager = RealtimeManager.getInstance();
+export const realtimeManager = UnifiedRealtimeManager.getInstance();
 
-// Hook para usar o real-time manager
+// ===== HOOK SIMPLIFICADO =====
 export const useRealtimeManager = () => {
   const connect = () => realtimeManager.connect();
   const disconnect = () => realtimeManager.disconnect();
   const isConnected = () => realtimeManager.getConnectionStatus();
+  const subscribe = (eventType: string, callback: EventCallback) => 
+    realtimeManager.subscribe(eventType, callback);
 
   return {
     connect,
     disconnect,
-    isConnected
+    isConnected,
+    subscribe,
+    getStatus: isConnected,
+    getSubscriberCount: () => realtimeManager.getSubscriberCount()
   };
+};
+
+// ===== HOOK ESPECÍFICO PARA ORDERS =====
+export const useOrdersRealtime = (callback: EventCallback) => {
+  const { subscribe } = useRealtimeManager();
+  return subscribe('orders', callback);
+};
+
+// ===== HOOK ESPECÍFICO PARA PRODUCTS =====
+export const useProductsRealtime = (callback: EventCallback) => {
+  const { subscribe } = useRealtimeManager();
+  return subscribe('products', callback);
 };
