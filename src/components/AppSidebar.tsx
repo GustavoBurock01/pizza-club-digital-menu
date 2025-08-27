@@ -47,11 +47,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Menu items for customers
 const customerItems = [
-  { title: "Início", url: "/", icon: Home },
+  { title: "Início", url: "/dashboard", icon: Home },
   { title: "Cardápio", url: "/menu", icon: Package },
   { title: "Meus Pedidos", url: "/orders", icon: FileText },
   { title: "Minha Conta", url: "/account", icon: User },
-  { title: "Carrinho", url: "/express-checkout", icon: ShoppingCart },
 ];
 
 // Menu items for attendants  
@@ -80,13 +79,13 @@ export function AppSidebar() {
 
   // Auto-navigate based on role when accessing root paths
   useEffect(() => {
-    if (location.pathname === '/dashboard') {
+    if (location.pathname === '/') {
       if (role === 'admin') {
         navigate('/admin');
       } else if (role === 'attendant') {
         navigate('/attendant');
       } else {
-        navigate('/menu');
+        navigate('/dashboard');
       }
     }
   }, [role, location.pathname, navigate]);
@@ -138,8 +137,8 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                      {item.title === "Carrinho" && itemCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto">
+                      {item.title === "Cardápio" && itemCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto">
                           {itemCount}
                         </Badge>
                       )}
@@ -147,6 +146,31 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Show cart for customers */}
+              {role === 'customer' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip="Carrinho"
+                    isActive={location.pathname === '/cart'}
+                  >
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => navigate('/cart')}
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      <span>Carrinho</span>
+                      {itemCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto">
+                          {itemCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

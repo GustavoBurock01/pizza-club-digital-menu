@@ -15,7 +15,7 @@ const Index = () => {
 
   const handleAuthNavigation = () => {
     if (user) {
-      navigate('/menu');
+      navigate('/dashboard');
     } else {
       navigate('/auth');
     }
@@ -78,7 +78,7 @@ const Index = () => {
             </div>
           </div>
           <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
-            {user ? 'Acessar Dashboard' : 'Entrar / Cadastrar'}
+            {user ? 'Minha Conta' : 'Entrar / Cadastrar'}
           </Button>
         </div>
       </header>

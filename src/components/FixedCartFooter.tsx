@@ -2,11 +2,11 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart } from 'lucide-react';
-import { useUnifiedStore } from '@/stores/simpleStore';
+import { useCartStore } from '@/stores/simpleStore';
 import { useNavigate } from 'react-router-dom';
 
 export const FixedCartFooter = () => {
-  const { items, getTotal, getItemCount } = useUnifiedStore();
+  const { items, getTotal, getItemCount } = useCartStore();
   const navigate = useNavigate();
   const itemCount = getItemCount();
   const total = getTotal();
@@ -25,7 +25,7 @@ export const FixedCartFooter = () => {
       <div className="max-w-2xl mx-auto">
         <Button 
           className="w-full gradient-pizza text-white h-12 flex items-center justify-between"
-          onClick={() => navigate('/express-checkout')}
+          onClick={() => navigate('/cart')}
         >
           <div className="flex items-center gap-2">
             <div className="relative">

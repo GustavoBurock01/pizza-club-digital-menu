@@ -1,28 +1,23 @@
 
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  
-  const status = searchParams.get('status') || 'success';
-  const isSuccess = status === 'success';
-  const isPending = status === 'pending';
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/menu');
+      navigate('/dashboard');
     }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
-  const handleGoToMenu = () => {
-    navigate('/menu');
+  const handleGoToDashboard = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -30,32 +25,25 @@ const PaymentSuccess = () => {
       <Card className="w-full max-w-md text-center">
         <CardContent className="pt-8 pb-6">
           <div className="flex justify-center mb-6">
-            <div className={`p-4 rounded-full animate-scale-in ${
-              isSuccess ? 'bg-green-500' : 'bg-yellow-500'
-            }`}>
+            <div className="bg-green-500 p-4 rounded-full animate-scale-in">
               <Check className="w-8 h-8 text-white" />
             </div>
           </div>
           
-          <h1 className={`text-2xl font-bold mb-2 ${
-            isSuccess ? 'text-green-600' : 'text-yellow-600'
-          }`}>
-            {isSuccess ? 'Pagamento Aprovado!' : 'Pagamento Pendente'}
+          <h1 className="text-2xl font-bold text-green-600 mb-2">
+            Pagamento Aprovado!
           </h1>
           
           <p className="text-muted-foreground mb-6">
-            {isSuccess 
-              ? 'Sua assinatura foi ativada com sucesso. Bem-vindo ao Pizza Club!'
-              : 'Seu pagamento está sendo processado. Aguarde a confirmação.'
-            }
+            Sua assinatura foi ativada com sucesso. Bem-vindo ao Pizza Club!
           </p>
           
           <div className="space-y-3">
             <Button 
-              onClick={handleGoToMenu}
+              onClick={handleGoToDashboard}
               className="w-full gradient-pizza"
             >
-              Ir para o Menu
+              Ir para Dashboard
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             

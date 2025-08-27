@@ -12,7 +12,6 @@ class UnifiedRealtimeManager {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000;
-  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
   private eventCallbacks: Map<string, EventCallback[]> = new Map();
 
   static getInstance(): UnifiedRealtimeManager {
@@ -88,27 +87,14 @@ class UnifiedRealtimeManager {
 
   // ===== EVENT MANAGEMENT =====
   private handleEvent(eventType: string, payload: any) {
-    // Debounce frequent events to prevent spam
-    const debounceKey = `${eventType}-${payload.table}`;
-    const existingTimer = this.debounceTimers.get(debounceKey);
-    
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-    
-    const timer = setTimeout(() => {
-      const callbacks = this.eventCallbacks.get(eventType) || [];
-      callbacks.forEach(callback => {
-        try {
-          callback(payload);
-        } catch (error) {
-          console.error(`Error in real-time callback for ${eventType}:`, error);
-        }
-      });
-      this.debounceTimers.delete(debounceKey);
-    }, 300); // 300ms debounce
-    
-    this.debounceTimers.set(debounceKey, timer);
+    const callbacks = this.eventCallbacks.get(eventType) || [];
+    callbacks.forEach(callback => {
+      try {
+        callback(payload);
+      } catch (error) {
+        console.error(`Error in real-time callback for ${eventType}:`, error);
+      }
+    });
   }
 
   subscribe(eventType: string, callback: EventCallback) {
