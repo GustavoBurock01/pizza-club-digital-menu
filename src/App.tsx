@@ -3,13 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/config/queryClient";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
-import { UserRoute } from "@/components/UserRoute";
 import { CustomerRoute } from "@/components/routes/CustomerRoute";
-import { AttendantRoute } from "@/components/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
@@ -28,8 +26,7 @@ import ExpressCheckout from "./pages/ExpressCheckout";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
-// Lazy loaded pages - apenas secundárias
-const Cart = lazy(() => import("./pages/Cart"));
+// Lazy loaded pages - apenas secundárias (otimizado)
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const Payment = lazy(() => import("./pages/Payment"));
@@ -66,30 +63,12 @@ const App = () => {
                   <PaymentSuccess />
                 </ProtectedRoute>
               } />
-              <Route path="/payment-pending" element={
-                <ProtectedRoute requireAuth={true}>
-                  <PaymentSuccess />
-                </ProtectedRoute>
-              } />
               {/* Customer Routes - Only for regular users (not admins/attendants) */}
-              <Route path="/dashboard" element={
-                <CustomerRoute>
-                  <Menu />
-                </CustomerRoute>
-              } />
+              <Route path="/dashboard" element={<Navigate to="/menu" replace />} />
               <Route path="/menu" element={
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Menu />
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
-              <Route path="/cart" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Cart />
-                    </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>
               } />
