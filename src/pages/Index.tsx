@@ -15,7 +15,7 @@ const Index = () => {
 
   const handleAuthNavigation = () => {
     if (user) {
-      navigate('/menu');
+      navigate('/dashboard');
     } else {
       navigate('/auth');
     }

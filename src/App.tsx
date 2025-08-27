@@ -27,6 +27,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 // Lazy loaded pages - apenas secundárias (otimizado)
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const Payment = lazy(() => import("./pages/Payment"));
@@ -64,7 +65,13 @@ const App = () => {
                 </ProtectedRoute>
               } />
               {/* Customer Routes - Only for regular users (not admins/attendants) */}
-              <Route path="/dashboard" element={<Navigate to="/menu" replace />} />
+              <Route path="/dashboard" element={
+                <CustomerRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Dashboard />
+                  </Suspense>
+                </CustomerRoute>
+              } />
               <Route path="/menu" element={
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
