@@ -1,4 +1,4 @@
-import { useAdminOverview } from '@/hooks/useAdminOverview';
+import { useAdminOverviewOptimized } from '@/hooks/useAdminOverviewOptimized';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { formatCurrency } from '@/utils/formatting';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const { stats, loading, refreshStats } = useAdminOverview();
+  const { stats, loading, refreshStats } = useAdminOverviewOptimized();
   const navigate = useNavigate();
 
   if (loading) {
