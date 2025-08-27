@@ -15,6 +15,10 @@ import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
 import { smartPreload } from "@/utils/routePreloader";
 
+// ===== PHASE 4: PWA + ANALYTICS COMPONENTS =====
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { AnalyticsDebugger } from './components/AnalyticsDebugger';
+
 // ===== BUNDLE OPTIMIZATION - APENAS 5 ROTAS CRÍTICAS =====
 // Core pages - loading instantâneo (não lazy loaded)
 import Index from "./pages/Index";
@@ -168,6 +172,10 @@ const App = () => {
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            
+            {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
+            <PWAInstallPrompt />
+            <AnalyticsDebugger />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
