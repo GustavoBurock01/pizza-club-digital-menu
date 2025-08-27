@@ -15,24 +15,22 @@ import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
 import { smartPreload } from "@/utils/routePreloader";
 
-// Core pages - não lazy loaded para evitar flash de loading na navegação principal
+// ===== BUNDLE OPTIMIZATION - APENAS 5 ROTAS CRÍTICAS =====
+// Core pages - loading instantâneo (não lazy loaded)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Menu from "./pages/Menu";
+import ExpressCheckout from "./pages/ExpressCheckout";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
-// Lazy loaded pages - code splitting para otimização
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Menu = lazy(() => import("./pages/Menu"));
+// Lazy loaded pages - apenas secundárias
 const Cart = lazy(() => import("./pages/Cart"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
-const ExpressCheckout = lazy(() => import("./pages/ExpressCheckout"));
 const Payment = lazy(() => import("./pages/Payment"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-
-// Admin pages - bundle separado
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
@@ -72,17 +70,13 @@ const App = () => {
               {/* Customer Routes - Only for regular users (not admins/attendants) */}
               <Route path="/dashboard" element={
                 <CustomerRoute>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Dashboard />
-                  </Suspense>
+                  <Menu />
                 </CustomerRoute>
               } />
               <Route path="/menu" element={
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Menu />
-                    </Suspense>
+                    <Menu />
                   </ProtectedRoute>
                 </CustomerRoute>
               } />
@@ -98,9 +92,7 @@ const App = () => {
               <Route path="/express-checkout" element={
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <ExpressCheckout />
-                    </Suspense>
+                    <ExpressCheckout />
                   </ProtectedRoute>
                 </CustomerRoute>
               } />
@@ -143,9 +135,7 @@ const App = () => {
               {/* Admin Routes - Only for admin users */}
               <Route path="/admin" element={
                 <AdminRoute>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminDashboard />
-                  </Suspense>
+                  <AdminDashboard />
                 </AdminRoute>
               } />
               <Route path="/admin/orders" element={
