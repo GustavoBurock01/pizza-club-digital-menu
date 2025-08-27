@@ -30,6 +30,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderReview = lazy(() => import("./pages/OrderReview"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const ExpressCheckout = lazy(() => import("./pages/ExpressCheckout"));
 const Payment = lazy(() => import("./pages/Payment"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
@@ -129,6 +130,15 @@ const App = () => {
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Checkout />
+                    </Suspense>
+                  </ProtectedRoute>
+                </CustomerRoute>
+              } />
+              <Route path="/express-checkout" element={
+                <CustomerRoute>
+                  <ProtectedRoute requireSubscription={true}>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <ExpressCheckout />
                     </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>
