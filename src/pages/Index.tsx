@@ -15,7 +15,7 @@ const Index = () => {
 
   const handleAuthNavigation = () => {
     if (user) {
-      navigate('/menu', { state: { fromHomepage: true } });
+      navigate('/dashboard');
     } else {
       navigate('/auth');
     }
@@ -78,7 +78,7 @@ const Index = () => {
             </div>
           </div>
           <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
-            {user ? 'Ver Cardápio' : 'Entrar / Cadastrar'}
+            {user ? 'Acessar Dashboard' : 'Entrar / Cadastrar'}
           </Button>
         </div>
       </header>
@@ -103,7 +103,7 @@ const Index = () => {
               Assinar por R$ 99,90/ano
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4" onClick={() => navigate('/menu', { state: { fromHomepage: true } })}>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4" onClick={() => navigate('/menu')}>
               Ver Cardápio Demo
             </Button>
           </div>

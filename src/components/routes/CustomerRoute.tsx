@@ -38,11 +38,6 @@ export const CustomerRoute = ({ children }: CustomerRouteProps) => {
     return <Navigate to="/attendant" replace />;
   }
 
-  // For customers accessing protected routes, redirect to homepage first
-  if (role === 'customer' && location.pathname !== '/' && !location.state?.fromHomepage) {
-    return <Navigate to="/" replace />;
-  }
-
   // Allow access for customers
   return <>{children}</>;
 };
