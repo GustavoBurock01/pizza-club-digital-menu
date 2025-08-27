@@ -2,7 +2,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AdminOrder } from '@/hooks/useAdminOrders';
+// Definindo o tipo AdminOrder diretamente
+interface AdminOrder {
+  id: string;
+  status: string;
+  total_amount: number;
+  payment_method: string;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+  };
+}
 import { formatCurrency, formatDateTime } from '@/utils/formatting';
 
 interface AdminOrdersTableProps {

@@ -18,24 +18,18 @@ import { smartPreload } from "@/utils/routePreloader";
 // Core pages - não lazy loaded para evitar flash de loading na navegação principal
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Loading from "./pages/Loading";
 import NotFound from "./pages/NotFound";
 
 // Lazy loaded pages - code splitting para otimização
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Menu = lazy(() => import("./pages/Menu"));
-const Product = lazy(() => import("./pages/Product"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
-const OrderReview = lazy(() => import("./pages/OrderReview"));
-const Checkout = lazy(() => import("./pages/Checkout"));
 const ExpressCheckout = lazy(() => import("./pages/ExpressCheckout"));
 const Payment = lazy(() => import("./pages/Payment"));
-const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const PaymentFailure = lazy(() => import("./pages/PaymentFailure"));
 
 // Admin pages - bundle separado
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -65,15 +59,9 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/loading" element={<Loading />} />
               <Route path="/payment-success" element={
                 <ProtectedRoute requireAuth={true}>
                   <PaymentSuccess />
-                </ProtectedRoute>
-              } />
-              <Route path="/payment-failure" element={
-                <ProtectedRoute requireAuth={true}>
-                  <PaymentFailure />
                 </ProtectedRoute>
               } />
               <Route path="/payment-pending" element={
@@ -98,38 +86,11 @@ const App = () => {
                   </ProtectedRoute>
                 </CustomerRoute>
               } />
-              <Route path="/produto/:id" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Product />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
               <Route path="/cart" element={
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Cart />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
-              <Route path="/order-review" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <OrderReview />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
-              <Route path="/checkout" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Checkout />
                     </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>
@@ -148,15 +109,6 @@ const App = () => {
                   <ProtectedRoute requireSubscription={true}>
                     <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                       <Payment />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
-              <Route path="/order-confirmation/:orderId" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <OrderConfirmation />
                     </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>

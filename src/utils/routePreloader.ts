@@ -30,11 +30,8 @@ export const preloadRoute = async (routePath: string) => {
       case '/dashboard':
         component = await import('../pages/Dashboard');
         break;
-      case '/order-review':
-        component = await import('../pages/OrderReview');
-        break;
-      case '/checkout':
-        component = await import('../pages/Checkout');
+      case '/express-checkout':
+        component = await import('../pages/ExpressCheckout');
         break;
       default:
         return null;
@@ -72,9 +69,9 @@ export const smartPreload = {
   // Preload sequencial baseado na jornada do usuário
   userJourney: (currentRoute: string) => {
     const journeyMap = {
-      '/menu': ['/cart', '/product'],
-      '/cart': ['/order-review', '/checkout'],
-      '/checkout': ['/payment'],
+      '/menu': ['/cart'],
+      '/cart': ['/express-checkout'],
+      '/express-checkout': ['/payment'],
       '/dashboard': ['/menu', '/orders'],
     };
 

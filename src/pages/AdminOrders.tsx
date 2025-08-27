@@ -1,6 +1,6 @@
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAdminOrders } from '@/hooks/useAdminOrders';
+import { useAdminOrdersOptimized } from '@/hooks/useAdminOrdersOptimized';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +55,7 @@ export default function AdminOrders() {
     markDelivered,
     cancelOrder,
     refreshOrders 
-  } = useAdminOrders({ status: statusFilter });
+  } = useAdminOrdersOptimized({ status: statusFilter });
 
   // Filtrar pedidos por termo de busca
   const filteredOrders = orders.filter(order => {

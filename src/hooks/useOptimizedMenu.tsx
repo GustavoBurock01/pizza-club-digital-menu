@@ -24,16 +24,16 @@ const fetchCategories = async () => {
   return data;
 };
 
-const fetchProducts = async (subcategoryId: string) => {
+const fetchProducts = async (subcategoryId: string): Promise<any[]> => {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('subcategory_id', subcategoryId)
-    .eq('available', true)
+    .eq('is_available', true)
     .order('name');
 
   if (error) throw error;
-  return data;
+  return data || [];
 };
 
 // ===== MAIN HOOK =====

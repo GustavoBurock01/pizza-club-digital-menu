@@ -1,5 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdminOverviewStats } from '@/hooks/useAdminOverview';
+// Definindo o tipo AdminOverviewStats diretamente
+interface AdminOverviewStats {
+  totalOrders: number;
+  totalRevenue: number;
+  totalProducts: number;
+  totalCustomers: number;
+  pendingOrders: number;
+  completedOrders: number;
+}
 import { formatCurrency } from '@/utils/formatting';
 import { Package, Users, ShoppingCart, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
