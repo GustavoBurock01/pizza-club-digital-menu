@@ -29,7 +29,7 @@ import NotFound from "./pages/NotFound";
 
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Product = lazy(() => import("./pages/Product"));
+
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const Payment = lazy(() => import("./pages/Payment"));
@@ -76,15 +76,6 @@ const App = () => {
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Menu />
-                  </ProtectedRoute>
-                </CustomerRoute>
-              } />
-              <Route path="/produto/:id" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Product />
-                    </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>
               } />

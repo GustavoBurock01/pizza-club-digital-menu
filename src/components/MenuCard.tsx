@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Info, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useUnifiedStore } from '@/stores/simpleStore';
+import { PizzaCustomizer } from './PizzaCustomizer';
+import { supabase } from '@/services/supabase';
 
 interface MenuItemProps {
   id: string;
@@ -27,8 +29,30 @@ export const MenuCard = ({
   ingredients = []
 }: MenuItemProps) => {
   const [showIngredients, setShowIngredients] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
   const { addItem } = useUnifiedStore();
-  const navigate = useNavigate();
+
+  // Buscar dados completos do produto quando necessário
+  const { data: fullProduct, isLoading: productLoading } = useQuery({
+    queryKey: ['product', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          subcategory:subcategories(
+            name,
+            category:categories(name)
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: showCustomizer // Só busca quando o modal for aberto
+  });
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -133,7 +157,8 @@ export const MenuCard = ({
             </Button>
             <Button 
               className="gradient-pizza text-white hover:opacity-90 transition-opacity"
-              onClick={() => navigate(`/produto/${id}`)}
+              onClick={() => setShowCustomizer(true)}
+              disabled={productLoading}
             >
               <Plus className="h-4 w-4 mr-2" />
               Ver Produto
@@ -141,6 +166,15 @@ export const MenuCard = ({
           </div>
         </div>
       </CardContent>
+
+      {/* Modal do PizzaCustomizer */}
+      {fullProduct && (
+        <PizzaCustomizer
+          product={fullProduct}
+          isOpen={showCustomizer}
+          onClose={() => setShowCustomizer(false)}
+        />
+      )}
     </Card>
   );
 };
