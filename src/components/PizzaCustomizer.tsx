@@ -39,9 +39,6 @@ const EXTRA_OPTIONS = [
 ];
 
 export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerProps) => {
-  const [isHalfAndHalf, setIsHalfAndHalf] = useState(false);
-  const [firstHalf, setFirstHalf] = useState('');
-  const [secondHalf, setSecondHalf] = useState('');
   const [selectedCrust, setSelectedCrust] = useState('tradicional');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -75,10 +72,6 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
   const handleAddToCart = () => {
     const customizations: CartCustomization = {};
     
-    if (isHalfAndHalf && firstHalf && secondHalf) {
-      customizations.halfAndHalf = { firstHalf, secondHalf };
-    }
-    
     if (selectedCrust !== 'tradicional') {
       customizations.crust = selectedCrust;
     }
@@ -98,9 +91,6 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
     });
 
     // Reset form
-    setIsHalfAndHalf(false);
-    setFirstHalf('');
-    setSecondHalf('');
     setSelectedCrust('tradicional');
     setSelectedExtras([]);
     setNotes('');
@@ -127,42 +117,6 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Half and Half Option */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="half-and-half"
-                checked={isHalfAndHalf}
-                onCheckedChange={(checked) => setIsHalfAndHalf(!!checked)}
-              />
-              <Label htmlFor="half-and-half">Meio a meio</Label>
-            </div>
-            
-            {isHalfAndHalf && (
-              <div className="grid grid-cols-2 gap-3 ml-6">
-                <div>
-                  <Label>Primeira metade</Label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Margherita"
-                    value={firstHalf}
-                    onChange={(e) => setFirstHalf(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <Label>Segunda metade</Label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Calabresa"
-                    value={secondHalf}
-                    onChange={(e) => setSecondHalf(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border rounded-md text-sm"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Crust Selection */}
           <div className="space-y-3">
@@ -270,7 +224,6 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
             <Button 
               onClick={handleAddToCart} 
               className="w-full gradient-pizza"
-              disabled={isHalfAndHalf && (!firstHalf || !secondHalf)}
             >
               Adicionar ao Carrinho
             </Button>
