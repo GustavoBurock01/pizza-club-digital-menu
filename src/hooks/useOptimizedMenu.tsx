@@ -7,27 +7,35 @@ import { optimizedCache } from '@/utils/optimizedCache';
 import { CACHE_STRATEGIES } from '@/config/queryClient';
 
 const fetchMenuData = async () => {
+  // Buscar categorias com suas subcategorias
   const { data: categories, error: categoriesError } = await supabase
     .from('categories')
     .select(`
-      id, name, description, order_index,
-      subcategories!inner(
-        id, name, description, order_index,
-        products!inner(id, name, price)
+      id, name, description, order_position,
+      subcategories(
+        id, name, description, order_position
       )
     `)
-    .order('order_index');
+    .order('order_position');
 
-  if (categoriesError) throw categoriesError;
+  if (categoriesError) {
+    console.error('Categories Error:', categoriesError);
+    throw categoriesError;
+  }
 
+  // Buscar produtos separadamente 
   const { data: products, error: productsError } = await supabase
     .from('products')
     .select('*')
     .eq('is_available', true)
     .order('name');
 
-  if (productsError) throw productsError;
+  if (productsError) {
+    console.error('Products Error:', productsError);
+    throw productsError;
+  }
 
+  console.log('Fetched data:', { categories, products });
   return { categories: categories || [], products: products || [] };
 };
 
@@ -56,8 +64,10 @@ export const useOptimizedMenu = () => {
     ...CACHE_STRATEGIES.STATIC,
   });
 
+  console.log('Menu query result:', { data, queryLoading, error });
+
   // Atualizar store quando dados chegarem
-  if (data && !isLoading) {
+  if (data && !queryLoading) {
     if (categories.length === 0) setCategories(data.categories);
     if (products.length === 0) setProducts(data.products);
   }

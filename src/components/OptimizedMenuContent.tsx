@@ -13,6 +13,7 @@ interface OptimizedMenuContentProps {
   products: any[];
   searchTerm: string;
   selectedCategoryId: string | null;
+  handleCategorySelect: (categoryId: string) => void;
   handleSubcategorySelect: (subcategoryId: string) => void;
   handleBackToCategories: () => void;
   handleBackToSubcategories: () => void;
@@ -27,6 +28,7 @@ export const OptimizedMenuContent = memo(({
   products,
   searchTerm,
   selectedCategoryId,
+  handleCategorySelect,
   handleSubcategorySelect,
   handleBackToCategories,
   handleBackToSubcategories,
@@ -44,6 +46,8 @@ export const OptimizedMenuContent = memo(({
 
   // ===== NAVEGAÇÃO ENTRE CATEGORIAS =====
   if (currentView === 'categories') {
+    console.log('Rendering categories view:', categories);
+    
     return (
       <div className="space-y-6">
         <MenuSearch
@@ -51,27 +55,31 @@ export const OptimizedMenuContent = memo(({
           onSearchChange={onSearchChange}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category) => (
-            <Card 
-              key={category.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => {
-                if (category.subcategories?.length > 0) {
-                  // Use the appropriate handler from the parent
-                  handleSubcategorySelect(category.id);
-                }
-              }}
-            >
-              <CardHeader>
-                <CardTitle className="text-center">
-                  <span className="text-2xl">🍽️</span>
-                  <div>{category.name}</div>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Nenhuma categoria encontrada</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories.map((category) => (
+              <Card 
+                key={category.id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => {
+                  console.log('Category selected:', category);
+                  handleCategorySelect(category.id);
+                }}
+              >
+                <CardHeader>
+                  <CardTitle className="text-center">
+                    <span className="text-2xl">🍽️</span>
+                    <div>{category.name}</div>
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

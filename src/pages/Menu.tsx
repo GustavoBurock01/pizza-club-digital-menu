@@ -24,6 +24,7 @@ const Menu = () => {
     currentView,
     selectedCategoryId,
     selectedSubcategoryId,
+    handleCategorySelect,
     handleSubcategorySelect,
     handleBackToCategories,
     handleBackToSubcategories,
@@ -96,6 +97,7 @@ const Menu = () => {
               products={products}
               searchTerm={searchTerm}
               selectedCategoryId={selectedCategoryId}
+              handleCategorySelect={handleCategorySelect}
               handleSubcategorySelect={handleSubcategorySelect}
               handleBackToCategories={handleBackToCategories}
               handleBackToSubcategories={handleBackToSubcategories}
