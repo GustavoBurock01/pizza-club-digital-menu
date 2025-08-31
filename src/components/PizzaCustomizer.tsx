@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { CartCustomization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { ChevronDown } from 'lucide-react';
 
 interface PizzaCustomizerProps {
   product: any;
@@ -44,6 +46,7 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [crustPopoverOpen, setCrustPopoverOpen] = useState(false);
   
   const { addItem } = useUnifiedStore();
   const { toast } = useToast();
@@ -163,22 +166,44 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
 
           {/* Crust Selection */}
           <div className="space-y-3">
-            <Label>Borda</Label>
-            <RadioGroup value={selectedCrust} onValueChange={setSelectedCrust}>
-              {CRUST_OPTIONS.map((crust) => (
-                <div key={crust.id} className="flex items-center space-x-2">
-                  <RadioGroupItem value={crust.id} id={crust.id} />
-                  <Label htmlFor={crust.id} className="flex-1">
-                    {crust.name}
-                    {crust.price > 0 && (
-                      <span className="text-sm text-muted-foreground ml-2">
-                        +{formatPrice(crust.price)}
-                      </span>
-                    )}
-                  </Label>
+            <Label>Borda Recheada</Label>
+            <Popover open={crustPopoverOpen} onOpenChange={setCrustPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={crustPopoverOpen}
+                  className="w-full justify-between"
+                >
+                  {CRUST_OPTIONS.find(crust => crust.id === selectedCrust)?.name || "Selecione uma borda"}
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <div className="p-2">
+                  {CRUST_OPTIONS.map((crust) => (
+                    <Button
+                      key={crust.id}
+                      variant="ghost"
+                      className="w-full justify-start h-auto p-3"
+                      onClick={() => {
+                        setSelectedCrust(crust.id);
+                        setCrustPopoverOpen(false);
+                      }}
+                    >
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{crust.name}</span>
+                        {crust.price > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            +{formatPrice(crust.price)}
+                          </span>
+                        )}
+                      </div>
+                    </Button>
+                  ))}
                 </div>
-              ))}
-            </RadioGroup>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Extras */}
