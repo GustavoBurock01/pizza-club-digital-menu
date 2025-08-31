@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { OptimizedMenuContent } from "@/components/OptimizedMenuContent";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
-import { useMenuOptimized } from "@/hooks/useMenuOptimized";
+import { useOptimizedMenu } from "@/hooks/useOptimizedMenu";
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from "react-router-dom";
 import { MenuSkeleton, CategorySkeleton } from "@/components/MenuSkeleton";
@@ -20,19 +20,19 @@ const Menu = () => {
   const {
     categories,
     products,
-    loading,
+    isLoading,
     currentView,
     selectedCategoryId,
     selectedSubcategoryId,
     handleSubcategorySelect,
     handleBackToCategories,
     handleBackToSubcategories,
-    getCurrentCategoryName,
-    getCurrentSubcategoryName
-  } = useMenuOptimized();
+    getCurrentCategory,
+    getCurrentSubcategory
+  } = useOptimizedMenu();
 
   // Loading state otimizado com skeleton
-  if (loading) {
+  if (isLoading) {
     return (
       <SidebarProvider>
         <div className="flex min-h-screen w-full">
@@ -74,7 +74,7 @@ const Menu = () => {
                   {currentView === 'categories' 
                     ? `${categories.length} categorias disponíveis`
                     : currentView === 'subcategories' 
-                      ? `Subcategorias de ${getCurrentCategoryName()}`
+                      ? `Subcategorias de ${getCurrentCategory()?.name || ''}`
                       : `${products.length} produtos disponíveis`
                   }
                 </p>
@@ -99,8 +99,8 @@ const Menu = () => {
               handleSubcategorySelect={handleSubcategorySelect}
               handleBackToCategories={handleBackToCategories}
               handleBackToSubcategories={handleBackToSubcategories}
-              getCurrentCategoryName={getCurrentCategoryName}
-              getCurrentSubcategoryName={getCurrentSubcategoryName}
+              getCurrentCategory={getCurrentCategory}
+              getCurrentSubcategory={getCurrentSubcategory}
               onSearchChange={setSearchTerm}
             />
           </div>
