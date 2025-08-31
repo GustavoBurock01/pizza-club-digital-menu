@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 import { MenuCategory } from "@/components/MenuCategory";
 import { MenuSearch } from "@/components/MenuSearch";
-import { SubcategoryNavigation } from "@/components/SubcategoryNavigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
 
 // ===== COMPONENTE OTIMIZADO PARA CONTEÚDO DO MENU =====
@@ -53,17 +53,23 @@ export const OptimizedMenuContent = memo(({
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
-            <MenuCategory
-              key={category.id}
-              title={category.name}
-              items={[]}
-              icon="🍽️"
+            <Card 
+              key={category.id} 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => {
                 if (category.subcategories?.length > 0) {
+                  // Use the appropriate handler from the parent
                   handleSubcategorySelect(category.id);
                 }
               }}
-            />
+            >
+              <CardHeader>
+                <CardTitle className="text-center">
+                  <span className="text-2xl">🍽️</span>
+                  <div>{category.name}</div>
+                </CardTitle>
+              </CardHeader>
+            </Card>
           ))}
         </div>
       </div>
@@ -88,12 +94,22 @@ export const OptimizedMenuContent = memo(({
           <h2 className="text-2xl font-bold">{selectedCategory?.name || ''}</h2>
         </div>
         
-        {selectedCategory?.subcategories && (
-          <SubcategoryNavigation
-            subcategories={selectedCategory.subcategories}
-            onSelect={handleSubcategorySelect}
-          />
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {selectedCategory?.subcategories?.map((subcategory: any) => (
+            <Card 
+              key={subcategory.id} 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleSubcategorySelect(subcategory.id)}
+            >
+              <CardHeader>
+                <CardTitle className="text-center">
+                  <span className="text-2xl">🍽️</span>
+                  <div>{subcategory.name}</div>
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
