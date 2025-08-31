@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +29,7 @@ import NotFound from "./pages/NotFound";
 
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Product = lazy(() => import("./pages/Product"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const Payment = lazy(() => import("./pages/Payment"));
@@ -37,8 +39,6 @@ const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const Analytics = lazy(() => import("./pages/Analytics"));
-
-
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -76,6 +76,15 @@ const App = () => {
                 <CustomerRoute>
                   <ProtectedRoute requireSubscription={true}>
                     <Menu />
+                  </ProtectedRoute>
+                </CustomerRoute>
+              } />
+              <Route path="/produto/:id" element={
+                <CustomerRoute>
+                  <ProtectedRoute requireSubscription={true}>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Product />
+                    </Suspense>
                   </ProtectedRoute>
                 </CustomerRoute>
               } />
