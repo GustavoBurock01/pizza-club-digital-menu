@@ -133,14 +133,37 @@ export const OptimizedMenuContent = memo(({
           {selectedCategory?.subcategories?.map((subcategory: any) => (
             <Card 
               key={subcategory.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 border border-border bg-card"
               onClick={() => handleSubcategorySelect(subcategory.id)}
             >
-              <CardHeader>
-                <CardTitle className="text-center">
-                  <span className="text-2xl">🍽️</span>
-                  <div>{subcategory.name}</div>
-                </CardTitle>
+              <CardHeader className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-3xl">
+                        {subcategory.name.toLowerCase().includes('pizza') ? '🍕' : 
+                         subcategory.name.toLowerCase().includes('bebida') ? '🥤' : '🍽️'}
+                      </span>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        {subcategory.name}
+                      </CardTitle>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {subcategory.name.toLowerCase().includes('grande') ? 'Pizzas tamanho grande' :
+                       subcategory.name.toLowerCase().includes('broto') ? 'Pizzas tamanho broto' :
+                       subcategory.name.toLowerCase().includes('bebida') ? 'Todas as bebidas disponíveis' :
+                       `Produtos da subcategoria ${subcategory.name}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Ver produtos disponíveis
+                    </p>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                  </div>
+                </div>
               </CardHeader>
             </Card>
           ))}
