@@ -1,17 +1,8 @@
-// ===== STORE UNIFICADO OTIMIZADO =====
+// ===== STORE UNIFICADO - SINGLE SOURCE OF TRUTH =====
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, CartCustomization } from '@/types';
-
-// Shallow comparison for customizations
-const areCustomizationsEqual = (a?: CartCustomization, b?: CartCustomization): boolean => {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
-  
-  return a.crust === b.crust && 
-         JSON.stringify(a.extras?.sort()) === JSON.stringify(b.extras?.sort());
-};
 
 // ===== UNIFIED STORE =====
 interface UnifiedState {
@@ -80,7 +71,7 @@ export const useUnifiedStore = create<UnifiedState>()(
       addItem: (product, customizations, notes, quantity = 1) => {
         const existingItemIndex = get().items.findIndex(item => 
           item.productId === product.id &&
-          areCustomizationsEqual(item.customizations, customizations) &&
+          JSON.stringify(item.customizations) === JSON.stringify(customizations) &&
           item.notes === notes
         );
 
@@ -187,7 +178,8 @@ export const useUnifiedStore = create<UnifiedState>()(
   )
 );
 
-// Export only the unified store
-export { useUnifiedStore as useCartStore };
-export { useUnifiedStore as useMenuStore };
-export { useUnifiedStore as useRealtimeStore };
+// ===== BACKWARD COMPATIBILITY EXPORTS =====
+// Deprecated - use useUnifiedStore instead
+export const useCartStore = useUnifiedStore;
+export const useMenuStore = useUnifiedStore;
+export const useRealtimeStore = useUnifiedStore;
