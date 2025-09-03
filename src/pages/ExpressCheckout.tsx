@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check } from 'lucide-react';
 
 interface CustomerData {
+  name: string;
   street: string;
   number: string;
   neighborhood: string;
@@ -42,6 +43,7 @@ const ExpressCheckout = () => {
   const [loading, setLoading] = useState(false);
 
   const [customerData, setCustomerData] = useState<CustomerData>({
+    name: '',
     street: '',
     number: '',
     neighborhood: '',
@@ -67,9 +69,9 @@ const ExpressCheckout = () => {
       case 'review':
         return items.length > 0;
       case 'address':
-        if (deliveryMethod === 'pickup') return true;
-        if (!isGuest && selectedAddressId) return true;
-        return customerData.street && customerData.number && customerData.neighborhood && customerData.phone;
+        if (deliveryMethod === 'pickup') return customerData.name && customerData.phone;
+        if (!isGuest && selectedAddressId) return customerData.name && customerData.phone;
+        return customerData.name && customerData.street && customerData.number && customerData.neighborhood && customerData.phone;
       case 'payment':
         return paymentMethod === 'pix' || paymentMethod === 'card';
       default:
@@ -133,6 +135,7 @@ const ExpressCheckout = () => {
           delivery_method: deliveryMethod,
           status: 'pending',
           payment_status: 'pending',
+          customer_name: customerData.name,
           customer_phone: customerData.phone,
           notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
         })
@@ -333,6 +336,33 @@ const ExpressCheckout = () => {
                       </CardContent>
                     </Card>
 
+                    {/* Customer Info */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Informações do Cliente</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="customerName">Nome completo *</Label>
+                          <Input
+                            id="customerName"
+                            value={customerData.name}
+                            onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Seu nome completo"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Telefone *</Label>
+                          <Input
+                            id="phone"
+                            value={customerData.phone}
+                            onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="(11) 99999-9999"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {/* Address Form */}
                     {deliveryMethod === 'delivery' && (
                       <Card>
@@ -398,16 +428,6 @@ const ExpressCheckout = () => {
                               </div>
                             </div>
                           )}
-
-                          <div>
-                            <Label htmlFor="phone">Telefone *</Label>
-                            <Input
-                              id="phone"
-                              value={customerData.phone}
-                              onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                              placeholder="(11) 99999-9999"
-                            />
-                          </div>
                         </CardContent>
                       </Card>
                     )}

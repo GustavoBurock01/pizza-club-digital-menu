@@ -183,7 +183,10 @@ export type Database = {
         Row: {
           address_id: string | null
           created_at: string | null
+          customer_name: string | null
+          customer_phone: string | null
           delivery_fee: number | null
+          delivery_method: string | null
           estimated_delivery_time: number | null
           id: string
           notes: string | null
@@ -197,7 +200,10 @@ export type Database = {
         Insert: {
           address_id?: string | null
           created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_fee?: number | null
+          delivery_method?: string | null
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
@@ -211,7 +217,10 @@ export type Database = {
         Update: {
           address_id?: string | null
           created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_fee?: number | null
+          delivery_method?: string | null
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
