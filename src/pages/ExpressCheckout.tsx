@@ -459,18 +459,20 @@ const ExpressCheckout = () => {
                             </Label>
                           </div>
                           
-                          <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                            <RadioGroupItem value="on_delivery" id="on_delivery" />
-                            <Label htmlFor="on_delivery" className="flex-1 cursor-pointer">
-                              <div className="flex items-center gap-3">
-                                <Wallet className="h-5 w-5 text-green-600" />
-                                <div>
-                                  <div className="font-medium">Pagamento na Entrega</div>
-                                  <div className="text-sm text-muted-foreground">Cartão ou Dinheiro na entrega</div>
-                                </div>
-                              </div>
-                            </Label>
-                          </div>
+                           <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                             <RadioGroupItem value="on_delivery" id="on_delivery" />
+                             <Label htmlFor="on_delivery" className="flex-1 cursor-pointer">
+                               <div className="flex items-center gap-3">
+                                 <Wallet className="h-5 w-5 text-green-600" />
+                                 <div>
+                                   <div className="font-medium">{deliveryMethod === 'pickup' ? 'Pagamento no Balcão' : 'Pagamento na Entrega'}</div>
+                                   <div className="text-sm text-muted-foreground">
+                                     {deliveryMethod === 'pickup' ? 'Cartão ou Dinheiro no balcão' : 'Cartão ou Dinheiro na entrega'}
+                                   </div>
+                                 </div>
+                               </div>
+                             </Label>
+                           </div>
                         </RadioGroup>
                       </CardContent>
                     </Card>
@@ -478,9 +480,10 @@ const ExpressCheckout = () => {
                     {/* Payment Method Selection */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>
-                          {paymentCategory === 'online' ? 'Método de Pagamento Online' : 'Método de Pagamento na Entrega'}
-                        </CardTitle>
+                         <CardTitle>
+                           {paymentCategory === 'online' ? 'Método de Pagamento Online' : 
+                            (deliveryMethod === 'pickup' ? 'Método de Pagamento no Balcão' : 'Método de Pagamento na Entrega')}
+                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <RadioGroup value={paymentMethod} onValueChange={(value: PaymentMethod) => {
