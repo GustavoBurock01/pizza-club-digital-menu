@@ -535,7 +535,15 @@ export type Database = {
         | "delivering"
         | "delivered"
         | "cancelled"
-      payment_method: "credit_card" | "debit_card" | "pix" | "cash"
+      payment_method:
+        | "credit_card"
+        | "debit_card"
+        | "pix"
+        | "cash"
+        | "credit_card_online"
+        | "debit_card_online"
+        | "credit_card_delivery"
+        | "debit_card_delivery"
       subscription_status: "active" | "inactive" | "pending" | "cancelled"
       user_role: "customer" | "admin" | "seller" | "attendant"
     }
@@ -674,7 +682,16 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_method: ["credit_card", "debit_card", "pix", "cash"],
+      payment_method: [
+        "credit_card",
+        "debit_card",
+        "pix",
+        "cash",
+        "credit_card_online",
+        "debit_card_online",
+        "credit_card_delivery",
+        "debit_card_delivery",
+      ],
       subscription_status: ["active", "inactive", "pending", "cancelled"],
       user_role: ["customer", "admin", "seller", "attendant"],
     },
