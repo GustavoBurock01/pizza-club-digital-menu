@@ -63,6 +63,11 @@ const ExpressCheckout = () => {
     });
   };
 
+  // ===== PAYMENT LOGIC =====
+  const isOnlinePayment = () => {
+    return ['pix', 'credit_card_online', 'debit_card_online'].includes(paymentMethod);
+  };
+
   // ===== VALIDATION =====
   const isStepValid = useMemo(() => {
     switch (step) {
@@ -104,11 +109,16 @@ const ExpressCheckout = () => {
     setLoading(true);
 
     try {
-      if (paymentCategory === 'online') {
-        // Para pagamentos online, salvar dados e ir para pagamento
+      console.log('[CHECKOUT] Payment method:', paymentMethod, 'Category:', paymentCategory);
+      console.log('[CHECKOUT] Is online payment:', isOnlinePayment());
+      
+      if (isOnlinePayment()) {
+        // Para pagamentos online (PIX, cartões online), salvar dados e aguardar pagamento
+        console.log('[CHECKOUT] Redirecting to online payment flow');
         await handleOnlinePayment();
       } else {
-        // Para pagamentos presenciais, criar pedido normalmente
+        // Para pagamentos presenciais (dinheiro, cartões presenciais), criar pedido imediatamente
+        console.log('[CHECKOUT] Processing in-person payment');
         await handlePresencialPayment();
       }
     } catch (error: any) {
@@ -173,7 +183,7 @@ const ExpressCheckout = () => {
 
     if (paymentMethod === 'pix') {
       navigate('/payment/pix');
-    } else {
+    } else if (paymentMethod === 'credit_card_online' || paymentMethod === 'debit_card_online') {
       navigate('/payment/card');
     }
 
@@ -551,6 +561,12 @@ const ExpressCheckout = () => {
                           
                           {paymentCategory === 'online' && (
                             <>
+                              <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg mb-4">
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                  ℹ️ Pagamentos online requerem confirmação antes da criação do pedido
+                                </p>
+                              </div>
+                              
                               <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                                 <RadioGroupItem value="pix" id="pix" />
                                 <Label htmlFor="pix" className="flex-1 cursor-pointer">
