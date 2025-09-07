@@ -69,7 +69,7 @@ const Payment = () => {
       timer = setTimeout(() => {
         setTimeLeft(timeLeft - 1);
       }, 1000);
-    } else if (timeLeft === 0 && paymentStatus === 'pending') {
+    } else if (pixData && timeLeft === 0 && paymentStatus === 'pending') {
       setPaymentStatus('expired');
     }
 
