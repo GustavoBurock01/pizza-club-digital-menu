@@ -1,4 +1,4 @@
-// ===== ROUTE GUARD UNIFICADO - CONSOLIDA ProtectedRoute + CustomerRoute + AdminRoute =====
+// ===== ROUTE GUARD UNIFICADO OTIMIZADO =====
 
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';

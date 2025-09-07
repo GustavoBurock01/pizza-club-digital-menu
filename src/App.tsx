@@ -6,9 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/config/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AdminRoute } from "@/components/AdminRoute";
-import { CustomerRoute } from "@/components/routes/CustomerRoute";
+import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
@@ -60,101 +58,90 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/payment-success" element={
-                <ProtectedRoute requireAuth={true}>
+                <UnifiedProtectedRoute requireAuth={true}>
                   <PaymentSuccess />
-                </ProtectedRoute>
+                </UnifiedProtectedRoute>
               } />
-              {/* Customer Routes - Only for regular users (not admins/attendants) */}
+              {/* Customer Routes */}
               <Route path="/dashboard" element={
-                <CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Dashboard />
                   </Suspense>
-                </CustomerRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/menu" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Menu />
-                  </ProtectedRoute>
-                </CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Menu />
+                </UnifiedProtectedRoute>
               } />
               <Route path="/express-checkout" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <ExpressCheckout />
-                  </ProtectedRoute>
-                </CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <ExpressCheckout />
+                </UnifiedProtectedRoute>
               } />
               <Route path="/payment/:orderId" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Payment />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Payment />
+                  </Suspense>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/orders" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Orders />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Orders />
+                  </Suspense>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/account" element={
-                <CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Account />
                   </Suspense>
-                </CustomerRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={
-                <CustomerRoute>
-                  <ProtectedRoute requireSubscription={true}>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <OrderStatus />
-                    </Suspense>
-                  </ProtectedRoute>
-                </CustomerRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <OrderStatus />
+                  </Suspense>
+                </UnifiedProtectedRoute>
               } />
               
-              
-              {/* Admin Routes - Only for admin users */}
+              {/* Admin Routes */}
               <Route path="/admin" element={
-                <AdminRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <AdminDashboard />
-                </AdminRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/admin/orders" element={
-                <AdminRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminOrders />
                   </Suspense>
-                </AdminRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/admin/customers" element={
-                <AdminRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminCustomers />
                   </Suspense>
-                </AdminRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/admin/products" element={
-                <AdminRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminProducts />
                   </Suspense>
-                </AdminRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="/admin/analytics" element={
-                <AdminRoute>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />
                   </Suspense>
-                </AdminRoute>
+                </UnifiedProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
