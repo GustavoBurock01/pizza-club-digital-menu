@@ -39,7 +39,7 @@ const getStatusLabel = (status: string) => {
 };
 
 export default function AdminOrders() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('confirmed');
   const [searchTerm, setSearchTerm] = useState('');
   
   const statusFilter = activeTab === 'all' ? undefined : activeTab;
@@ -98,13 +98,16 @@ export default function AdminOrders() {
             <div>
               <h1 className="text-3xl font-bold">Gestão de Pedidos</h1>
               <p className="text-muted-foreground">
-                Gerencie todos os pedidos da plataforma
+                Gerencie pedidos confirmados e prontos para produção
                 {isConnected && (
                   <span className="ml-2 inline-flex items-center gap-1 text-sm text-green-600">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     Tempo real ativo
                   </span>
                 )}
+              </p>
+              <p className="text-xs text-orange-600 mt-1">
+                💡 Pedidos pendentes de pagamento não aparecem aqui automaticamente
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -126,21 +129,40 @@ export default function AdminOrders() {
 
           {/* Tabs de Status */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-6 w-fit">
+            <TabsList className="grid grid-cols-7 w-fit">
               <TabsTrigger value="all">Todos ({orders.length})</TabsTrigger>
-              <TabsTrigger value="pending">Pendentes</TabsTrigger>
               <TabsTrigger value="confirmed">Confirmados</TabsTrigger>
               <TabsTrigger value="preparing">Preparando</TabsTrigger>
               <TabsTrigger value="ready">Prontos</TabsTrigger>
+              <TabsTrigger value="delivering">Entregando</TabsTrigger>
               <TabsTrigger value="delivered">Entregues</TabsTrigger>
+              <TabsTrigger value="awaiting-payment" className="text-orange-600">
+                Aguardando Pagamento
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="space-y-4">
+              {/* Alerta para aba de aguardando pagamento */}
+              {activeTab === 'awaiting-payment' && (
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-orange-700">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                      <p className="text-sm font-medium">
+                        Estes pedidos aguardam confirmação de pagamento. Não devem ser preparados até pagamento confirmado.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {filteredOrders.length === 0 ? (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <p className="text-muted-foreground">
-                      {searchTerm ? 'Nenhum pedido encontrado para esta busca.' : 'Nenhum pedido encontrado.'}
+                      {searchTerm ? 'Nenhum pedido encontrado para esta busca.' : 
+                       activeTab === 'awaiting-payment' ? 'Nenhum pedido aguardando pagamento.' :
+                       'Nenhum pedido encontrado.'}
                     </p>
                   </CardContent>
                 </Card>
@@ -214,66 +236,75 @@ export default function AdminOrders() {
                         {/* Ações */}
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div className="flex items-center gap-2">
-                            <Select
-                              value={order.status}
-                              onValueChange={(value) => handleStatusUpdate(order.id, value)}
-                            >
-                              <SelectTrigger className="w-40">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pendente</SelectItem>
-                                <SelectItem value="confirmed">Confirmado</SelectItem>
-                                <SelectItem value="preparing">Preparando</SelectItem>
-                                <SelectItem value="ready">Pronto</SelectItem>
-                                <SelectItem value="delivering">Saiu para entrega</SelectItem>
-                                <SelectItem value="delivered">Entregue</SelectItem>
-                                <SelectItem value="cancelled">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            {/* Desabilitar mudança de status para pedidos aguardando pagamento */}
+                            {activeTab === 'awaiting-payment' ? (
+                              <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                                Aguardando Pagamento
+                              </Badge>
+                            ) : (
+                              <Select
+                                value={order.status}
+                                onValueChange={(value) => handleStatusUpdate(order.id, value)}
+                              >
+                                <SelectTrigger className="w-40">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                                  <SelectItem value="preparing">Preparando</SelectItem>
+                                  <SelectItem value="ready">Pronto</SelectItem>
+                                  <SelectItem value="delivering">Saiu para entrega</SelectItem>
+                                  <SelectItem value="delivered">Entregue</SelectItem>
+                                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            {/* Ações rápidas baseadas no status */}
-                            {order.status === 'pending' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => confirmOrder(order.id)}
-                              >
-                                Confirmar
-                              </Button>
+                            {/* Ações rápidas baseadas no status - desabilitadas para aguardando pagamento */}
+                            {activeTab !== 'awaiting-payment' && (
+                              <>
+                                {order.status === 'confirmed' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => startPreparing(order.id)}
+                                  >
+                                    Iniciar Preparo
+                                  </Button>
+                                )}
+                                {order.status === 'preparing' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => markReady(order.id)}
+                                  >
+                                    Marcar Pronto
+                                  </Button>
+                                )}
+                                {order.status === 'ready' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => markDelivering(order.id)}
+                                  >
+                                    Saiu para Entrega
+                                  </Button>
+                                )}
+                                {order.status === 'delivering' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => markDelivered(order.id)}
+                                  >
+                                    Marcar Entregue
+                                  </Button>
+                                )}
+                              </>
                             )}
-                            {order.status === 'confirmed' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => startPreparing(order.id)}
-                              >
-                                Iniciar Preparo
-                              </Button>
-                            )}
-                            {order.status === 'preparing' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => markReady(order.id)}
-                              >
-                                Marcar Pronto
-                              </Button>
-                            )}
-                            {order.status === 'ready' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => markDelivering(order.id)}
-                              >
-                                Saiu para Entrega
-                              </Button>
-                            )}
-                            {order.status === 'delivering' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => markDelivered(order.id)}
-                              >
-                                Marcar Entregue
-                              </Button>
+                            
+                            {/* Indicador especial para pedidos aguardando pagamento */}
+                            {activeTab === 'awaiting-payment' && (
+                              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                                ⏳ Não processar ainda
+                              </Badge>
                             )}
                             
                             <Button variant="outline" size="sm">

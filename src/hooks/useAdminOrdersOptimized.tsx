@@ -297,13 +297,20 @@ async function fetchOrdersOptimized(status?: string, limit: number = 50): Promis
     `)
     .order('created_at', { ascending: false });
 
-  // Apply filters
+  // Apply filters - EXCLUIR pedidos com payment_status pending para o painel principal
   if (status) {
     if (status === 'pending') {
-      query = query.in('status', ['pending', 'confirmed', 'preparing']);
+      // Para aba "pending", mostrar apenas pedidos confirmados em preparo
+      query = query.in('status', ['confirmed', 'preparing']);
+    } else if (status === 'awaiting-payment') {
+      // Nova aba para pedidos aguardando pagamento
+      query = query.eq('payment_status', 'pending');
     } else {
       query = query.eq('status', status as 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled');
     }
+  } else {
+    // Por padrão, filtrar apenas pedidos com pagamento confirmado ou processado
+    query = query.not('payment_status', 'eq', 'pending');
   }
 
   query = query.limit(limit);
