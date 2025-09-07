@@ -145,7 +145,7 @@ export const CartDrawer = () => {
                 <div className="space-y-2 pt-2">
                   <Button 
                     className="w-full gradient-pizza" 
-                    onClick={() => navigate('/checkout')}
+                    onClick={() => navigate('/express-checkout')}
                   >
                     Finalizar Pedido
                   </Button>

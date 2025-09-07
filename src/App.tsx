@@ -30,7 +30,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
-const Payment = lazy(() => import("./pages/Payment"));
+
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
@@ -78,13 +78,6 @@ const App = () => {
               <Route path="/express-checkout" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <ExpressCheckout />
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/payment/:orderId" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
-                  </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/orders" element={
