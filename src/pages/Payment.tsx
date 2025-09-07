@@ -109,6 +109,9 @@ const Payment = () => {
 
   const createPixPayment = async (orderData: Order) => {
     try {
+      setPaymentStatus('pending');
+      setPixData(null);
+      
       const { data, error } = await supabase.functions.invoke('create-pix-payment', {
         body: { 
           orderId: orderData.id
@@ -117,14 +120,19 @@ const Payment = () => {
 
       if (error) throw error;
 
+      console.log('PIX response:', data);
+
       if (data.success && data.pixData) {
         setPixData(data.pixData);
         
-        // Calculate time left until expiration
+        // Calculate time left until expiration (30 minutes)
         const expiresAt = new Date(data.pixData.expiresAt);
         const now = new Date();
         const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
         setTimeLeft(secondsLeft);
+        
+        console.log('PIX data set:', data.pixData);
+        console.log('Time left:', secondsLeft);
       } else {
         throw new Error(data.error || 'Erro ao criar pagamento PIX');
       }
@@ -241,7 +249,10 @@ const Payment = () => {
             <Clock className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
             <h2 className="text-xl font-semibold text-yellow-800 mb-2">Código PIX Expirado</h2>
             <p className="text-yellow-700 mb-4">O tempo para pagamento expirou. Gere um novo código.</p>
-            <Button onClick={() => createPixPayment(order)}>
+            <Button onClick={() => {
+              setPaymentStatus('pending');
+              createPixPayment(order);
+            }}>
               Gerar Novo Código
             </Button>
           </CardContent>
@@ -254,7 +265,10 @@ const Payment = () => {
             <XCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
             <h2 className="text-xl font-semibold text-red-800 mb-2">Erro no Pagamento</h2>
             <p className="text-red-700 mb-4">Ocorreu um erro ao gerar o código PIX.</p>
-            <Button onClick={() => createPixPayment(order)}>
+            <Button onClick={() => {
+              setPaymentStatus('pending');
+              createPixPayment(order);
+            }}>
               Tentar Novamente
             </Button>
           </CardContent>
