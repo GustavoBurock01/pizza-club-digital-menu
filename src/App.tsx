@@ -33,6 +33,7 @@ const Account = lazy(() => import("./pages/Account"));
 
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const Payment = lazy(() => import("./pages/Payment"));
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
@@ -60,6 +61,13 @@ const App = () => {
               <Route path="/payment-success" element={
                 <UnifiedProtectedRoute requireAuth={true}>
                   <PaymentSuccess />
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/payment/:orderId" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Payment />
+                  </Suspense>
                 </UnifiedProtectedRoute>
               } />
               {/* Customer Routes */}
