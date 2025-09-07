@@ -165,5 +165,6 @@ export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'out_for_deliv
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type UserRole = 'admin' | 'customer';
 export type SubscriptionStatus = 'active' | 'inactive' | 'pending' | 'cancelled';
-export type PaymentMethod = 'credit_card' | 'pix' | 'cash';
+export type PaymentCategory = 'online' | 'on_delivery';
+export type PaymentMethod = 'pix' | 'credit_card_online' | 'debit_card_online' | 'credit_card_delivery' | 'debit_card_delivery' | 'cash';
 export type DeliveryMethod = 'delivery' | 'pickup';

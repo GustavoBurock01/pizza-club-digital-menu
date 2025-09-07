@@ -17,7 +17,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet } from 'lucide-react';
+import { PaymentCategory, PaymentMethod } from '@/types';
 
 interface CustomerData {
   street: string;
@@ -35,7 +36,10 @@ const ExpressCheckout = () => {
 
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
+  const [paymentCategory, setPaymentCategory] = useState<PaymentCategory>('online');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
+  const [needsChange, setNeedsChange] = useState(false);
+  const [changeAmount, setChangeAmount] = useState('');
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isGuest, setIsGuest] = useState(!user);
   const [loading, setLoading] = useState(false);
@@ -69,11 +73,14 @@ const ExpressCheckout = () => {
         if (!isGuest && selectedAddressId) return true;
         return customerData.street && customerData.number && customerData.neighborhood;
       case 'payment':
-        return paymentMethod === 'pix' || paymentMethod === 'card';
+        if (paymentMethod === 'cash' && needsChange) {
+          return changeAmount && parseFloat(changeAmount) > total;
+        }
+        return !!paymentMethod;
       default:
         return false;
     }
-  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod]);
+  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total]);
 
   // ===== HANDLERS =====
   const handleNext = () => {
@@ -156,13 +163,32 @@ const ExpressCheckout = () => {
 
       if (itemsError) throw itemsError;
 
+      // Update order with payment method and notes
+      let orderNotes = deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined;
+      if (paymentMethod === 'cash' && needsChange) {
+        orderNotes = `${orderNotes ? orderNotes + '. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
+      }
+
+      await supabase
+        .from('orders')
+        .update({
+          payment_method: paymentMethod,
+          notes: orderNotes
+        })
+        .eq('id', orderData.id);
+
       // Clear cart and navigate
       clearCart();
       
-      if (paymentMethod === 'pix') {
-        navigate(`/payment/${orderData.id}`);
+      if (paymentCategory === 'online') {
+        if (paymentMethod === 'pix') {
+          navigate(`/payment/${orderData.id}`);
+        } else {
+          navigate(`/payment/card/${orderData.id}`);
+        }
       } else {
-        navigate(`/payment/card/${orderData.id}`);
+        // Payment on delivery - go directly to order status
+        navigate(`/order-status/${orderData.id}`);
       }
 
       toast({
@@ -332,7 +358,6 @@ const ExpressCheckout = () => {
                       </CardContent>
                     </Card>
 
-
                     {/* Address Form */}
                     {deliveryMethod === 'delivery' && (
                       <Card>
@@ -406,40 +431,195 @@ const ExpressCheckout = () => {
 
                 {/* STEP: PAYMENT */}
                 {step === 'payment' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Método de Pagamento</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <RadioGroup value={paymentMethod} onValueChange={(value: 'pix' | 'card') => setPaymentMethod(value)}>
-                        <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                          <RadioGroupItem value="pix" id="pix" />
-                          <Label htmlFor="pix" className="flex-1 cursor-pointer">
-                            <div className="flex items-center gap-3">
-                              <Smartphone className="h-5 w-5 text-primary" />
-                              <div>
-                                <div className="font-medium">PIX</div>
-                                <div className="text-sm text-muted-foreground">Pagamento instantâneo</div>
+                  <div className="space-y-6">
+                    {/* Payment Category Selection */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Forma de Pagamento</CardTitle>
+                        <p className="text-sm text-muted-foreground">Escolha quando deseja pagar</p>
+                      </CardHeader>
+                      <CardContent>
+                        <RadioGroup value={paymentCategory} onValueChange={(value: PaymentCategory) => {
+                          setPaymentCategory(value);
+                          // Reset payment method when category changes
+                          setPaymentMethod(value === 'online' ? 'pix' : 'cash');
+                          setNeedsChange(false);
+                          setChangeAmount('');
+                        }}>
+                          <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <RadioGroupItem value="online" id="online" />
+                            <Label htmlFor="online" className="flex-1 cursor-pointer">
+                              <div className="flex items-center gap-3">
+                                <Smartphone className="h-5 w-5 text-blue-600" />
+                                <div>
+                                  <div className="font-medium">Pagamento Online</div>
+                                  <div className="text-sm text-muted-foreground">PIX ou Cartão via MercadoPago</div>
+                                </div>
                               </div>
-                            </div>
-                          </Label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                          <RadioGroupItem value="card" id="card" />
-                          <Label htmlFor="card" className="flex-1 cursor-pointer">
-                            <div className="flex items-center gap-3">
-                              <CreditCard className="h-5 w-5 text-primary" />
-                              <div>
-                                <div className="font-medium">Cartão</div>
-                                <div className="text-sm text-muted-foreground">Débito ou crédito</div>
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <RadioGroupItem value="on_delivery" id="on_delivery" />
+                            <Label htmlFor="on_delivery" className="flex-1 cursor-pointer">
+                              <div className="flex items-center gap-3">
+                                <Wallet className="h-5 w-5 text-green-600" />
+                                <div>
+                                  <div className="font-medium">Pagamento na Entrega</div>
+                                  <div className="text-sm text-muted-foreground">Cartão ou Dinheiro na entrega</div>
+                                </div>
                               </div>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </CardContent>
+                    </Card>
+
+                    {/* Payment Method Selection */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>
+                          {paymentCategory === 'online' ? 'Método de Pagamento Online' : 'Método de Pagamento na Entrega'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <RadioGroup value={paymentMethod} onValueChange={(value: PaymentMethod) => {
+                          setPaymentMethod(value);
+                          if (value !== 'cash') {
+                            setNeedsChange(false);
+                            setChangeAmount('');
+                          }
+                        }}>
+                          
+                          {paymentCategory === 'online' && (
+                            <>
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="pix" id="pix" />
+                                <Label htmlFor="pix" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <Smartphone className="h-5 w-5 text-green-600" />
+                                    <div>
+                                      <div className="font-medium">PIX</div>
+                                      <div className="text-sm text-muted-foreground">Aprovação instantânea</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="credit_card_online" id="credit_card_online" />
+                                <Label htmlFor="credit_card_online" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <CreditCard className="h-5 w-5 text-blue-600" />
+                                    <div>
+                                      <div className="font-medium">Cartão de Crédito</div>
+                                      <div className="text-sm text-muted-foreground">Parcelamento até 12x</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="debit_card_online" id="debit_card_online" />
+                                <Label htmlFor="debit_card_online" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <CreditCard className="h-5 w-5 text-purple-600" />
+                                    <div>
+                                      <div className="font-medium">Cartão de Débito</div>
+                                      <div className="text-sm text-muted-foreground">Débito online</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+                            </>
+                          )}
+
+                          {paymentCategory === 'on_delivery' && (
+                            <>
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="credit_card_delivery" id="credit_card_delivery" />
+                                <Label htmlFor="credit_card_delivery" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <CreditCard className="h-5 w-5 text-blue-600" />
+                                    <div>
+                                      <div className="font-medium">Cartão de Crédito</div>
+                                      <div className="text-sm text-muted-foreground">Máquina na entrega</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="debit_card_delivery" id="debit_card_delivery" />
+                                <Label htmlFor="debit_card_delivery" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <CreditCard className="h-5 w-5 text-purple-600" />
+                                    <div>
+                                      <div className="font-medium">Cartão de Débito</div>
+                                      <div className="text-sm text-muted-foreground">Máquina na entrega</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <RadioGroupItem value="cash" id="cash" />
+                                <Label htmlFor="cash" className="flex-1 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <Banknote className="h-5 w-5 text-green-700" />
+                                    <div>
+                                      <div className="font-medium">Dinheiro</div>
+                                      <div className="text-sm text-muted-foreground">Pagamento em espécie</div>
+                                    </div>
+                                  </div>
+                                </Label>
+                              </div>
+                            </>
+                          )}
+                        </RadioGroup>
+
+                        {/* Cash Change Options */}
+                        {paymentMethod === 'cash' && (
+                          <div className="mt-6 p-4 bg-muted/30 rounded-lg space-y-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="needsChange"
+                                checked={needsChange}
+                                onChange={(e) => {
+                                  setNeedsChange(e.target.checked);
+                                  if (!e.target.checked) setChangeAmount('');
+                                }}
+                                className="rounded"
+                              />
+                              <Label htmlFor="needsChange" className="cursor-pointer">
+                                Preciso de troco
+                              </Label>
                             </div>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </CardContent>
-                  </Card>
+
+                            {needsChange && (
+                              <div>
+                                <Label htmlFor="changeAmount">Troco para quanto?</Label>
+                                <Input
+                                  id="changeAmount"
+                                  type="number"
+                                  value={changeAmount}
+                                  onChange={(e) => setChangeAmount(e.target.value)}
+                                  placeholder="50.00"
+                                  min={total + 0.01}
+                                  step="0.01"
+                                  className="mt-1"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Total do pedido: {formatPrice(total)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
 
                 {/* PROCESSING */}
