@@ -100,10 +100,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Start transaction-like operations
+    // ETAPA 1: Preparar dados do endereço se necessário
     let addressId = null;
     
-    // Create address if needed
     if (orderData.delivery_method === 'delivery' && orderData.addressData) {
       if (orderData.addressData.id) {
         addressId = orderData.addressData.id;
@@ -127,7 +126,66 @@ serve(async (req) => {
       }
     }
 
-    // Create order
+    // ETAPA 2: Obter perfil do usuário para dados do pagamento
+    const { data: profile } = await supabaseServiceClient
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    // ETAPA 3: CRIAR PIX PRIMEIRO - só cria pedido se PIX der certo
+    const paymentData = {
+      transaction_amount: parseFloat(orderData.total_amount),
+      description: `Pedido PizzaClub #${orderData.user_id.slice(-8)}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: profile?.email || user.email,
+        first_name: profile?.full_name?.split(' ')[0] || 'Cliente',
+        last_name: profile?.full_name?.split(' ').slice(1).join(' ') || 'PizzaClub',
+        identification: {
+          type: 'CPF',
+          number: profile?.cpf?.replace(/\D/g, '') || '00000000000'
+        }
+      },
+      external_reference: `temp-${user.id}-${Date.now()}`, // Referência temporária
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
+    };
+
+    console.log('[CREATE-ORDER-PIX] Creating PIX payment FIRST - amount:', orderData.total_amount);
+
+    // Chamar MercadoPago API para criar PIX
+    const mercadoPagoResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${mercadoPagoToken}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': `pix-${user.id}-${Date.now()}`
+      },
+      body: JSON.stringify(paymentData)
+    });
+
+    const mercadoPagoResult = await mercadoPagoResponse.json();
+
+    // Se PIX falhou, NÃO criar pedido
+    if (!mercadoPagoResponse.ok) {
+      console.error('[CREATE-ORDER-PIX] PIX creation failed:', mercadoPagoResult);
+      throw new Error(`Erro ao gerar PIX: ${mercadoPagoResult.message || 'Erro desconhecido'}`);
+    }
+
+    // Verificar se dados do PIX foram retornados
+    const pixTransactionData = mercadoPagoResult.point_of_interaction?.transaction_data;
+    
+    if (!pixTransactionData || !pixTransactionData.qr_code) {
+      console.error('[CREATE-ORDER-PIX] No PIX data received from MercadoPago');
+      throw new Error('PIX não foi gerado pelo MercadoPago');
+    }
+
+    console.log('[CREATE-ORDER-PIX] PIX created successfully:', {
+      id: mercadoPagoResult.id,
+      status: mercadoPagoResult.status
+    });
+
+    // ETAPA 4: PIX criado com sucesso - AGORA criar o pedido
     const { data: order, error: orderError } = await supabaseServiceClient
       .from('orders')
       .insert({
@@ -148,12 +206,14 @@ serve(async (req) => {
 
     if (orderError) {
       console.error('[CREATE-ORDER-PIX] Error creating order:', orderError);
-      throw new Error('Erro ao criar pedido');
+      // PIX já foi criado, mas não conseguimos criar o pedido
+      // Em um cenário real, seria ideal cancelar o PIX aqui
+      throw new Error('Erro ao criar pedido (PIX já foi gerado)');
     }
 
     console.log('[CREATE-ORDER-PIX] Order created:', order.id);
 
-    // Create order items
+    // ETAPA 5: Criar itens do pedido
     const orderItems = orderData.items.map((item: any) => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -169,78 +229,26 @@ serve(async (req) => {
 
     if (itemsError) {
       console.error('[CREATE-ORDER-PIX] Error creating order items:', itemsError);
-      // Try to rollback order
+      // Rollback do pedido
       await supabaseServiceClient.from('orders').delete().eq('id', order.id);
       throw new Error('Erro ao criar itens do pedido');
     }
 
     console.log('[CREATE-ORDER-PIX] Order items created:', orderItems.length);
 
-    // Get user profile for payment details
-    const { data: profile } = await supabaseServiceClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    // Create PIX payment with MercadoPago API
-    const paymentData = {
-      transaction_amount: parseFloat(order.total_amount),
-      description: `Pedido PizzaClub #${order.id.slice(-8)}`,
-      payment_method_id: 'pix',
-      payer: {
-        email: profile?.email || user.email,
-        first_name: profile?.full_name?.split(' ')[0] || 'Cliente',
-        last_name: profile?.full_name?.split(' ').slice(1).join(' ') || 'PizzaClub',
-        identification: {
-          type: 'CPF',
-          number: profile?.cpf?.replace(/\D/g, '') || '00000000000'
-        }
-      },
-      external_reference: order.id,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
-    };
-
-    console.log('[CREATE-ORDER-PIX] Creating MercadoPago payment for order:', order.id);
-
-    // Call MercadoPago API
-    const mercadoPagoResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-      method: 'POST',
+    // ETAPA 6: Atualizar a referência externa do PIX com o ID real do pedido
+    await fetch(`https://api.mercadopago.com/v1/payments/${mercadoPagoResult.id}`, {
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${mercadoPagoToken}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': `pix-${order.id}-${Date.now()}`
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify({
+        external_reference: order.id
+      })
     });
 
-    const mercadoPagoResult = await mercadoPagoResponse.json();
-
-    if (!mercadoPagoResponse.ok) {
-      console.error('[CREATE-ORDER-PIX] MercadoPago API error:', mercadoPagoResult);
-      // Rollback order
-      await supabaseServiceClient.from('order_items').delete().eq('order_id', order.id);
-      await supabaseServiceClient.from('orders').delete().eq('id', order.id);
-      throw new Error('Erro ao criar pagamento PIX');
-    }
-
-    console.log('[CREATE-ORDER-PIX] MercadoPago payment created:', {
-      id: mercadoPagoResult.id,
-      status: mercadoPagoResult.status
-    });
-
-    // Extract PIX data from MercadoPago response
-    const pixTransactionData = mercadoPagoResult.point_of_interaction?.transaction_data;
-    
-    if (!pixTransactionData || !pixTransactionData.qr_code) {
-      console.error('[CREATE-ORDER-PIX] No PIX data received from MercadoPago');
-      // Rollback order
-      await supabaseServiceClient.from('order_items').delete().eq('order_id', order.id);
-      await supabaseServiceClient.from('orders').delete().eq('id', order.id);
-      throw new Error('PIX não foi gerado pelo MercadoPago');
-    }
-
-    // Store PIX transaction in database
+    // ETAPA 7: Armazenar transação PIX no banco
     const transactionId = `MP-${mercadoPagoResult.id}`;
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
@@ -258,10 +266,10 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('[CREATE-ORDER-PIX] Error storing PIX transaction:', insertError);
-      // Don't rollback here as payment was created successfully
+      // Não fazer rollback aqui pois PIX e pedido já foram criados com sucesso
     }
 
-    // Generate QR Code image URL
+    // ETAPA 8: Gerar dados finais do PIX
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(pixTransactionData.qr_code)}`;
 
     const pixData = {
@@ -275,7 +283,7 @@ serve(async (req) => {
       ticketUrl: pixTransactionData.ticket_url || null
     };
 
-    console.log('[CREATE-ORDER-PIX] Order and PIX created successfully');
+    console.log('[CREATE-ORDER-PIX] ✅ PIX CREATED FIRST → ORDER CREATED SUCCESSFULLY');
 
     return new Response(
       JSON.stringify({
