@@ -51,7 +51,7 @@ const customerItems = [
   { title: "Cardápio", url: "/menu", icon: Package },
   { title: "Meus Pedidos", url: "/orders", icon: FileText },
   { title: "Minha Conta", url: "/account", icon: User },
-  { title: "Carrinho", url: "/express-checkout", icon: ShoppingCart },
+  { title: "Carrinho", url: "/checkout", icon: ShoppingCart },
 ];
 
 // Menu items for attendants  

@@ -81,7 +81,7 @@ const Menu = () => {
               </div>
               {getItemCount() > 0 && (
                 <Button 
-                  onClick={() => navigate('/express-checkout')}
+                  onClick={() => navigate('/checkout')}
                   className="gradient-pizza text-white relative"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />

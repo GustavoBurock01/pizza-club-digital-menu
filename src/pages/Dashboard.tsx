@@ -100,7 +100,7 @@ const Dashboard = () => {
         description: "Os itens do seu último pedido foram adicionados ao carrinho.",
       });
 
-      navigate('/express-checkout');
+      navigate('/checkout');
     } catch (error: any) {
       console.error('Error repeating order:', error);
       toast({

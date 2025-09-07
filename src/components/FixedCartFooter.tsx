@@ -25,7 +25,7 @@ export const FixedCartFooter = () => {
       <div className="max-w-2xl mx-auto">
         <Button 
           className="w-full gradient-pizza text-white h-12 flex items-center justify-between"
-          onClick={() => navigate('/express-checkout')}
+          onClick={() => navigate('/checkout')}
         >
           <div className="flex items-center gap-2">
             <div className="relative">
