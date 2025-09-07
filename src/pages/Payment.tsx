@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ const Payment = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { pathname } = useLocation();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
@@ -41,18 +42,38 @@ const Payment = () => {
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'expired' | 'error'>('pending');
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
+  // Determinar tipo de pagamento pela URL
+  const isPixPayment = pathname.includes('/payment/pix');
+  const isCardPayment = pathname.includes('/payment/card');
+  const isLegacyPayment = !!orderId; // URL antiga: /payment/:orderId
+
   useEffect(() => {
-    if (orderId) {
+    if (isLegacyPayment && orderId) {
+      // Fluxo antigo - buscar pedido existente
       fetchOrder();
+    } else if (isPixPayment || isCardPayment) {
+      // Novo fluxo - criar pedido + pagamento
+      initializePayment();
     }
-  }, [orderId]);
+  }, [orderId, isPixPayment, isCardPayment]);
+
+  const startPaymentStatusCheck = (transactionId: string) => {
+    const interval = setInterval(() => {
+      checkPaymentStatus(transactionId);
+    }, 5000);
+    
+    // Cleanup interval after 30 minutes
+    setTimeout(() => {
+      clearInterval(interval);
+    }, 30 * 60 * 1000);
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (pixData && paymentStatus === 'pending') {
-      // Check payment status every 5 seconds
-      interval = setInterval(checkPaymentStatus, 5000);
+      // Check payment status every 5 seconds for legacy flow
+      interval = setInterval(() => checkPaymentStatus(pixData.transactionId), 5000);
     }
 
     return () => {
@@ -79,6 +100,76 @@ const Payment = () => {
       }
     };
   }, [timeLeft, pixData, paymentStatus]);
+
+  const initializePayment = async () => {
+    try {
+      // Recuperar dados do pedido pendente
+      const pendingOrderData = localStorage.getItem('pendingOrder');
+      if (!pendingOrderData) {
+        toast({
+          title: "Erro",
+          description: "Dados do pedido não encontrados",
+          variant: "destructive"
+        });
+        navigate('/menu');
+        return;
+      }
+
+      const orderData = JSON.parse(pendingOrderData);
+      
+      if (isPixPayment) {
+        await createOrderAndPixPayment(orderData);
+      } else if (isCardPayment) {
+        await createOrderAndCardPayment(orderData);
+      }
+    } catch (error: any) {
+      console.error('Error initializing payment:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao inicializar pagamento",
+        variant: "destructive"
+      });
+      navigate('/menu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createOrderAndPixPayment = async (orderData: any) => {
+    try {
+      // Criar pedido via edge function que também cria o PIX
+      const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
+        body: orderData
+      });
+
+      if (error) throw error;
+
+      setOrder(data.order);
+      setPixData(data.pixData);
+      localStorage.removeItem('pendingOrder');
+      
+      // Calculate time left until expiration
+      const expiresAt = new Date(data.pixData.expiresAt);
+      const now = new Date();
+      const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      setTimeLeft(secondsLeft);
+      
+      // Iniciar verificação de status
+      startPaymentStatusCheck(data.pixData.transactionId);
+    } catch (error) {
+      console.error('Error creating order and PIX:', error);
+      throw error;
+    }
+  };
+
+  const createOrderAndCardPayment = async (orderData: any) => {
+    // TODO: Implementar pagamento com cartão
+    toast({
+      title: "Em desenvolvimento",
+      description: "Pagamento com cartão em breve",
+    });
+    navigate('/menu');
+  };
 
   const fetchOrder = async () => {
     try {
@@ -148,12 +239,13 @@ const Payment = () => {
     }
   };
 
-  const checkPaymentStatus = async () => {
-    if (!pixData) return;
+  const checkPaymentStatus = async (transactionId?: string) => {
+    const txId = transactionId || pixData?.transactionId;
+    if (!txId) return;
 
     try {
       const { data, error } = await supabase.functions.invoke('check-pix-status', {
-        body: { transactionId: pixData.transactionId }
+        body: { transactionId: txId }
       });
 
       if (error) throw error;
@@ -166,7 +258,12 @@ const Payment = () => {
         });
         
         setTimeout(() => {
-          navigate(`/order-status/${orderId}`);
+          const orderIdToUse = order?.id || orderId;
+          if (orderIdToUse) {
+            navigate(`/order-status/${orderIdToUse}`);
+          } else {
+            navigate('/orders');
+          }
         }, 2000);
       } else if (data.status === 'expired') {
         setPaymentStatus('expired');
@@ -251,7 +348,15 @@ const Payment = () => {
             <p className="text-yellow-700 mb-4">O tempo para pagamento expirou. Gere um novo código.</p>
             <Button onClick={() => {
               setPaymentStatus('pending');
-              createPixPayment(order);
+              if (order) {
+                createPixPayment(order);
+              } else {
+                // Regenerate for new flow
+                const pendingOrderData = localStorage.getItem('pendingOrder');
+                if (pendingOrderData) {
+                  createOrderAndPixPayment(JSON.parse(pendingOrderData));
+                }
+              }
             }}>
               Gerar Novo Código
             </Button>
@@ -267,7 +372,15 @@ const Payment = () => {
             <p className="text-red-700 mb-4">Ocorreu um erro ao gerar o código PIX.</p>
             <Button onClick={() => {
               setPaymentStatus('pending');
-              createPixPayment(order);
+              if (order) {
+                createPixPayment(order);
+              } else {
+                // Retry for new flow
+                const pendingOrderData = localStorage.getItem('pendingOrder');
+                if (pendingOrderData) {
+                  createOrderAndPixPayment(JSON.parse(pendingOrderData));
+                }
+              }
             }}>
               Tentar Novamente
             </Button>

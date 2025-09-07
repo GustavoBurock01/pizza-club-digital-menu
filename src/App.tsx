@@ -63,6 +63,22 @@ const App = () => {
                   <PaymentSuccess />
                 </UnifiedProtectedRoute>
               } />
+              {/* New Payment Routes */}
+              <Route path="/payment/pix" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Payment />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/payment/card" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Payment />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              {/* Legacy Payment Route */}
               <Route path="/payment/:orderId" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
@@ -83,7 +99,7 @@ const App = () => {
                   <Menu />
                 </UnifiedProtectedRoute>
               } />
-              <Route path="/express-checkout" element={
+              <Route path="/checkout" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <ExpressCheckout />
                 </UnifiedProtectedRoute>

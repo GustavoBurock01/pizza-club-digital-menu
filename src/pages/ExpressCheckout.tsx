@@ -104,108 +104,163 @@ const ExpressCheckout = () => {
     setLoading(true);
 
     try {
-      let addressId = selectedAddressId;
-
-      // Create address if needed
-      if (deliveryMethod === 'delivery' && !selectedAddressId) {
-        const { data: addressData, error: addressError } = await supabase
-          .from('addresses')
-          .insert({
-            user_id: user?.id,
-            street: customerData.street,
-            number: customerData.number,
-            neighborhood: customerData.neighborhood,
-            complement: customerData.complement,
-            city: 'Sua Cidade',
-            state: 'SP',
-            zip_code: '00000-000'
-          })
-          .select()
-          .single();
-
-        if (addressError) throw addressError;
-        addressId = addressData.id;
-      }
-
-      // Create order
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user?.id,
-          address_id: deliveryMethod === 'delivery' ? addressId : null,
-          total_amount: total,
-          delivery_fee: deliveryFee,
-          delivery_method: deliveryMethod,
-          status: 'pending',
-          payment_status: 'pending',
-          customer_name: user?.email || 'Cliente',
-          customer_phone: user?.phone || '',
-          notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItems = items.map(item => ({
-        order_id: orderData.id,
-        product_id: item.productId,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        customizations: item.customizations ? JSON.parse(JSON.stringify(item.customizations)) : null
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Update order with payment method and notes
-      let orderNotes = deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined;
-      if (paymentMethod === 'cash' && needsChange) {
-        orderNotes = `${orderNotes ? orderNotes + '. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
-      }
-
-      await supabase
-        .from('orders')
-        .update({
-          payment_method: paymentMethod,
-          notes: orderNotes
-        })
-        .eq('id', orderData.id);
-
-      // Clear cart and navigate
-      clearCart();
-      
       if (paymentCategory === 'online') {
-        if (paymentMethod === 'pix') {
-          navigate(`/payment/${orderData.id}`);
-        } else {
-          navigate(`/payment/card/${orderData.id}`);
-        }
+        // Para pagamentos online, salvar dados e ir para pagamento
+        await handleOnlinePayment();
       } else {
-        // Payment on delivery - go directly to order status
-        navigate(`/order-status/${orderData.id}`);
+        // Para pagamentos presenciais, criar pedido normalmente
+        await handlePresencialPayment();
       }
-
-      toast({
-        title: "Pedido criado!",
-        description: "Redirecionando para pagamento...",
-      });
-
     } catch (error: any) {
       setStep('payment');
       toast({
-        title: "Erro ao criar pedido",
+        title: "Erro ao processar pedido",
         description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOnlinePayment = async () => {
+    // Preparar dados do pedido para pagamento online
+    const orderData = {
+      user_id: user?.id,
+      delivery_method: deliveryMethod,
+      total_amount: total,
+      delivery_fee: deliveryFee,
+      payment_method: paymentMethod,
+      customer_name: user?.email || 'Cliente',
+      customer_phone: user?.phone || '',
+      items: items.map(item => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.price * item.quantity,
+        customizations: item.customizations
+      })),
+      addressData: null as any
+    };
+
+    // Preparar endereço se necessário
+    if (deliveryMethod === 'delivery') {
+      if (selectedAddressId) {
+        orderData.addressData = { id: selectedAddressId };
+      } else {
+        orderData.addressData = {
+          street: customerData.street,
+          number: customerData.number,
+          neighborhood: customerData.neighborhood,
+          complement: customerData.complement,
+          city: 'Sua Cidade',
+          state: 'SP',
+          zip_code: '00000-000'
+        };
+      }
+    }
+
+    // Preparar notas
+    let notes = deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined;
+    if (paymentMethod === 'cash' && needsChange) {
+      notes = `${notes ? notes + '. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
+    }
+    orderData.customer_name = notes || orderData.customer_name;
+
+    // Salvar no localStorage e navegar para pagamento
+    localStorage.setItem('pendingOrder', JSON.stringify(orderData));
+    clearCart();
+
+    if (paymentMethod === 'pix') {
+      navigate('/payment/pix');
+    } else {
+      navigate('/payment/card');
+    }
+
+    toast({
+      title: "Redirecionando para pagamento",
+      description: "Complete o pagamento para confirmar seu pedido.",
+    });
+  };
+
+  const handlePresencialPayment = async () => {
+    let addressId = selectedAddressId;
+
+    // Create address if needed
+    if (deliveryMethod === 'delivery' && !selectedAddressId) {
+      const { data: addressData, error: addressError } = await supabase
+        .from('addresses')
+        .insert({
+          user_id: user?.id,
+          street: customerData.street,
+          number: customerData.number,
+          neighborhood: customerData.neighborhood,
+          complement: customerData.complement,
+          city: 'Sua Cidade',
+          state: 'SP',
+          zip_code: '00000-000'
+        })
+        .select()
+        .single();
+
+      if (addressError) throw addressError;
+      addressId = addressData.id;
+    }
+
+    // Create order
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: user?.id,
+        address_id: deliveryMethod === 'delivery' ? addressId : null,
+        total_amount: total,
+        delivery_fee: deliveryFee,
+        delivery_method: deliveryMethod,
+        status: 'pending',
+        payment_status: 'pending',
+        customer_name: user?.email || 'Cliente',
+        customer_phone: user?.phone || '',
+        payment_method: paymentMethod,
+        notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
+      })
+      .select()
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Create order items
+    const orderItems = items.map(item => ({
+      order_id: orderData.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      unit_price: item.price,
+      total_price: item.price * item.quantity,
+      customizations: item.customizations ? JSON.parse(JSON.stringify(item.customizations)) : null
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) throw itemsError;
+
+    // Update order with notes if needed
+    if (paymentMethod === 'cash' && needsChange) {
+      const orderNotes = `${deliveryMethod === 'pickup' ? 'Retirada no balcão. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
+      await supabase
+        .from('orders')
+        .update({ notes: orderNotes })
+        .eq('id', orderData.id);
+    }
+
+    // Clear cart and navigate
+    clearCart();
+    navigate(`/order-status/${orderData.id}`);
+
+    toast({
+      title: "Pedido criado!",
+      description: "Acompanhe o status do seu pedido.",
+    });
   };
 
   if (items.length === 0) {
