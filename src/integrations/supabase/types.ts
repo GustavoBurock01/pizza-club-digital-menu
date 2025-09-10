@@ -217,6 +217,45 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_integrations: {
+        Row: {
+          api_key: string | null
+          configuration: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          platform: string
+          store_id: string | null
+          updated_at: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform: string
+          store_id?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform?: string
+          store_id?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       delivery_zones: {
         Row: {
           created_at: string | null
@@ -241,6 +280,204 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           neighborhood?: string
+        }
+        Relationships: []
+      }
+      erp_configurations: {
+        Row: {
+          api_endpoint: string | null
+          api_key: string | null
+          configuration: Json | null
+          created_at: string | null
+          erp_system: string
+          id: string
+          last_sync_at: string | null
+          sync_enabled: boolean | null
+          sync_frequency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_endpoint?: string | null
+          api_key?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          erp_system: string
+          id?: string
+          last_sync_at?: string | null
+          sync_enabled?: boolean | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_endpoint?: string | null
+          api_key?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          erp_system?: string
+          id?: string
+          last_sync_at?: string | null
+          sync_enabled?: boolean | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_sync_logs: {
+        Row: {
+          completed_at: string | null
+          erp_system: string
+          error_details: Json | null
+          id: string
+          records_error: number | null
+          records_processed: number | null
+          records_success: number | null
+          started_at: string | null
+          status: string | null
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          erp_system: string
+          error_details?: Json | null
+          id?: string
+          records_error?: number | null
+          records_processed?: number | null
+          records_success?: number | null
+          started_at?: string | null
+          status?: string | null
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          erp_system?: string
+          error_details?: Json | null
+          id?: string
+          records_error?: number | null
+          records_processed?: number | null
+          records_success?: number | null
+          started_at?: string | null
+          status?: string | null
+          sync_type?: string
+        }
+        Relationships: []
+      }
+      external_orders: {
+        Row: {
+          created_at: string | null
+          customer_data: Json | null
+          delivery_address: Json | null
+          delivery_fee: number | null
+          estimated_delivery: string | null
+          external_id: string
+          external_status: string | null
+          id: string
+          internal_order_id: string | null
+          items: Json
+          platform: string
+          platform_fee: number | null
+          scheduled_for: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_data?: Json | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          estimated_delivery?: string | null
+          external_id: string
+          external_status?: string | null
+          id?: string
+          internal_order_id?: string | null
+          items: Json
+          platform: string
+          platform_fee?: number | null
+          scheduled_for?: string | null
+          status: string
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_data?: Json | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          estimated_delivery?: string | null
+          external_id?: string
+          external_status?: string | null
+          id?: string
+          internal_order_id?: string | null
+          items?: Json
+          platform?: string
+          platform_fee?: number | null
+          scheduled_for?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_orders_internal_order_id_fkey"
+            columns: ["internal_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_orders_internal_order_id_fkey"
+            columns: ["internal_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_reports: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          external_reference: string | null
+          file_path: string | null
+          generated_at: string | null
+          id: string
+          reference_date: string
+          report_type: string
+          sent_at: string | null
+          status: string | null
+          total_orders: number | null
+          total_sales: number | null
+          total_taxes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          external_reference?: string | null
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          reference_date: string
+          report_type: string
+          sent_at?: string | null
+          status?: string | null
+          total_orders?: number | null
+          total_sales?: number | null
+          total_taxes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          external_reference?: string | null
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          reference_date?: string
+          report_type?: string
+          sent_at?: string | null
+          status?: string | null
+          total_orders?: number | null
+          total_sales?: number | null
+          total_taxes?: number | null
         }
         Relationships: []
       }
@@ -427,6 +664,69 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_reconciliation: {
+        Row: {
+          created_at: string | null
+          discrepancy_reason: string | null
+          expected_amount: number
+          external_transaction_id: string
+          fee_amount: number | null
+          id: string
+          internal_transaction_id: string | null
+          order_id: string | null
+          payment_method: string
+          received_amount: number | null
+          reconciled_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discrepancy_reason?: string | null
+          expected_amount: number
+          external_transaction_id: string
+          fee_amount?: number | null
+          id?: string
+          internal_transaction_id?: string | null
+          order_id?: string | null
+          payment_method: string
+          received_amount?: number | null
+          reconciled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discrepancy_reason?: string | null
+          expected_amount?: number
+          external_transaction_id?: string
+          fee_amount?: number | null
+          id?: string
+          internal_transaction_id?: string | null
+          order_id?: string | null
+          payment_method?: string
+          received_amount?: number | null
+          reconciled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reconciliation_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_reconciliation_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
             referencedColumns: ["id"]
           },
         ]
@@ -849,6 +1149,60 @@ export type Database = {
           },
         ]
       }
+      webhook_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          order_id: string | null
+          payload: Json
+          platform: string
+          processed_at: string | null
+          signature: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          order_id?: string | null
+          payload: Json
+          platform: string
+          processed_at?: string | null
+          signature?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          payload?: Json
+          platform?: string
+          processed_at?: string | null
+          signature?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       admin_stats_view: {
@@ -936,6 +1290,10 @@ export type Database = {
           reservation_id: string
           success: boolean
         }[]
+      }
+      auto_reconcile_payments: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       cleanup_expired_stock_reservations: {
         Args: Record<PropertyKey, never>
@@ -1064,6 +1422,10 @@ export type Database = {
           p_user_id?: string
         }
         Returns: undefined
+      }
+      process_external_order: {
+        Args: { p_external_id: string; p_order_data: Json; p_platform: string }
+        Returns: string
       }
       refresh_admin_stats: {
         Args: Record<PropertyKey, never>
