@@ -359,6 +359,47 @@ export type Database = {
           },
         ]
       }
+      product_stock: {
+        Row: {
+          available_quantity: number
+          created_at: string
+          id: string
+          product_id: string
+          reorder_level: number
+          reserved_quantity: number
+          total_quantity: number | null
+          updated_at: string
+        }
+        Insert: {
+          available_quantity?: number
+          created_at?: string
+          id?: string
+          product_id: string
+          reorder_level?: number
+          reserved_quantity?: number
+          total_quantity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          available_quantity?: number
+          created_at?: string
+          id?: string
+          product_id?: string
+          reorder_level?: number
+          reserved_quantity?: number
+          total_quantity?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_product_stock_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category_id: string | null
@@ -484,6 +525,103 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      stock_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          product_id: string
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reason: string | null
+          reservation_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          product_id: string
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reason?: string | null
+          reservation_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          product_id?: string
+          quantity_after?: number
+          quantity_before?: number
+          quantity_change?: number
+          reason?: string | null
+          reservation_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_stock_audit_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_reservations: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          order_key: string | null
+          product_id: string
+          quantity: number
+          reserved_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          order_key?: string | null
+          product_id: string
+          quantity: number
+          reserved_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          order_key?: string | null
+          product_id?: string
+          quantity?: number
+          reserved_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_stock_reservations_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcategories: {
         Row: {
@@ -645,6 +783,38 @@ export type Database = {
       }
     }
     Functions: {
+      atomic_confirm_stock: {
+        Args: { p_order_id?: string; p_reservation_id: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
+      atomic_release_stock: {
+        Args: { p_reason?: string; p_reservation_id: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
+      atomic_reserve_stock: {
+        Args: {
+          p_order_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_ttl_minutes?: number
+          p_user_id: string
+        }
+        Returns: {
+          message: string
+          reservation_id: string
+          success: boolean
+        }[]
+      }
+      cleanup_expired_stock_reservations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
