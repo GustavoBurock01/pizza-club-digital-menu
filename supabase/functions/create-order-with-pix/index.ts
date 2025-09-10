@@ -6,7 +6,84 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('[CREATE-ORDER-PIX] 🚀 FASE 1 - REAL PIX IMPLEMENTATION LOADED');
+// Limites de segurança
+const ORDER_LIMITS = {
+  MIN_VALUE: 15.00,
+  MAX_VALUE: 500.00,
+  MAX_ITEMS: 50,
+  MAX_QUANTITY_PER_ITEM: 20,
+  MAX_ORDERS_PER_HOUR: 5
+};
+
+// Rate limiting simples em memória
+const rateLimitStore = new Map();
+
+const checkRateLimit = (userId: string): boolean => {
+  const now = Date.now();
+  const hourAgo = now - (60 * 60 * 1000); // 1 hora
+  
+  if (!rateLimitStore.has(userId)) {
+    rateLimitStore.set(userId, []);
+  }
+  
+  const userRequests = rateLimitStore.get(userId);
+  
+  // Limpar requisições antigas
+  const recentRequests = userRequests.filter((timestamp: number) => timestamp > hourAgo);
+  rateLimitStore.set(userId, recentRequests);
+  
+  // Verificar limite
+  if (recentRequests.length >= ORDER_LIMITS.MAX_ORDERS_PER_HOUR) {
+    return false;
+  }
+  
+  // Adicionar nova requisição
+  recentRequests.push(now);
+  return true;
+};
+
+const validateOrderSecurity = (items: any[], totalValue: number) => {
+  const errors: string[] = [];
+  
+  // Validar valor total
+  if (totalValue < ORDER_LIMITS.MIN_VALUE) {
+    errors.push(`Valor mínimo do pedido é R$ ${ORDER_LIMITS.MIN_VALUE.toFixed(2)}`);
+  }
+  
+  if (totalValue > ORDER_LIMITS.MAX_VALUE) {
+    errors.push(`Valor máximo do pedido é R$ ${ORDER_LIMITS.MAX_VALUE.toFixed(2)}`);
+  }
+  
+  // Validar quantidade de itens
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  if (totalItems > ORDER_LIMITS.MAX_ITEMS) {
+    errors.push(`Máximo de ${ORDER_LIMITS.MAX_ITEMS} itens por pedido`);
+  }
+  
+  // Validar quantidade individual
+  const invalidItems = items.filter(item => item.quantity > ORDER_LIMITS.MAX_QUANTITY_PER_ITEM);
+  if (invalidItems.length > 0) {
+    errors.push(`Máximo de ${ORDER_LIMITS.MAX_QUANTITY_PER_ITEM} unidades por item`);
+  }
+  
+  // Validar se todos os itens têm dados válidos
+  for (const item of items) {
+    if (!item.product_id || item.quantity <= 0 || item.unit_price <= 0) {
+      errors.push('Dados de produto inválidos detectados');
+      break;
+    }
+    
+    // Validar se quantidade é número inteiro
+    if (!Number.isInteger(item.quantity)) {
+      errors.push('Quantidade deve ser um número inteiro');
+      break;
+    }
+  }
+  
+  return errors;
+};
+
+console.log('[CREATE-ORDER-PIX] 🚀 SECURITY HARDENED - REAL PIX IMPLEMENTATION LOADED');
 
 serve(async (req) => {
   console.log('[CREATE-ORDER-PIX] Request received:', req.method, req.url);
@@ -116,6 +193,22 @@ serve(async (req) => {
 
     console.log('[CREATE-ORDER-PIX] ✅ User authenticated:', user.id);
 
+    // Verificar rate limiting
+    if (!checkRateLimit(user.id)) {
+      console.warn('[CREATE-ORDER-PIX] ⚠️ Rate limit exceeded for user:', user.id);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Limite de pedidos por hora excedido. Tente novamente mais tarde.',
+          rateLimited: true
+        }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Parse request body
     const body = await req.text();
     if (!body.trim()) {
@@ -123,7 +216,30 @@ serve(async (req) => {
     }
     
     const orderData = JSON.parse(body);
-    console.log('[CREATE-ORDER-PIX] 📦 Order data received:', { 
+    
+    // Validação de dados obrigatórios
+    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+      throw new Error('Itens do pedido são obrigatórios');
+    }
+
+    if (!orderData.total_amount || isNaN(parseFloat(orderData.total_amount))) {
+      throw new Error('Valor total do pedido é obrigatório');
+    }
+
+    if (!orderData.customer_name || !orderData.customer_phone) {
+      throw new Error('Dados do cliente são obrigatórios');
+    }
+
+    const totalValue = parseFloat(orderData.total_amount);
+    
+    // Validar limites de segurança
+    const validationErrors = validateOrderSecurity(orderData.items, totalValue);
+    if (validationErrors.length > 0) {
+      console.warn('[CREATE-ORDER-PIX] ⚠️ Order validation failed:', validationErrors);
+      throw new Error(validationErrors.join('; '));
+    }
+
+    console.log('[CREATE-ORDER-PIX] 📦 Order data validated:', { 
       user_id: orderData.user_id,
       total_amount: orderData.total_amount,
       items_count: orderData.items?.length 

@@ -4,18 +4,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from './AuthLayout';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
+import { FormattedInput } from './FormattedInput';
+import { PasswordInput } from './PasswordInput';
+import { validateCEPWithAPI, CEPData } from '@/utils/cepValidation';
+import { validateCPF, validateEmail, validatePhone } from '@/utils/validation';
+import { toast } from 'sonner';
 interface RegisterFormProps {
   onToggleToLogin: () => void;
 }
 export const RegisterForm = ({
   onToggleToLogin
 }: RegisterFormProps) => {
-  const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingCEP, setIsValidatingCEP] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,23 +42,74 @@ export const RegisterForm = ({
     signUp
   } = useAuth();
   const navigate = useNavigate();
+  const validateCurrentStep = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (currentStep === 1) {
+      if (!formData.name.trim()) errors.name = 'Nome é obrigatório';
+      if (!validateEmail(formData.email)) errors.email = 'Email inválido';
+      if (!validatePhone(formData.phone)) errors.phone = 'Telefone inválido';
+      if (!validateCPF(formData.cpf)) errors.cpf = 'CPF inválido';
+    } else if (currentStep === 2) {
+      if (!formData.address.zipCode) errors.zipCode = 'CEP é obrigatório';
+      if (!formData.address.street.trim()) errors.street = 'Rua é obrigatória';
+      if (!formData.address.number.trim()) errors.number = 'Número é obrigatório';
+      if (!formData.address.neighborhood.trim()) errors.neighborhood = 'Bairro é obrigatório';
+    } else if (currentStep === 3) {
+      if (!formData.password) errors.password = 'Senha é obrigatória';
+      if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'As senhas não coincidem';
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCEPValidation = async (cep: string) => {
+    if (cep.replace(/\D/g, '').length === 8) {
+      setIsValidatingCEP(true);
+      const cepData = await validateCEPWithAPI(cep);
+      setIsValidatingCEP(false);
+      
+      if (cepData) {
+        setFormData(prev => ({
+          ...prev,
+          address: {
+            ...prev.address,
+            zipCode: cep,
+            street: cepData.logradouro || prev.address.street,
+            neighborhood: cepData.bairro || prev.address.neighborhood
+          }
+        }));
+        toast.success('CEP válido! Dados preenchidos automaticamente.');
+      } else {
+        toast.error('CEP não encontrado. Verifique e tente novamente.');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateCurrentStep()) {
+      toast.error('Por favor, corrija os erros antes de continuar.');
+      return;
+    }
+    
     if (currentStep === 1) {
       setCurrentStep(2);
     } else if (currentStep === 2) {
       setCurrentStep(3);
     } else {
-      if (formData.password !== formData.confirmPassword) {
-        alert('As senhas não coincidem');
-        return;
-      }
       setIsLoading(true);
       try {
         await signUp(formData.email, formData.password, formData);
+        toast.success('Conta criada com sucesso!');
         navigate('/dashboard');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Registration error:', error);
+        toast.error(error.message || 'Erro ao criar conta. Tente novamente.');
       } finally {
         setIsLoading(false);
       }
@@ -60,36 +117,77 @@ export const RegisterForm = ({
   };
   const renderStep1 = () => <>
       <div className="space-y-2">
-        <Label htmlFor="name">Nome completo</Label>
-        <Input id="name" placeholder="Seu nome completo" value={formData.name} onChange={e => setFormData({
-        ...formData,
-        name: e.target.value
-      })} required disabled={isLoading} />
+        <Label htmlFor="name">Nome completo <span className="text-destructive">*</span></Label>
+        <Input 
+          id="name" 
+          placeholder="Seu nome completo" 
+          value={formData.name} 
+          onChange={e => setFormData({
+            ...formData,
+            name: e.target.value
+          })} 
+          required 
+          disabled={isLoading}
+          className={validationErrors.name ? 'border-destructive' : ''}
+        />
+        {validationErrors.name && (
+          <p className="text-sm text-destructive flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {validationErrors.name}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">E-mail</Label>
-        <Input id="email" type="email" placeholder="seu@email.com" value={formData.email} onChange={e => setFormData({
-        ...formData,
-        email: e.target.value
-      })} required disabled={isLoading} />
+        <Label htmlFor="email">E-mail <span className="text-destructive">*</span></Label>
+        <Input 
+          id="email" 
+          type="email" 
+          placeholder="seu@email.com" 
+          value={formData.email} 
+          onChange={e => setFormData({
+            ...formData,
+            email: e.target.value
+          })} 
+          required 
+          disabled={isLoading}
+          className={validationErrors.email ? 'border-destructive' : ''}
+        />
+        {validationErrors.email && (
+          <p className="text-sm text-destructive flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {validationErrors.email}
+          </p>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="phone">Telefone</Label>
-        <Input id="phone" placeholder="(11) 99999-9999" value={formData.phone} onChange={e => setFormData({
-        ...formData,
-        phone: e.target.value
-      })} required disabled={isLoading} />
-      </div>
+      <FormattedInput
+        id="phone"
+        label="Telefone"
+        type="phone"
+        value={formData.phone}
+        onChange={(value) => setFormData({
+          ...formData,
+          phone: value
+        })}
+        placeholder="(11) 99999-9999"
+        required
+        disabled={isLoading}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="cpf">CPF</Label>
-        <Input id="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={e => setFormData({
-        ...formData,
-        cpf: e.target.value
-      })} required disabled={isLoading} />
-      </div>
+      <FormattedInput
+        id="cpf"
+        label="CPF"
+        type="cpf"
+        value={formData.cpf}
+        onChange={(value) => setFormData({
+          ...formData,
+          cpf: value
+        })}
+        placeholder="000.000.000-00"
+        required
+        disabled={isLoading}
+      />
     </>;
   const renderStep2 = () => <>
       <div className="space-y-2">
@@ -116,14 +214,28 @@ export const RegisterForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="zipCode">CEP</Label>
-          <Input id="zipCode" placeholder="12345-678" value={formData.address.zipCode} onChange={e => setFormData({
-          ...formData,
-          address: {
-            ...formData.address,
-            zipCode: e.target.value
-          }
-        })} required disabled={isLoading} />
+          <FormattedInput
+            id="zipCode"
+            label="CEP"
+            type="cep"
+            value={formData.address.zipCode}
+            onChange={(value) => {
+              setFormData({
+                ...formData,
+                address: {
+                  ...formData.address,
+                  zipCode: value
+                }
+              });
+              handleCEPValidation(value);
+            }}
+            placeholder="12345-678"
+            required
+            disabled={isLoading || isValidatingCEP}
+          />
+          {isValidatingCEP && (
+            <p className="text-sm text-muted-foreground">Validando CEP...</p>
+          )}
         </div>
       </div>
 
@@ -161,28 +273,42 @@ export const RegisterForm = ({
       </div>
     </>;
   const renderStep3 = () => <>
-      <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
-        <div className="relative">
-          <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Crie uma senha segura" value={formData.password} onChange={e => setFormData({
+      <PasswordInput
+        id="password"
+        label="Senha"
+        value={formData.password}
+        onChange={(value) => setFormData({
           ...formData,
-          password: e.target.value
-        })} required disabled={isLoading} />
-          <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
+          password: value
+        })}
+        placeholder="Crie uma senha segura"
+        required
+        disabled={isLoading}
+        showStrengthIndicator={true}
+      />
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirmar senha</Label>
-        <Input id="confirmPassword" type="password" placeholder="Digite a senha novamente" value={formData.confirmPassword} onChange={e => setFormData({
-        ...formData,
-        confirmPassword: e.target.value
-      })} required disabled={isLoading} />
+        <Label htmlFor="confirmPassword">Confirmar senha <span className="text-destructive">*</span></Label>
+        <Input 
+          id="confirmPassword" 
+          type="password" 
+          placeholder="Digite a senha novamente" 
+          value={formData.confirmPassword} 
+          onChange={e => setFormData({
+            ...formData,
+            confirmPassword: e.target.value
+          })} 
+          required 
+          disabled={isLoading}
+          className={validationErrors.confirmPassword ? 'border-destructive' : ''}
+        />
+        {validationErrors.confirmPassword && (
+          <p className="text-sm text-destructive flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {validationErrors.confirmPassword}
+          </p>
+        )}
       </div>
-
-      
     </>;
   const getStepTitle = () => {
     switch (currentStep) {

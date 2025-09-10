@@ -61,3 +61,47 @@ export const formatCEP = (cep: string): string => {
   }
   return cep;
 };
+
+// Formatação dinâmica para CPF
+export const formatCPFDynamic = (value: string): string => {
+  const cleaned = value.replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})$/);
+  if (match) {
+    return [match[1], match[2], match[3], match[4]]
+      .filter(Boolean)
+      .join('.')
+      .replace(/\.(\d{2})$/, '-$1');
+  }
+  return value;
+};
+
+// Formatação dinâmica para telefone
+export const formatPhoneDynamic = (value: string): string => {
+  const cleaned = value.replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{0,2})(\d{0,5})(\d{0,4})$/);
+  if (match) {
+    const formatted = [match[1], match[2], match[3]]
+      .filter(Boolean)
+      .join(' ')
+      .replace(/^(\d{2}) /, '($1) ')
+      .replace(/(\d{5}) /, '$1-');
+    return formatted;
+  }
+  return value;
+};
+
+// Formatação dinâmica para CEP
+export const formatCEPDynamic = (value: string): string => {
+  const cleaned = value.replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{0,5})(\d{0,3})$/);
+  if (match) {
+    return [match[1], match[2]]
+      .filter(Boolean)
+      .join('-');
+  }
+  return value;
+};
+
+export const cleanNumeric = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
