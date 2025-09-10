@@ -65,22 +65,33 @@ class RateLimiter {
 // Instância global para rate limiting
 export const rateLimiter = new RateLimiter();
 
-// Constantes de rate limiting
+// Constantes de rate limiting otimizadas para pizzaria
 export const RATE_LIMITS = {
-  ORDERS_PER_HOUR: 5,
-  REGISTRATION_PER_IP: 3,
-  LOGIN_ATTEMPTS: 5,
+  ORDERS_PER_HOUR: 25, // Aumentado para pizzaria com alta demanda
+  ORDERS_PER_HOUR_VIP: 50, // Limite maior para usuários VIP/frequentes
+  REGISTRATION_PER_IP: 5,
+  LOGIN_ATTEMPTS: 10, // Mais tentativas para clientes legítimos
   PASSWORD_RESET: 3,
-  PAYMENT_ATTEMPTS: 3,
-  CHECKOUT_CLICKS: 10 // Por minuto
+  PAYMENT_ATTEMPTS: 5, // Mais tentativas para pagamentos
+  CHECKOUT_CLICKS: 20, // Mais cliques por minuto para alta demanda
+  CONCURRENT_ORDERS: 3 // Máximo de pedidos simultâneos por usuário
 } as const;
 
 // Utilitários para diferentes tipos de rate limiting
-export const checkOrderRateLimit = (userId: string): boolean => {
+export const checkOrderRateLimit = (userId: string, isVip: boolean = false): boolean => {
+  const limit = isVip ? RATE_LIMITS.ORDERS_PER_HOUR_VIP : RATE_LIMITS.ORDERS_PER_HOUR;
   return rateLimiter.isAllowed(
     `order:${userId}`, 
-    RATE_LIMITS.ORDERS_PER_HOUR, 
+    limit, 
     60 * 60 * 1000 // 1 hora
+  );
+};
+
+export const checkConcurrentOrderLimit = (userId: string): boolean => {
+  return rateLimiter.isAllowed(
+    `concurrent:${userId}`, 
+    RATE_LIMITS.CONCURRENT_ORDERS, 
+    5 * 60 * 1000 // 5 minutos
   );
 };
 
