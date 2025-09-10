@@ -67,6 +67,63 @@ export type Database = {
           },
         ]
       }
+      card_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          installments: number | null
+          mercadopago_payment_id: string
+          order_id: string
+          payment_method_id: string | null
+          status: string
+          status_detail: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id: string
+          installments?: number | null
+          mercadopago_payment_id: string
+          order_id: string
+          payment_method_id?: string | null
+          status?: string
+          status_detail?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          installments?: number | null
+          mercadopago_payment_id?: string
+          order_id?: string
+          payment_method_id?: string | null
+          status?: string
+          status_detail?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string | null
