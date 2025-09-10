@@ -67,6 +67,69 @@ export type Database = {
           },
         ]
       }
+      background_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error_details: Json | null
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          job_data: Json
+          job_type: string
+          max_attempts: number
+          priority: number
+          result_data: Json | null
+          scheduled_at: string
+          started_at: string | null
+          status: string
+          timeout_seconds: number | null
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          job_data: Json
+          job_type: string
+          max_attempts?: number
+          priority?: number
+          result_data?: Json | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          timeout_seconds?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          job_data?: Json
+          job_type?: string
+          max_attempts?: number
+          priority?: number
+          result_data?: Json | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          timeout_seconds?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: []
+      }
       card_transactions: {
         Row: {
           amount: number
@@ -235,6 +298,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      order_processing_queue: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error_details: Json | null
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          idempotency_key: string | null
+          max_attempts: number
+          order_data: Json
+          order_id: string | null
+          priority: number
+          scheduled_at: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          max_attempts?: number
+          order_data: Json
+          order_id?: string | null
+          priority?: number
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          max_attempts?: number
+          order_data?: Json
+          order_id?: string | null
+          priority?: number
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          worker_id?: string | null
+        }
+        Relationships: []
       }
       orders: {
         Row: {
@@ -814,6 +940,67 @@ export type Database = {
       cleanup_expired_stock_reservations: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      cleanup_old_queue_items: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      complete_queue_item: {
+        Args: { p_order_id?: string; p_queue_id: string; p_result_data?: Json }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
+      dequeue_next_order: {
+        Args: { p_limit?: number; p_worker_id: string }
+        Returns: {
+          attempts: number
+          idempotency_key: string
+          order_data: Json
+          priority: number
+          queue_id: string
+          user_id: string
+        }[]
+      }
+      enqueue_background_job: {
+        Args: {
+          p_job_data: Json
+          p_job_type: string
+          p_priority?: number
+          p_scheduled_at?: string
+          p_timeout_seconds?: number
+        }
+        Returns: {
+          job_id: string
+          message: string
+          success: boolean
+        }[]
+      }
+      enqueue_order_processing: {
+        Args: {
+          p_idempotency_key?: string
+          p_order_data: Json
+          p_priority?: number
+          p_user_id: string
+        }
+        Returns: {
+          message: string
+          queue_id: string
+          success: boolean
+        }[]
+      }
+      fail_queue_item: {
+        Args: {
+          p_error_details?: Json
+          p_error_message: string
+          p_queue_id: string
+          p_reschedule_seconds?: number
+        }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
       }
       get_admin_stats: {
         Args: Record<PropertyKey, never>

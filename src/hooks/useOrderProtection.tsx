@@ -1,4 +1,4 @@
-// ===== HOOK DE PROTEÇÃO CONTRA DUPLICAÇÃO DE PEDIDOS =====
+// ===== HOOK DE PROTEÇÃO CONTRA DUPLICAÇÃO DE PEDIDOS COM SISTEMA DE FILAS =====
 
 import { useState, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import {
 } from '@/utils/atomicStockControl';
 import { concurrencyManager, acquireOrderProcessingLock, acquireUserOrderSemaphore, acquireGlobalOrderSemaphore } from '@/utils/concurrencyControl';
 import { retryOrderOperation } from '@/utils/retryManager';
+import { enqueueOrder, triggerQueueProcessing } from '@/utils/queueManager';
 
 interface OrderProtectionState {
   isProcessing: boolean;
@@ -81,7 +82,7 @@ class OrderProtectionManager {
     return { success: true, errors: [] };
   }
 
-  // Função principal para proteger criação de pedidos com sistema atômico
+  // Função principal para proteger criação de pedidos com sistema de filas
   async protectOrderCreation(
     orderData: any,
     createOrderFn: () => Promise<any>,
@@ -90,9 +91,10 @@ class OrderProtectionManager {
       timeoutMs?: number;
       enableIdempotency?: boolean;
       isVip?: boolean;
+      useQueue?: boolean; // Nova opção para usar sistema de filas
     }
   ): Promise<any> {
-    const { userId, timeoutMs = 60000, enableIdempotency = true, isVip = false } = options;
+    const { userId, timeoutMs = 60000, enableIdempotency = true, isVip = false, useQueue = true } = options;
     let reservationIds: string[] = [];
     let idempotentKey: string | null = null;
     let releaseLock: (() => void) | null = null;
@@ -115,102 +117,146 @@ class OrderProtectionManager {
         throw new Error('Muitos pedidos recentes. Aguarde um pouco antes de tentar novamente.');
       }
 
-      // 3. Verificar disponibilidade de produtos
-      const stockCheck = await this.checkProductStock(orderData);
-      if (!stockCheck.success) {
-        throw new Error(`Produtos indisponíveis: ${stockCheck.errors.join(', ')}`);
-      }
-
-      // 4. Adquirir semáforos e locks para controle de concorrência
-      try {
-        // Semáforo global
-        releaseGlobalSemaphore = await acquireGlobalOrderSemaphore();
+      // 3. Gerar chave de idempotência
+      if (enableIdempotency) {
+        idempotentKey = this.generateOrderKey(orderData);
         
-        // Semáforo por usuário
-        releaseUserSemaphore = await acquireUserOrderSemaphore(userId);
-        
-        // Lock específico do pedido
-        if (enableIdempotency) {
-          idempotentKey = this.generateOrderKey(orderData);
-          releaseLock = await acquireOrderProcessingLock(idempotentKey);
-        }
-      } catch (error) {
-        throw new Error('Sistema em alta demanda. Tente novamente em alguns segundos.');
-      }
-
-      // 5. Verificar idempotência se habilitada
-      if (enableIdempotency && idempotentKey) {
-        // Verificar se já foi completado
+        // Verificar se já foi processado
         const existingResult = idempotencyManager.getResult(idempotentKey);
         if (existingResult) {
           console.log('[ORDER_PROTECTION] Returning cached result');
           return existingResult;
         }
-
-        // Marcar como processando
-        idempotencyManager.markAsProcessing(idempotentKey);
-        this.processingOrders.add(idempotentKey);
       }
 
-      // 6. Reservar produtos atomicamente
-      if (stockItems.length > 0) {
-        const reservationResult = await reserveProductsAtomically(stockItems, userId, idempotentKey);
+      // 4. Decidir se usar fila ou processamento direto
+      if (useQueue) {
+        // ===== USAR SISTEMA DE FILAS =====
+        console.log('[ORDER_PROTECTION] Usando sistema de filas para processamento assíncrono');
         
-        if (!reservationResult.success) {
-          throw new Error(`Falha na reserva de estoque: ${reservationResult.errors.join(', ')}`);
-        }
-        
-        reservationIds = reservationResult.reservations;
-        console.log('[ORDER_PROTECTION] Stock reserved successfully:', reservationIds);
-      }
-
-      // 7. Marcar como processando
-      this.isProcessing = true;
-
-      // 8. Executar função com timeout e retry
-      const result = await retryOrderOperation(async () => {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('Timeout na criação do pedido'));
-          }, timeoutMs);
+        // Enfileirar pedido para processamento assíncrono
+        const queueResult = await enqueueOrder(userId, orderData, {
+          priority: isVip ? 2 : 5, // VIPs têm prioridade maior
+          idempotencyKey: idempotentKey,
+          delay: 0 // Processar imediatamente
         });
 
-        return Promise.race([
-          createOrderFn(),
-          timeoutPromise
-        ]);
-      }, `order-${idempotentKey || userId}`);
-
-      // 9. Confirmar reservas no sistema atômico
-      if (reservationIds.length > 0 && result?.order?.id) {
-        const confirmResult = await confirmStockReservations(reservationIds, result.order.id);
-        
-        if (!confirmResult.success) {
-          console.warn('[ORDER_PROTECTION] Failed to confirm some reservations:', confirmResult.errors);
-          // Não falhar o pedido por isso, apenas logar
-        } else {
-          console.log('[ORDER_PROTECTION] Stock reservations confirmed successfully');
+        if (!queueResult.success) {
+          throw new Error(`Falha ao enfileirar pedido: ${queueResult.message}`);
         }
-      }
 
-      // 10. Marcar idempotência como completada
-      if (idempotentKey) {
-        idempotencyManager.markAsCompleted(idempotentKey, result);
-      }
+        // Disparar processamento da fila
+        await triggerQueueProcessing();
 
-      // 11. Atualizar último ID do pedido
-      if (result?.order?.id) {
-        this.lastOrderId = result.order.id;
-      }
+        // Marcar idempotência como completada com referência da fila
+        if (idempotentKey) {
+          const queueReference = {
+            queue_id: queueResult.queueId,
+            status: 'queued',
+            message: 'Pedido adicionado à fila de processamento'
+          };
+          idempotencyManager.markAsCompleted(idempotentKey, queueReference);
+        }
 
-      console.log('[ORDER_PROTECTION] Order created successfully:', result?.order?.id);
-      return result;
+        return {
+          success: true,
+          queue_id: queueResult.queueId,
+          status: 'queued',
+          message: 'Pedido adicionado à fila de processamento com sucesso'
+        };
+      } else {
+        // ===== PROCESSAMENTO DIRETO (MÉTODO ANTERIOR) =====
+        console.log('[ORDER_PROTECTION] Usando processamento direto síncrono');
+        
+        // Verificar disponibilidade de produtos
+        const stockCheck = await this.checkProductStock(orderData);
+        if (!stockCheck.success) {
+          throw new Error(`Produtos indisponíveis: ${stockCheck.errors.join(', ')}`);
+        }
+
+        // Adquirir semáforos e locks para controle de concorrência
+        try {
+          // Semáforo global
+          releaseGlobalSemaphore = await acquireGlobalOrderSemaphore();
+          
+          // Semáforo por usuário
+          releaseUserSemaphore = await acquireUserOrderSemaphore(userId);
+          
+          // Lock específico do pedido
+          if (enableIdempotency && idempotentKey) {
+            releaseLock = await acquireOrderProcessingLock(idempotentKey);
+          }
+        } catch (error) {
+          throw new Error('Sistema em alta demanda. Tente novamente em alguns segundos.');
+        }
+
+        // Verificar idempotência novamente após adquirir locks
+        if (enableIdempotency && idempotentKey) {
+          // Marcar como processando
+          idempotencyManager.markAsProcessing(idempotentKey);
+          this.processingOrders.add(idempotentKey);
+        }
+
+        // Reservar produtos atomicamente
+        if (stockItems.length > 0) {
+          const reservationResult = await reserveProductsAtomically(stockItems, userId, idempotentKey);
+          
+          if (!reservationResult.success) {
+            throw new Error(`Falha na reserva de estoque: ${reservationResult.errors.join(', ')}`);
+          }
+          
+          reservationIds = reservationResult.reservations;
+          console.log('[ORDER_PROTECTION] Stock reserved successfully:', reservationIds);
+        }
+
+        // Marcar como processando
+        this.isProcessing = true;
+
+        // Executar função com timeout e retry
+        const result = await retryOrderOperation(async () => {
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('Timeout na criação do pedido'));
+            }, timeoutMs);
+          });
+
+          return Promise.race([
+            createOrderFn(),
+            timeoutPromise
+          ]);
+        }, `order-${idempotentKey || userId}`);
+
+        // Confirmar reservas no sistema atômico
+        if (reservationIds.length > 0 && result?.order?.id) {
+          const confirmResult = await confirmStockReservations(reservationIds, result.order.id);
+          
+          if (!confirmResult.success) {
+            console.warn('[ORDER_PROTECTION] Failed to confirm some reservations:', confirmResult.errors);
+            // Não falhar o pedido por isso, apenas logar
+          } else {
+            console.log('[ORDER_PROTECTION] Stock reservations confirmed successfully');
+          }
+        }
+
+        // Marcar idempotência como completada
+        if (idempotentKey) {
+          idempotencyManager.markAsCompleted(idempotentKey, result);
+        }
+
+        // Atualizar último ID do pedido
+        if (result?.order?.id) {
+          this.lastOrderId = result.order.id;
+        }
+
+        console.log('[ORDER_PROTECTION] Order created successfully:', result?.order?.id);
+        return result;
+      }
 
     } catch (error) {
       console.error('[ORDER_PROTECTION] Error creating order:', error);
       
-      // Liberar reservas de estoque em caso de erro
-      if (reservationIds.length > 0) {
+      // Liberar reservas de estoque em caso de erro (apenas para processamento direto)
+      if (!useQueue && reservationIds.length > 0) {
         try {
           await releaseStockReservations(reservationIds, 'Erro na criação do pedido');
           console.log('[ORDER_PROTECTION] Stock reservations released due to error');
@@ -226,16 +272,18 @@ class OrderProtectionManager {
       
       throw error;
     } finally {
-      // Sempre limpar recursos
-      if (releaseLock) releaseLock();
-      if (releaseUserSemaphore) releaseUserSemaphore();
-      if (releaseGlobalSemaphore) releaseGlobalSemaphore();
-      
-      if (idempotentKey) {
-        this.processingOrders.delete(idempotentKey);
+      // Sempre limpar recursos (apenas para processamento direto)
+      if (!useQueue) {
+        if (releaseLock) releaseLock();
+        if (releaseUserSemaphore) releaseUserSemaphore();
+        if (releaseGlobalSemaphore) releaseGlobalSemaphore();
+        
+        if (idempotentKey) {
+          this.processingOrders.delete(idempotentKey);
+        }
+        
+        this.isProcessing = false;
       }
-      
-      this.isProcessing = false;
     }
   }
 
@@ -302,7 +350,8 @@ export const useOrderProtection = () => {
       timeoutMs?: number;
       enableIdempotency?: boolean;
       isVip?: boolean;
-    } = { userId: '', timeoutMs: 30000, enableIdempotency: true, isVip: false }
+      useQueue?: boolean;
+    } = { userId: '', timeoutMs: 60000, enableIdempotency: true, isVip: false, useQueue: true }
   ): Promise<any> => {
     setState(prev => ({ ...prev, isProcessing: true, processingStartTime: Date.now() }));
     
