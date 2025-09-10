@@ -27,6 +27,11 @@ import NotFound from "./pages/NotFound";
 
 // Lazy load attendant dashboard
 const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
+const AttendantOrders = lazy(() => import("./pages/AttendantOrders"));
+const AttendantKitchen = lazy(() => import("./pages/AttendantKitchen"));
+const AttendantDelivery = lazy(() => import("./pages/AttendantDelivery"));
+const AttendantReports = lazy(() => import("./pages/AttendantReports"));
+const AttendantCustomers = lazy(() => import("./pages/AttendantCustomers"));
 
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -149,35 +154,35 @@ const App = () => {
               <Route path="/attendant/orders" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
+                    <AttendantOrders />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/attendant/kitchen" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
+                    <AttendantKitchen />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/attendant/delivery" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
+                    <AttendantDelivery />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/attendant/reports" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
+                    <AttendantReports />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/attendant/customers" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantDashboard />
+                    <AttendantCustomers />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
