@@ -56,18 +56,24 @@ export const useSubscription = () => {
       return;
     }
 
-    // Verifica cache - só consulta se passou mais de 8 horas ou se forçado
+    // Cache inteligente - só consulta se passou mais de 4 horas ou se forçado
     const lastCheck = localStorage.getItem('subscription_last_check');
-    const eightHoursInMs = 8 * 60 * 60 * 1000; // 8 horas em millisegundos
+    const fourHoursInMs = 4 * 60 * 60 * 1000; // 4 horas em millisegundos
     const now = Date.now();
     
-    if (!forceCheck && lastCheck && (now - parseInt(lastCheck)) < eightHoursInMs) {
-      // Usa dados do cache se não passou 8 horas
+    if (!forceCheck && lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
+      // Usa dados do cache se não passou 4 horas
       const cachedData = localStorage.getItem('subscription_data');
       if (cachedData) {
-        const parsedData = JSON.parse(cachedData);
-        setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
-        return;
+        try {
+          const parsedData = JSON.parse(cachedData);
+          setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
+          return;
+        } catch {
+          // Remove cache corrompido
+          localStorage.removeItem('subscription_data');
+          localStorage.removeItem('subscription_last_check');
+        }
       }
     }
 
@@ -100,6 +106,14 @@ export const useSubscription = () => {
       // Salva no cache com timestamp
       localStorage.setItem('subscription_last_check', now.toString());
       localStorage.setItem('subscription_data', JSON.stringify(subscriptionData));
+
+      // Se dados mudaram, limpa cache para próxima verificação ser mais rápida
+      const previousData = localStorage.getItem('subscription_data_previous');
+      if (previousData && previousData !== JSON.stringify(subscriptionData)) {
+        localStorage.removeItem('subscription_last_check');
+      }
+      localStorage.setItem('subscription_data_previous', JSON.stringify(subscriptionData));
+
     } catch (error: any) {
       console.error('Error checking subscription:', error);
       toast({
@@ -111,7 +125,7 @@ export const useSubscription = () => {
     }
   };
 
-  const createCheckout = async () => {
+  const createCheckout = async (planType: 'annual' | 'monthly' | 'trial' = 'annual') => {
     if (!user || !session) {
       toast({
         title: "Erro",
@@ -122,14 +136,27 @@ export const useSubscription = () => {
     }
 
     try {
+      // Get price_id based on plan type from environment
+      const priceIdMap = {
+        annual: 'STRIPE_PRICE_ID_ANNUAL',
+        monthly: 'STRIPE_PRICE_ID_MONTHLY', 
+        trial: 'STRIPE_PRICE_ID_TRIAL'
+      };
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {},
+        body: { 
+          plan_type: planType
+        },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
       if (error) throw error;
+
+      // Invalidate cache since we're about to create a new subscription
+      localStorage.removeItem('subscription_last_check');
+      localStorage.removeItem('subscription_data');
 
       // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
@@ -214,6 +241,23 @@ export const useSubscription = () => {
       }, 2000);
     }
   }, []);
+
+  // Auto-refresh on focus to catch webhook updates
+  useEffect(() => {
+    const handleFocus = () => {
+      // Check if we should refresh on focus (every 10 minutes max)
+      const lastCheck = localStorage.getItem('subscription_last_check');
+      const tenMinutesInMs = 10 * 60 * 1000;
+      const now = Date.now();
+      
+      if (!lastCheck || (now - parseInt(lastCheck)) > tenMinutesInMs) {
+        checkSubscription();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
 
   return {
     subscription,

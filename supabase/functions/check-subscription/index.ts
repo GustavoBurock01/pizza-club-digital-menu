@@ -89,17 +89,37 @@ serve(async (req) => {
       expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: expiresAt });
       
-      // Determine plan details from price
+      // Determine plan details from price_id using env secrets
       const priceId = subscription.items.data[0].price.id;
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
       
-      if (amount === 100) {
+      // Map by price_id from secrets
+      const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
+      const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
+      const annualPriceId = Deno.env.get("STRIPE_PRICE_ID_ANNUAL");
+      
+      if (priceId === trialPriceId) {
         planName = "Trial";
         planPrice = 1.00;
-      } else if (amount === 990) {
+      } else if (priceId === monthlyPriceId) {
         planName = "Mensal";
         planPrice = 9.90;
+      } else if (priceId === annualPriceId) {
+        planName = "Anual";
+        planPrice = 99.90;
+      } else {
+        // Fallback para compatibilidade
+        if (amount === 100) {
+          planName = "Trial";
+          planPrice = 1.00;
+        } else if (amount === 990) {
+          planName = "Mensal";
+          planPrice = 9.90;
+        } else if (amount === 9990) {
+          planName = "Anual";
+          planPrice = 99.90;
+        }
       }
       
       logStep("Determined subscription plan", { priceId, amount, planName, planPrice });
@@ -107,14 +127,16 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
-    // Update Supabase subscriptions table
+    // Update Supabase subscriptions table with new columns
     await supabaseClient.from("subscriptions").upsert({
       user_id: user.id,
       stripe_subscription_id: stripeSubscriptionId,
+      stripe_price_id: hasActiveSub ? subscription.items.data[0].price.id : null,
       status: hasActiveSub ? 'active' : 'inactive',
       plan_name: planName,
       plan_price: planPrice,
       expires_at: expiresAt,
+      sync_status: 'manual',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
 

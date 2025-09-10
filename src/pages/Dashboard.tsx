@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShoppingCart, Repeat, Sparkles, Clock, Crown } from "lucide-react";
+import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useUnifiedStore } from '@/stores/simpleStore';
+import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -18,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { subscription, createCheckout } = useSubscription();
+  const { subscription, createCheckout, checkSubscription } = useSubscription();
   const { addItem } = useUnifiedStore();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchRecentOrders();
@@ -113,6 +116,21 @@ const Dashboard = () => {
     }
   };
 
+  const handleRefreshSubscription = async () => {
+    setRefreshing(true);
+    try {
+      await checkSubscription(true);
+      toast({
+        title: "Status atualizado!",
+        description: "Status da assinatura verificado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error refreshing subscription:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário';
 
   return (
@@ -149,12 +167,25 @@ const Dashboard = () => {
                 </span>
                 <Button 
                   className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                  onClick={createCheckout}
+                  onClick={() => setShowPlans(true)}
                 >
-                  Assinar por R$ 99,90/ano
+                  Ver Planos
                 </Button>
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Planos de assinatura */}
+          {showPlans && subscription?.status !== 'active' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Escolha seu Plano</h2>
+                <Button variant="outline" onClick={() => setShowPlans(false)}>
+                  Fechar
+                </Button>
+              </div>
+              <SubscriptionPlans />
+            </div>
           )}
 
           {/* Ações Rápidas */}
@@ -212,7 +243,7 @@ const Dashboard = () => {
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <Crown className="h-5 w-5 text-pizza-red" />
-                      <div>
+                      <div className="flex-1">
                         <CardTitle className="text-lg">Status da Assinatura</CardTitle>
                         <CardDescription>
                           {subscription?.status === 'active' 
@@ -221,9 +252,19 @@ const Dashboard = () => {
                           }
                         </CardDescription>
                       </div>
-                      <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'} className="ml-auto">
-                        {subscription?.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRefreshSubscription}
+                          disabled={refreshing}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
+                          {subscription?.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
                   {subscription?.status === 'active' && subscription.expires_at && (
@@ -252,9 +293,9 @@ const Dashboard = () => {
                     <CardContent className="pt-0">
                       <Button 
                         className="w-full gradient-pizza text-white"
-                        onClick={createCheckout}
+                        onClick={() => setShowPlans(true)}
                       >
-                        Ativar Assinatura
+                        Ver Planos
                       </Button>
                     </CardContent>
                   )}
@@ -296,9 +337,9 @@ const Dashboard = () => {
                       {subscription?.status !== 'active' && (
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={createCheckout}
+                          onClick={() => setShowPlans(true)}
                         >
-                          Assinar por R$ 99,90/ano
+                          Ver Planos
                         </Button>
                       )}
                     </div>
