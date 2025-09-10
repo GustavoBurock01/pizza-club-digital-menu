@@ -42,6 +42,7 @@ const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -170,6 +171,15 @@ const App = () => {
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Analytics />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              
+              {/* Integrations Route */}
+              <Route path="/admin/integrations" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <IntegrationsManager />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
