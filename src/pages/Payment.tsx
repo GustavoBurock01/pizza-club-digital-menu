@@ -163,12 +163,13 @@ const Payment = () => {
   };
 
   const createOrderAndCardPayment = async (orderData: any) => {
-    // TODO: Implementar pagamento com cartão
-    toast({
-      title: "Em desenvolvimento",
-      description: "Pagamento com cartão em breve",
-    });
-    navigate('/menu');
+    try {
+      // Redirecionar para página de pagamento integrado com cartão
+      navigate('/payment/card-integrated', { state: { orderData } });
+    } catch (error) {
+      console.error('Error redirecting to card payment:', error);
+      throw error;
+    }
   };
 
   const fetchOrder = async () => {
