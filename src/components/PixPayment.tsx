@@ -10,8 +10,7 @@ import { supabase } from '@/services/supabase';
 // ===== COMPONENTE PIX OTIMIZADO PARA PERFORMANCE =====
 
 interface PixPaymentProps {
-  orderId: string;
-  totalAmount: number;
+  orderData: any; // Order data for creating new order with PIX
   onPaymentSuccess: () => void;
 }
 
@@ -23,7 +22,7 @@ interface PixData {
   expiresAt: string;
 }
 
-export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymentProps) => {
+export const PixPayment = ({ orderData, onPaymentSuccess }: PixPaymentProps) => {
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'expired' | 'error'>('pending');
@@ -40,13 +39,13 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
   const maxPollingInterval = 30000; // Máximo 30s
 
   useEffect(() => {
-    createPixPayment();
+    createOrderAndPixPayment();
     
     return () => {
       isUnmountedRef.current = true;
       clearAllIntervals();
     };
-  }, [orderId]);
+  }, [orderData]);
 
   // Função para limpar todos os intervalos
   const clearAllIntervals = useCallback(() => {
@@ -114,7 +113,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
     }
   }, [pixData, paymentStatus]);
 
-  const createPixPayment = async () => {
+  const createOrderAndPixPayment = async () => {
     // Reset state
     setPixData(null);
     setPaymentStatus('pending');
@@ -123,40 +122,43 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
     
     try {
       setLoading(true);
-      console.log('[PIX-OPTIMIZED] Creating PIX payment for order:', orderId);
+      console.log('[PIX-UNIFIED] Creating order and PIX payment:', orderData);
       
-      const { data, error } = await supabase.functions.invoke('create-pix-payment', {
-        body: { orderId }
+      const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
+        body: orderData
       });
 
       if (isUnmountedRef.current) return;
 
       if (error) {
-        console.error('[PIX-OPTIMIZED] Supabase function error:', error);
+        console.error('[PIX-UNIFIED] Supabase function error:', error);
         throw new Error(error.message || 'Erro na comunicação com o servidor');
       }
 
-      if (!data?.success || !data.pixData?.brCode) {
-        console.error('[PIX-OPTIMIZED] Invalid response data:', data);
-        throw new Error('Código PIX não foi gerado corretamente');
+      if (!data?.order || !data?.pixData?.brCode) {
+        console.error('[PIX-UNIFIED] Invalid response data:', data);
+        throw new Error('Pedido ou código PIX não foi gerado corretamente');
       }
 
-      console.log('[PIX-OPTIMIZED] PIX created successfully');
+      console.log('[PIX-UNIFIED] Order and PIX created successfully');
       setPixData(data.pixData);
       setPaymentStatus('pending');
       
+      // Clear pending order from localStorage
+      localStorage.removeItem('pendingOrder');
+      
       toast({
-        title: "PIX gerado com sucesso!",
-        description: "Escaneie o QR Code ou copie o código PIX.",
+        title: "Pedido criado com sucesso!",
+        description: "Escaneie o QR Code ou copie o código PIX para pagar.",
       });
     } catch (error: any) {
       if (isUnmountedRef.current) return;
       
-      console.error('[PIX-OPTIMIZED] Error creating PIX:', error);
+      console.error('[PIX-UNIFIED] Error creating order and PIX:', error);
       setPaymentStatus('error');
       
       toast({
-        title: "Erro ao gerar PIX",
+        title: "Erro ao criar pedido",
         description: error.message || 'Erro inesperado. Tente novamente.',
         variant: "destructive",
       });
@@ -292,9 +294,9 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
           <p className="text-muted-foreground mb-4">
             Não foi possível gerar o código PIX. Tente novamente.
           </p>
-          <Button onClick={createPixPayment}>
-            Tentar novamente
-          </Button>
+            <Button onClick={createOrderAndPixPayment}>
+              Tentar novamente
+            </Button>
         </CardContent>
       </Card>
     );
@@ -395,7 +397,7 @@ export const PixPayment = ({ orderId, totalAmount, onPaymentSuccess }: PixPaymen
             <p className="text-muted-foreground mb-4">
               O código PIX expirou. Gere um novo código para continuar.
             </p>
-            <Button onClick={createPixPayment}>
+            <Button onClick={createOrderAndPixPayment}>
               Gerar novo PIX
             </Button>
           </div>

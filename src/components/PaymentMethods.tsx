@@ -9,20 +9,22 @@ import { RealCardPayment } from './RealCardPayment';
 import { useNavigate } from 'react-router-dom';
 
 interface PaymentMethodsProps {
-  orderId: string;
+  orderData: any; // Unified order data for creating order with payment
   totalAmount: number;
 }
 
 type PaymentMethod = 'pix' | 'credit_card' | 'cash';
 
-export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) => {
+export const PaymentMethods = ({ orderData, totalAmount }: PaymentMethodsProps) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('pix');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const navigate = useNavigate();
 
   const handlePaymentMethodSelect = () => {
     if (selectedMethod === 'cash') {
-      navigate(`/order-confirmation/${orderId}`);
+      // Store order data and navigate to cash payment flow
+      localStorage.setItem('pendingOrder', JSON.stringify({ ...orderData, payment_method: 'cash' }));
+      navigate('/payment/cash');
       return;
     }
     
@@ -30,17 +32,15 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
   };
 
   const handlePaymentSuccess = () => {
-    // Não limpar carrinho aqui - só após pagamento aprovado
-    // Redirecionar para order-confirmation que irá verificar status
-    navigate(`/order-confirmation/${orderId}`);
+    // Redirect to orders list after successful payment
+    navigate('/orders');
   };
 
   if (showPaymentForm) {
     if (selectedMethod === 'pix') {
       return (
         <PixPayment 
-          orderId={orderId}
-          totalAmount={totalAmount}
+          orderData={orderData}
           onPaymentSuccess={handlePaymentSuccess}
         />
       );
@@ -49,8 +49,7 @@ export const PaymentMethods = ({ orderId, totalAmount }: PaymentMethodsProps) =>
     if (selectedMethod === 'credit_card') {
       return (
         <RealCardPayment 
-          orderId={orderId}
-          totalAmount={totalAmount}
+          orderData={orderData}
           onPaymentSuccess={handlePaymentSuccess}
         />
       );

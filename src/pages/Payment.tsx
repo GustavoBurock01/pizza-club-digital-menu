@@ -184,7 +184,13 @@ const Payment = () => {
       setOrder(orderData);
 
       if (orderData.payment_method === 'pix') {
-        await createPixPayment(orderData);
+        // Legacy flow - redirect to unified flow
+        toast({
+          title: "Redirecionando...",
+          description: "Usando fluxo unificado de pagamento PIX",
+        });
+        navigate('/payment/pix');
+        return;
       }
     } catch (error: any) {
       console.error('Error fetching order:', error);
@@ -198,46 +204,7 @@ const Payment = () => {
     }
   };
 
-  const createPixPayment = async (orderData: Order) => {
-    try {
-      setPaymentStatus('pending');
-      setPixData(null);
-      
-      const { data, error } = await supabase.functions.invoke('create-pix-payment', {
-        body: { 
-          orderId: orderData.id
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('PIX response:', data);
-
-      if (data.success && data.pixData) {
-        setPixData(data.pixData);
-        
-        // Calculate time left until expiration (30 minutes)
-        const expiresAt = new Date(data.pixData.expiresAt);
-        const now = new Date();
-        const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
-        setTimeLeft(secondsLeft);
-        
-        console.log('PIX data set:', data.pixData);
-        console.log('Time left:', secondsLeft);
-      } else {
-        throw new Error(data.error || 'Erro ao criar pagamento PIX');
-      }
-
-    } catch (error: any) {
-      console.error('Error creating PIX payment:', error);
-      setPaymentStatus('error');
-      toast({
-        title: "Erro no pagamento",
-        description: error.message || "Não foi possível gerar o código PIX.",
-        variant: "destructive"
-      });
-    }
-  };
+  // Function removed - using unified create-order-with-pix flow only
 
   const checkPaymentStatus = async (transactionId?: string) => {
     const txId = transactionId || pixData?.transactionId;
@@ -348,14 +315,12 @@ const Payment = () => {
             <p className="text-yellow-700 mb-4">O tempo para pagamento expirou. Gere um novo código.</p>
             <Button onClick={() => {
               setPaymentStatus('pending');
-              if (order) {
-                createPixPayment(order);
+              // Always use unified flow
+              const pendingOrderData = localStorage.getItem('pendingOrder');
+              if (pendingOrderData) {
+                createOrderAndPixPayment(JSON.parse(pendingOrderData));
               } else {
-                // Regenerate for new flow
-                const pendingOrderData = localStorage.getItem('pendingOrder');
-                if (pendingOrderData) {
-                  createOrderAndPixPayment(JSON.parse(pendingOrderData));
-                }
+                navigate('/menu');
               }
             }}>
               Gerar Novo Código
@@ -372,14 +337,12 @@ const Payment = () => {
             <p className="text-red-700 mb-4">Ocorreu um erro ao gerar o código PIX.</p>
             <Button onClick={() => {
               setPaymentStatus('pending');
-              if (order) {
-                createPixPayment(order);
+              // Always use unified flow
+              const pendingOrderData = localStorage.getItem('pendingOrder');
+              if (pendingOrderData) {
+                createOrderAndPixPayment(JSON.parse(pendingOrderData));
               } else {
-                // Retry for new flow
-                const pendingOrderData = localStorage.getItem('pendingOrder');
-                if (pendingOrderData) {
-                  createOrderAndPixPayment(JSON.parse(pendingOrderData));
-                }
+                navigate('/menu');
               }
             }}>
               Tentar Novamente

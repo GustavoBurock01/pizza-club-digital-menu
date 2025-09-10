@@ -34,10 +34,10 @@ serve(async (req) => {
       );
     }
 
-    // Get PIX key
-    const pixKey = Deno.env.get('PIX_KEY_PROD');
+    // Get real PIX key from environment with validation
+    const pixKey = Deno.env.get('PIX_KEY_PROD') || Deno.env.get('PIX_KEY');
     if (!pixKey) {
-      console.error('[CREATE-ORDER-PIX] ❌ PIX_KEY_PROD not configured');
+      console.error('[CREATE-ORDER-PIX] ❌ No PIX key configured');
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -50,7 +50,24 @@ serve(async (req) => {
       );
     }
 
-    console.log('[CREATE-ORDER-PIX] ✅ Using REAL PIX key:', pixKey.substring(0, 10) + '...');
+    // Validate PIX key format (basic validation)
+    const pixKeyValidated = pixKey.trim();
+    if (pixKeyValidated.length < 11) {
+      console.error('[CREATE-ORDER-PIX] ❌ Invalid PIX key format');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Formato de chave PIX inválido' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('[CREATE-ORDER-PIX] ✅ Using REAL PIX key (first 4 chars):', pixKeyValidated.substring(0, 4) + '...');
+    console.log('[CREATE-ORDER-PIX] ✅ Environment:', pixKeyValidated.includes('sandbox') ? 'SANDBOX' : 'PRODUCTION');
 
     // Verify user authentication
     const authHeader = req.headers.get('Authorization');
@@ -173,11 +190,10 @@ serve(async (req) => {
       },
       external_reference: `temp-${user.id}-${Date.now()}`, // Referência temporária
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
-      // 🔑 REAL PIX KEY CONFIGURATION
-      point_of_interaction: {
-        type: 'PIX',
-        sub_type: 'QR',
-        linked_to: pixKey
+      metadata: {
+        integration: 'pizzaclub_unified_flow',
+        environment: pixKeyValidated.includes('sandbox') ? 'sandbox' : 'production',
+        pix_key_hash: pixKeyValidated.substring(0, 8) + '***'
       }
     };
 

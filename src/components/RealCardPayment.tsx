@@ -11,8 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
 
 interface RealCardPaymentProps {
-  orderId: string;
-  totalAmount: number;
+  orderData: any; // Unified order data for creating order with payment
   onPaymentSuccess: () => void;
 }
 
@@ -33,7 +32,7 @@ declare global {
   }
 }
 
-export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: RealCardPaymentProps) => {
+export const RealCardPayment = ({ orderData, onPaymentSuccess }: RealCardPaymentProps) => {
   const [cardData, setCardData] = useState<CardData>({
     number: '',
     holderName: '',
@@ -232,10 +231,10 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
       // Create card token with MercadoPago
       const cardToken = await createCardToken();
       
-      // Send payment data to backend
+      // Send payment data to backend  
       const { data, error } = await supabase.functions.invoke('process-card-payment', {
         body: {
-          orderId,
+          orderData,
           cardToken,
           installments: parseInt(cardData.installments),
           payer: {
@@ -281,7 +280,7 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
     const options = [];
 
     for (let i = 1; i <= maxInstallments; i++) {
-      const value = totalAmount / i;
+      const value = (orderData?.total_amount || 0) / i;
       const text = i === 1 
         ? `1x de ${value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sem juros`
         : `${i}x de ${value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
@@ -496,7 +495,7 @@ export const RealCardPayment = ({ orderId, totalAmount, onPaymentSuccess }: Real
           ) : (
             <>
               <Lock className="w-4 h-4 mr-2" />
-              Pagar {totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              Pagar {(orderData?.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </>
           )}
         </Button>
