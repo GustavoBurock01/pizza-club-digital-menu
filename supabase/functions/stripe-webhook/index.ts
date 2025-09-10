@@ -79,6 +79,9 @@ serve(async (req) => {
       case 'invoice.payment_failed':
         await handleInvoiceEvent(event, supabaseClient, stripe);
         break;
+      case 'checkout.session.completed':
+        await handleCheckoutEvent(event, supabaseClient, stripe);
+        break;
       default:
         logStep("Unhandled event type", { eventType: event.type });
     }
@@ -231,6 +234,61 @@ async function handleInvoiceEvent(event: Stripe.Event, supabaseClient: any, stri
     
   } catch (error) {
     logStep("Error in handleInvoiceEvent", { error });
+    throw error;
+  }
+}
+
+async function handleCheckoutEvent(event: Stripe.Event, supabaseClient: any, stripe: Stripe) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  logStep("Processing checkout session completed", { 
+    eventType: event.type, 
+    sessionId: session.id,
+    customerId: session.customer,
+    paymentStatus: session.payment_status
+  });
+
+  try {
+    // For order payments (not subscriptions)
+    if (session.mode === 'payment' && session.metadata?.order_id) {
+      const orderId = session.metadata.order_id;
+      
+      // Update order status based on payment status
+      let orderStatus = 'pending';
+      let paymentStatus = 'pending';
+      
+      if (session.payment_status === 'paid') {
+        orderStatus = 'confirmed';
+        paymentStatus = 'paid';
+      } else if (session.payment_status === 'unpaid') {
+        orderStatus = 'cancelled';
+        paymentStatus = 'failed';
+      }
+
+      const { error: updateError } = await supabaseClient
+        .from('orders')
+        .update({
+          status: orderStatus,
+          payment_status: paymentStatus,
+          payment_method: 'credit_card',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (updateError) {
+        logStep("Error updating order from checkout", { error: updateError, orderId });
+        throw updateError;
+      }
+
+      logStep("Order updated from checkout session", {
+        orderId,
+        orderStatus,
+        paymentStatus,
+        sessionId: session.id
+      });
+    }
+    
+  } catch (error) {
+    logStep("Error in handleCheckoutEvent", { error });
     throw error;
   }
 }
