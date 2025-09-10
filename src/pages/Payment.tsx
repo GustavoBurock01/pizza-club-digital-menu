@@ -164,8 +164,8 @@ const Payment = () => {
 
   const createOrderAndCardPayment = async (orderData: any) => {
     try {
-      // Redirecionar para página de pagamento integrado com cartão
-      navigate('/payment/card-integrated', { state: { orderData } });
+      // Redirecionar para página de pagamento com cartão (rota simplificada)
+      navigate('/payment/card', { state: { orderData } });
     } catch (error) {
       console.error('Error redirecting to card payment:', error);
       throw error;

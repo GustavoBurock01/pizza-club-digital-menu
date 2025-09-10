@@ -75,13 +75,6 @@ const App = () => {
               <Route path="/payment/card" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/payment/card-integrated" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <CardPaymentPage />
                   </Suspense>
                 </UnifiedProtectedRoute>
