@@ -1,6 +1,14 @@
-// ===== CONTROLE DE ESTOQUE EM TEMPO REAL =====
+// ===== SISTEMA DE CONTROLE DE ESTOQUE (LEGACY - EM MIGRAÇÃO) =====
+// NOTA: Este sistema está sendo migrado para atomicStockControl.ts
+// Mantido para compatibilidade com código existente
 
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  checkProductsAvailability as atomicCheckAvailability,
+  reserveProductsAtomically,
+  releaseStockReservations,
+  confirmStockReservations
+} from './atomicStockControl';
 
 interface StockItem {
   product_id: string;
@@ -15,182 +23,168 @@ interface ProductAvailability {
   reason?: string;
 }
 
-class StockController {
-  private reservations: Map<string, { quantity: number; expires: number }> = new Map();
+// Adaptador para o sistema legacy - redireciona para o sistema atômico
+class LegacyStockController {
+  private reservationMap: Map<string, string[]> = new Map(); // userId -> reservationIds
   private cleanupInterval: NodeJS.Timeout;
 
   constructor() {
-    // Limpeza de reservas expiradas a cada 30 segundos
+    // Manter estrutura similar ao sistema antigo para compatibilidade
     this.cleanupInterval = setInterval(() => {
       this.cleanupExpiredReservations();
     }, 30 * 1000);
   }
 
   private cleanupExpiredReservations() {
-    const now = Date.now();
-    for (const [key, reservation] of this.reservations.entries()) {
-      if (reservation.expires <= now) {
-        this.reservations.delete(key);
-      }
-    }
+    // O sistema atômico já faz cleanup automático via cron job
+    // Apenas limpamos nosso mapeamento local
+    console.log('[LEGACY_STOCK] Cleanup check - atomic system handles expiration automatically');
   }
-
-  // Verificar disponibilidade de produtos em lote
+  
   async checkProductsAvailability(items: StockItem[]): Promise<ProductAvailability[]> {
     try {
-      const productIds = items.map(item => item.product_id);
+      const result = await atomicCheckAvailability(items);
       
-      // Buscar produtos do banco
-      const { data: products, error } = await supabase
-        .from('products')
-        .select('id, is_available')
-        .in('id', productIds);
-
-      if (error) {
-        console.error('[STOCK] Error checking product availability:', error);
-        return items.map(item => ({
-          product_id: item.product_id,
-          is_available: false,
-          reason: 'Database error'
-        }));
+      // Converter formato do novo sistema para o formato legacy
+      const availability: ProductAvailability[] = [];
+      
+      for (const item of items) {
+        const unavailable = result.unavailableItems.find(u => u.product_id === item.product_id);
+        
+        if (unavailable) {
+          availability.push({
+            product_id: item.product_id,
+            is_available: false,
+            stock_quantity: unavailable.available,
+            reason: `Estoque insuficiente. Disponível: ${unavailable.available}, Solicitado: ${unavailable.requested}`
+          });
+        } else {
+          // Assumir que item está em availableItems
+          availability.push({
+            product_id: item.product_id,
+            is_available: true,
+            stock_quantity: item.quantity, // Quantidade solicitada é disponível
+          });
+        }
       }
-
-      // Verificar cada item
-      return items.map(item => {
-        const product = products?.find(p => p.id === item.product_id);
-        
-        if (!product) {
-          return {
-            product_id: item.product_id,
-            is_available: false,
-            reason: 'Product not found'
-          };
-        }
-
-        if (!product.is_available) {
-          return {
-            product_id: item.product_id,
-            is_available: false,
-            reason: 'Product unavailable'
-          };
-        }
-
-        // Verificar reservas temporárias
-        const reservationKey = `product:${item.product_id}`;
-        const reservation = this.reservations.get(reservationKey);
-        
-        if (reservation && reservation.quantity >= 10) { // Limite de reservas simultâneas
-          return {
-            product_id: item.product_id,
-            is_available: false,
-            reason: 'Temporarily unavailable (high demand)'
-          };
-        }
-
-        return {
-          product_id: item.product_id,
-          is_available: true
-        };
-      });
+      
+      return availability;
     } catch (error) {
-      console.error('[STOCK] Unexpected error:', error);
+      console.error('Erro ao verificar disponibilidade (legacy):', error);
+      
+      // Fallback: assumir indisponível em caso de erro
       return items.map(item => ({
         product_id: item.product_id,
         is_available: false,
-        reason: 'System error'
+        stock_quantity: 0,
+        reason: 'Erro interno na verificação de estoque'
       }));
     }
   }
 
-  // Reservar produtos temporariamente (5 minutos)
   reserveProducts(items: StockItem[], userId: string): boolean {
-    const reservationTime = 5 * 60 * 1000; // 5 minutos
-    const expiresAt = Date.now() + reservationTime;
+    // Usar sistema atômico de forma assíncrona
+    this.reserveProductsAsync(items, userId);
     
+    // Retornar true por compatibilidade (sistema legacy espera retorno síncrono)
+    // A validação real acontece no sistema atômico
+    return true;
+  }
+
+  private async reserveProductsAsync(items: StockItem[], userId: string): Promise<void> {
     try {
-      for (const item of items) {
-        const reservationKey = `product:${item.product_id}`;
-        const existing = this.reservations.get(reservationKey);
-        
-        const newQuantity = (existing?.quantity || 0) + item.quantity;
-        
-        this.reservations.set(reservationKey, {
-          quantity: newQuantity,
-          expires: expiresAt
-        });
-      }
+      const result = await reserveProductsAtomically(items, userId);
       
-      console.log(`[STOCK] Reserved products for user ${userId}:`, items);
-      return true;
+      if (result.success) {
+        // Armazenar IDs das reservas para liberação posterior
+        this.reservationMap.set(userId, result.reservations);
+        console.log('[LEGACY_STOCK] Reservations created:', result.reservations);
+      } else {
+        console.error('[LEGACY_STOCK] Failed to reserve:', result.errors);
+      }
     } catch (error) {
-      console.error('[STOCK] Error reserving products:', error);
-      return false;
+      console.error('[LEGACY_STOCK] Error in async reservation:', error);
     }
   }
 
-  // Liberar reservas (quando pedido é cancelado/falha)
   releaseReservation(items: StockItem[], userId: string): void {
+    // Usar sistema atômico para liberar
+    this.releaseReservationAsync(userId);
+  }
+
+  private async releaseReservationAsync(userId: string): Promise<void> {
     try {
-      for (const item of items) {
-        const reservationKey = `product:${item.product_id}`;
-        const existing = this.reservations.get(reservationKey);
+      const reservationIds = this.reservationMap.get(userId);
+      
+      if (reservationIds && reservationIds.length > 0) {
+        const result = await releaseStockReservations(reservationIds, 'Liberação via sistema legacy');
         
-        if (existing) {
-          const newQuantity = Math.max(0, existing.quantity - item.quantity);
-          
-          if (newQuantity === 0) {
-            this.reservations.delete(reservationKey);
-          } else {
-            this.reservations.set(reservationKey, {
-              ...existing,
-              quantity: newQuantity
-            });
-          }
+        if (result.success) {
+          this.reservationMap.delete(userId);
+          console.log('[LEGACY_STOCK] Reservations released:', reservationIds);
+        } else {
+          console.error('[LEGACY_STOCK] Failed to release reservations:', result.errors);
         }
       }
-      
-      console.log(`[STOCK] Released reservations for user ${userId}:`, items);
     } catch (error) {
-      console.error('[STOCK] Error releasing reservation:', error);
+      console.error('[LEGACY_STOCK] Error releasing reservations:', error);
     }
   }
 
-  // Confirmar pedido (remove da reserva)
   confirmOrder(items: StockItem[], userId: string): void {
-    this.releaseReservation(items, userId);
-    console.log(`[STOCK] Confirmed order for user ${userId}`);
+    // Usar sistema atômico para confirmar
+    this.confirmOrderAsync(userId);
   }
 
-  // Obter estatísticas de estoque
+  private async confirmOrderAsync(userId: string): Promise<void> {
+    try {
+      const reservationIds = this.reservationMap.get(userId);
+      
+      if (reservationIds && reservationIds.length > 0) {
+        const result = await confirmStockReservations(reservationIds);
+        
+        if (result.success) {
+          this.reservationMap.delete(userId);
+          console.log('[LEGACY_STOCK] Order confirmed:', reservationIds);
+        } else {
+          console.error('[LEGACY_STOCK] Failed to confirm order:', result.errors);
+        }
+      }
+    } catch (error) {
+      console.error('[LEGACY_STOCK] Error confirming order:', error);
+    }
+  }
+
   getStockStats() {
-    const now = Date.now();
-    const activeReservations = Array.from(this.reservations.entries())
-      .filter(([_, reservation]) => reservation.expires > now);
-    
     return {
-      total_reservations: this.reservations.size,
-      active_reservations: activeReservations.length,
-      expired_pending_cleanup: this.reservations.size - activeReservations.length,
-      products_with_reservations: activeReservations.map(([key, reservation]) => ({
-        product_key: key,
-        reserved_quantity: reservation.quantity,
-        expires_in_seconds: Math.max(0, Math.floor((reservation.expires - now) / 1000))
+      total_reservations: this.reservationMap.size,
+      active_reservations: this.reservationMap.size,
+      expired_pending_cleanup: 0, // Sistema atômico lida com isso
+      products_with_reservations: Array.from(this.reservationMap.entries()).map(([userId, reservationIds]) => ({
+        user_id: userId,
+        reservation_count: reservationIds.length,
+        reservation_ids: reservationIds
       }))
     };
   }
 
-  destroy() {
+  destroy(): void {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    this.reservations.clear();
+    
+    // Limpar todas as reservas pendentes
+    for (const [userId, reservationIds] of this.reservationMap.entries()) {
+      this.releaseReservationAsync(userId);
+    }
+    this.reservationMap.clear();
   }
 }
 
-// Instância global
-export const stockController = new StockController();
+// Instância global com adaptador legacy
+export const stockController = new LegacyStockController();
 
-// Utilitários para usar em componentes
+// Funções de compatibilidade (redirecionam para o sistema atômico)
 export const checkProductAvailability = async (items: StockItem[]): Promise<ProductAvailability[]> => {
   return stockController.checkProductsAvailability(items);
 };
@@ -207,7 +201,7 @@ export const confirmProductOrder = (items: StockItem[], userId: string): void =>
   stockController.confirmOrder(items, userId);
 };
 
-// Hook para usar controle de estoque em React
+// Hook React para compatibilidade
 export const useStockControl = () => {
   return {
     checkAvailability: checkProductAvailability,
