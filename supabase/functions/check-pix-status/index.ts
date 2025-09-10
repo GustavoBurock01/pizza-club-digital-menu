@@ -13,18 +13,30 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[PIX-STATUS] Checking PIX payment status...');
+    console.log('[PIX-STATUS] 🚀 REAL PIX STATUS CHECK - FASE 1 IMPLEMENTATION');
 
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const mercadopagoAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN_PROD');
+
+    if (!mercadopagoAccessToken) {
+      console.error('[PIX-STATUS] ❌ MERCADOPAGO_ACCESS_TOKEN_PROD not configured');
+      return new Response(
+        JSON.stringify({ error: 'MercadoPago token not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body
     const { transactionId } = await req.json();
-    console.log('[PIX-STATUS] Checking transaction:', transactionId);
+    console.log('[PIX-STATUS] 🔍 Checking transaction:', transactionId);
 
     // Get user from JWT token
     const authHeader = req.headers.get('Authorization')!;
@@ -32,7 +44,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      console.error('[PIX-STATUS] Authentication error:', userError);
+      console.error('[PIX-STATUS] ❌ Authentication error:', userError);
       return new Response(
         JSON.stringify({ error: 'Authentication required' }),
         { 
@@ -42,7 +54,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch PIX transaction
+    // Fetch PIX transaction with MercadoPago payment ID
     const { data: transaction, error: transactionError } = await supabase
       .from('pix_transactions')
       .select('*')
@@ -51,7 +63,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error('[PIX-STATUS] Transaction not found:', transactionError);
+      console.error('[PIX-STATUS] ❌ Transaction not found:', transactionError);
       return new Response(
         JSON.stringify({ error: 'Transaction not found' }),
         { 
@@ -61,21 +73,32 @@ serve(async (req) => {
       );
     }
 
+    console.log('[PIX-STATUS] 📊 Transaction found:', {
+      id: transaction.id,
+      status: transaction.status,
+      orderId: transaction.order_id,
+      mercadopagoPaymentId: transaction.mercadopago_payment_id,
+      amount: transaction.amount
+    });
+
     // Check if transaction has expired
     const now = new Date();
     const expiresAt = new Date(transaction.expires_at);
     
     if (now > expiresAt && transaction.status === 'pending') {
-      console.log('[PIX-STATUS] Transaction expired, updating status');
+      console.log('[PIX-STATUS] ⏰ Transaction expired, updating status');
       
       // Update transaction status to expired
       const { error: updateError } = await supabase
         .from('pix_transactions')
-        .update({ status: 'expired' })
+        .update({ 
+          status: 'expired',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', transactionId);
 
       if (updateError) {
-        console.error('[PIX-STATUS] Error updating expired transaction:', updateError);
+        console.error('[PIX-STATUS] ❌ Error updating expired transaction:', updateError);
       }
 
       return new Response(
@@ -90,79 +113,179 @@ serve(async (req) => {
       );
     }
 
-    // Real PIX status checking implementation
-    // In production, you would integrate with your PIX provider's API
-    // For now, we implement a more realistic simulation based on transaction age
+    // 🌐 REAL MERCADOPAGO API INTEGRATION (FASE 1 IMPLEMENTATION)
     
-    if (transaction.status === 'pending') {
-      // Check transaction age for automatic confirmation simulation
-      const createdAt = new Date(transaction.created_at);
-      const ageInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
-      
-      // Simulate payment confirmation based on realistic timing
-      // Real integration would check with bank/PSP API status
-      let shouldConfirm = false;
-      
-      // Simulate progressive payment confirmation probability
-      if (ageInMinutes > 2) {
-        shouldConfirm = Math.random() > 0.7; // 30% chance after 2 minutes
-      } else if (ageInMinutes > 5) {
-        shouldConfirm = Math.random() > 0.4; // 60% chance after 5 minutes
-      } else if (ageInMinutes > 10) {
-        shouldConfirm = Math.random() > 0.2; // 80% chance after 10 minutes
-      }
-      
-      if (shouldConfirm) {
-        console.log('[PIX-STATUS] Confirming payment based on age:', ageInMinutes, 'minutes');
-        
-        // Update transaction status to paid
-        const { error: updateTxError } = await supabase
-          .from('pix_transactions')
-          .update({ 
-            status: 'paid',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', transactionId);
+    if (transaction.status === 'pending' && transaction.mercadopago_payment_id) {
+      console.log('[PIX-STATUS] 🌐 Querying REAL MercadoPago API for payment status');
+      console.log('[PIX-STATUS] 🔗 Payment ID:', transaction.mercadopago_payment_id);
 
-        if (updateTxError) {
-          console.error('[PIX-STATUS] Error updating transaction:', updateTxError);
-        } else {
-          // Update order status
-          const { error: updateOrderError } = await supabase
-            .from('orders')
-            .update({ 
-              payment_status: 'paid',
-              status: 'confirmed',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', transaction.order_id);
-
-          if (updateOrderError) {
-            console.error('[PIX-STATUS] Error updating order:', updateOrderError);
-          }
-        }
-
-        return new Response(
-          JSON.stringify({ 
-            status: 'paid',
-            message: 'Payment confirmed',
-            confirmed_at: new Date().toISOString()
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      try {
+        // Query real MercadoPago API
+        const paymentResponse = await fetch(
+          `https://api.mercadopago.com/v1/payments/${transaction.mercadopago_payment_id}`, 
+          {
+            headers: {
+              'Authorization': `Bearer ${mercadopagoAccessToken}`,
+              'Content-Type': 'application/json'
+            }
           }
         );
+
+        if (!paymentResponse.ok) {
+          console.error('[PIX-STATUS] ❌ MercadoPago API error:', {
+            status: paymentResponse.status,
+            statusText: paymentResponse.statusText
+          });
+          
+          // If payment not found, it might have been cancelled/expired
+          if (paymentResponse.status === 404) {
+            console.log('[PIX-STATUS] 🚫 Payment not found in MercadoPago, marking as expired');
+            
+            const { error: updateError } = await supabase
+              .from('pix_transactions')
+              .update({ 
+                status: 'expired',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', transactionId);
+
+            if (updateError) {
+              console.error('[PIX-STATUS] ❌ Error updating transaction:', updateError);
+            }
+
+            return new Response(
+              JSON.stringify({ 
+                status: 'expired',
+                message: 'Payment not found in MercadoPago'
+              }),
+              { 
+                status: 200, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+          }
+          
+          // For other errors, continue with current status
+          console.log('[PIX-STATUS] ⚠️ API error, returning current status');
+        } else {
+          // Parse real payment data from MercadoPago
+          const payment = await paymentResponse.json();
+          
+          console.log('[PIX-STATUS] 📊 REAL payment data received:', {
+            id: payment.id,
+            status: payment.status,
+            status_detail: payment.status_detail,
+            payment_method: payment.payment_method_id,
+            amount: payment.transaction_amount,
+            date_created: payment.date_created,
+            date_approved: payment.date_approved,
+            live_mode: payment.live_mode
+          });
+
+          // Map MercadoPago status to our status
+          let newStatus = transaction.status;
+          let shouldUpdateOrder = false;
+
+          switch (payment.status) {
+            case 'approved':
+              newStatus = 'paid';
+              shouldUpdateOrder = true;
+              console.log('[PIX-STATUS] ✅ Payment approved by MercadoPago');
+              break;
+            case 'rejected':
+            case 'cancelled':
+              newStatus = 'rejected';
+              shouldUpdateOrder = true;
+              console.log('[PIX-STATUS] ❌ Payment rejected/cancelled by MercadoPago');
+              break;
+            case 'pending':
+            case 'in_process':
+              newStatus = 'pending';
+              console.log('[PIX-STATUS] ⏳ Payment still pending in MercadoPago');
+              break;
+            default:
+              console.log('[PIX-STATUS] ❓ Unknown payment status:', payment.status);
+              break;
+          }
+
+          // Update transaction status if changed
+          if (newStatus !== transaction.status) {
+            console.log('[PIX-STATUS] 🔄 Updating transaction status:', {
+              from: transaction.status,
+              to: newStatus
+            });
+
+            const { error: updateTxError } = await supabase
+              .from('pix_transactions')
+              .update({ 
+                status: newStatus,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', transactionId);
+
+            if (updateTxError) {
+              console.error('[PIX-STATUS] ❌ Error updating transaction:', updateTxError);
+            } else if (shouldUpdateOrder) {
+              // Update order status
+              const orderStatus = newStatus === 'paid' ? 'confirmed' : 'cancelled';
+              const paymentStatus = newStatus === 'paid' ? 'paid' : 'rejected';
+
+              console.log('[PIX-STATUS] 🔄 Updating order status:', {
+                orderId: transaction.order_id,
+                orderStatus,
+                paymentStatus
+              });
+
+              const { error: updateOrderError } = await supabase
+                .from('orders')
+                .update({ 
+                  payment_status: paymentStatus,
+                  status: orderStatus,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', transaction.order_id);
+
+              if (updateOrderError) {
+                console.error('[PIX-STATUS] ❌ Error updating order:', updateOrderError);
+              } else {
+                console.log('[PIX-STATUS] ✅ Order updated successfully');
+              }
+            }
+
+            // Return updated status
+            return new Response(
+              JSON.stringify({ 
+                status: newStatus,
+                message: newStatus === 'paid' ? 'Payment confirmed' : 
+                        newStatus === 'rejected' ? 'Payment rejected' : 
+                        'Payment status updated',
+                confirmed_at: newStatus === 'paid' ? new Date().toISOString() : undefined
+              }),
+              { 
+                status: 200, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
+          }
+        }
+      } catch (apiError) {
+        console.error('[PIX-STATUS] ❌ Error querying MercadoPago API:', apiError);
+        // Continue with current status on API errors
       }
+    } else if (transaction.status === 'pending' && !transaction.mercadopago_payment_id) {
+      console.log('[PIX-STATUS] ⚠️ Transaction pending but no MercadoPago payment ID');
     }
 
-    // Return current status
-    console.log('[PIX-STATUS] Current transaction status:', transaction.status);
+    // Return current status if no changes
+    console.log('[PIX-STATUS] 📊 Current transaction status:', transaction.status);
 
     return new Response(
       JSON.stringify({ 
         status: transaction.status,
-        message: transaction.status === 'pending' ? 'Payment pending' : transaction.status
+        message: transaction.status === 'pending' ? 'Payment pending' : 
+                transaction.status === 'paid' ? 'Payment confirmed' :
+                transaction.status === 'expired' ? 'Payment expired' :
+                transaction.status
       }),
       { 
         status: 200, 
@@ -171,9 +294,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[PIX-STATUS] Error checking PIX status:', error);
+    console.error('[PIX-STATUS] ❌ Error checking PIX status:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

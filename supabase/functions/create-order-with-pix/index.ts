@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('[CREATE-ORDER-PIX] Function loaded successfully');
+console.log('[CREATE-ORDER-PIX] 🚀 FASE 1 - REAL PIX IMPLEMENTATION LOADED');
 
 serve(async (req) => {
   console.log('[CREATE-ORDER-PIX] Request received:', req.method, req.url);
@@ -21,7 +21,7 @@ serve(async (req) => {
     // Check MercadoPago access token
     const mercadoPagoToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN_PROD');
     if (!mercadoPagoToken) {
-      console.error('[CREATE-ORDER-PIX] MERCADOPAGO_ACCESS_TOKEN_PROD not configured');
+      console.error('[CREATE-ORDER-PIX] ❌ MERCADOPAGO_ACCESS_TOKEN_PROD not configured');
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -33,6 +33,24 @@ serve(async (req) => {
         }
       );
     }
+
+    // Get PIX key
+    const pixKey = Deno.env.get('PIX_KEY_PROD');
+    if (!pixKey) {
+      console.error('[CREATE-ORDER-PIX] ❌ PIX_KEY_PROD not configured');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Chave PIX não configurada' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('[CREATE-ORDER-PIX] ✅ Using REAL PIX key:', pixKey.substring(0, 10) + '...');
 
     // Verify user authentication
     const authHeader = req.headers.get('Authorization');
@@ -66,7 +84,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError || !user) {
-      console.error('[CREATE-ORDER-PIX] Authentication failed:', authError);
+      console.error('[CREATE-ORDER-PIX] ❌ Authentication failed:', authError);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -79,7 +97,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('[CREATE-ORDER-PIX] User authenticated:', user.id);
+    console.log('[CREATE-ORDER-PIX] ✅ User authenticated:', user.id);
 
     // Parse request body
     const body = await req.text();
@@ -88,7 +106,7 @@ serve(async (req) => {
     }
     
     const orderData = JSON.parse(body);
-    console.log('[CREATE-ORDER-PIX] Order data received:', { 
+    console.log('[CREATE-ORDER-PIX] 📦 Order data received:', { 
       user_id: orderData.user_id,
       total_amount: orderData.total_amount,
       items_count: orderData.items?.length 
@@ -117,12 +135,12 @@ serve(async (req) => {
           .single();
 
         if (addressError) {
-          console.error('[CREATE-ORDER-PIX] Error creating address:', addressError);
+          console.error('[CREATE-ORDER-PIX] ❌ Error creating address:', addressError);
           throw new Error('Erro ao criar endereço');
         }
         
         addressId = addressResult.id;
-        console.log('[CREATE-ORDER-PIX] Address created:', addressId);
+        console.log('[CREATE-ORDER-PIX] ✅ Address created:', addressId);
       }
     }
 
@@ -133,7 +151,13 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    // ETAPA 3: CRIAR PIX PRIMEIRO - só cria pedido se PIX der certo
+    console.log('[CREATE-ORDER-PIX] 👤 User profile:', {
+      email: profile?.email,
+      full_name: profile?.full_name,
+      cpf: profile?.cpf ? profile.cpf.substring(0, 3) + '***' : 'not_provided'
+    });
+
+    // ETAPA 3: 🎯 CRIAR PIX REAL COM CHAVE REAL - FASE 1 IMPLEMENTATION
     const paymentData = {
       transaction_amount: parseFloat(orderData.total_amount),
       description: `Pedido PizzaClub #${orderData.user_id.slice(-8)}`,
@@ -148,12 +172,24 @@ serve(async (req) => {
         }
       },
       external_reference: `temp-${user.id}-${Date.now()}`, // Referência temporária
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      // 🔑 REAL PIX KEY CONFIGURATION
+      point_of_interaction: {
+        type: 'PIX',
+        sub_type: 'QR',
+        linked_to: pixKey
+      }
     };
 
-    console.log('[CREATE-ORDER-PIX] Creating PIX payment FIRST - amount:', orderData.total_amount);
+    console.log('[CREATE-ORDER-PIX] 🌐 Creating REAL PIX payment with real key - amount:', orderData.total_amount);
+    console.log('[CREATE-ORDER-PIX] 📋 Payment data:', {
+      amount: paymentData.transaction_amount,
+      payer_email: paymentData.payer.email,
+      payer_cpf: paymentData.payer.identification.number.substring(0, 3) + '***',
+      pix_key_used: pixKey.substring(0, 10) + '...'
+    });
 
-    // Chamar MercadoPago API para criar PIX
+    // 🌐 REAL MERCADOPAGO API CALL
     const mercadoPagoResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
@@ -168,21 +204,27 @@ serve(async (req) => {
 
     // Se PIX falhou, NÃO criar pedido
     if (!mercadoPagoResponse.ok) {
-      console.error('[CREATE-ORDER-PIX] PIX creation failed:', mercadoPagoResult);
-      throw new Error(`Erro ao gerar PIX: ${mercadoPagoResult.message || 'Erro desconhecido'}`);
+      console.error('[CREATE-ORDER-PIX] ❌ REAL PIX creation failed:', {
+        status: mercadoPagoResponse.status,
+        error: mercadoPagoResult
+      });
+      throw new Error(`Erro ao gerar PIX real: ${mercadoPagoResult.message || 'Erro desconhecido'}`);
     }
 
     // Verificar se dados do PIX foram retornados
     const pixTransactionData = mercadoPagoResult.point_of_interaction?.transaction_data;
     
     if (!pixTransactionData || !pixTransactionData.qr_code) {
-      console.error('[CREATE-ORDER-PIX] No PIX data received from MercadoPago');
-      throw new Error('PIX não foi gerado pelo MercadoPago');
+      console.error('[CREATE-ORDER-PIX] ❌ No REAL PIX data received from MercadoPago');
+      throw new Error('PIX real não foi gerado pelo MercadoPago');
     }
 
-    console.log('[CREATE-ORDER-PIX] PIX created successfully:', {
-      id: mercadoPagoResult.id,
-      status: mercadoPagoResult.status
+    console.log('[CREATE-ORDER-PIX] ✅ REAL PIX created successfully:', {
+      mercadopago_id: mercadoPagoResult.id,
+      status: mercadoPagoResult.status,
+      live_mode: mercadoPagoResult.live_mode,
+      has_qr_code: !!pixTransactionData.qr_code,
+      expires_at: mercadoPagoResult.date_of_expiration
     });
 
     // ETAPA 4: PIX criado com sucesso - AGORA criar o pedido
@@ -205,13 +247,13 @@ serve(async (req) => {
       .single();
 
     if (orderError) {
-      console.error('[CREATE-ORDER-PIX] Error creating order:', orderError);
+      console.error('[CREATE-ORDER-PIX] ❌ Error creating order:', orderError);
       // PIX já foi criado, mas não conseguimos criar o pedido
       // Em um cenário real, seria ideal cancelar o PIX aqui
       throw new Error('Erro ao criar pedido (PIX já foi gerado)');
     }
 
-    console.log('[CREATE-ORDER-PIX] Order created:', order.id);
+    console.log('[CREATE-ORDER-PIX] ✅ Order created:', order.id);
 
     // ETAPA 5: Criar itens do pedido
     const orderItems = orderData.items.map((item: any) => ({
@@ -228,16 +270,16 @@ serve(async (req) => {
       .insert(orderItems);
 
     if (itemsError) {
-      console.error('[CREATE-ORDER-PIX] Error creating order items:', itemsError);
+      console.error('[CREATE-ORDER-PIX] ❌ Error creating order items:', itemsError);
       // Rollback do pedido
       await supabaseServiceClient.from('orders').delete().eq('id', order.id);
       throw new Error('Erro ao criar itens do pedido');
     }
 
-    console.log('[CREATE-ORDER-PIX] Order items created:', orderItems.length);
+    console.log('[CREATE-ORDER-PIX] ✅ Order items created:', orderItems.length);
 
     // ETAPA 6: Atualizar a referência externa do PIX com o ID real do pedido
-    await fetch(`https://api.mercadopago.com/v1/payments/${mercadoPagoResult.id}`, {
+    const updateExternalRefResponse = await fetch(`https://api.mercadopago.com/v1/payments/${mercadoPagoResult.id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${mercadoPagoToken}`,
@@ -248,9 +290,16 @@ serve(async (req) => {
       })
     });
 
-    // ETAPA 7: Armazenar transação PIX no banco
+    if (!updateExternalRefResponse.ok) {
+      console.warn('[CREATE-ORDER-PIX] ⚠️ Warning: Could not update external reference');
+    } else {
+      console.log('[CREATE-ORDER-PIX] ✅ External reference updated to order ID');
+    }
+
+    // ETAPA 7: Armazenar transação PIX no banco COM MERCADOPAGO ID (FASE 1)
     const transactionId = `MP-${mercadoPagoResult.id}`;
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const expiresAt = mercadoPagoResult.date_of_expiration || 
+                    new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
     const { error: insertError } = await supabaseServiceClient
       .from('pix_transactions')
@@ -261,12 +310,15 @@ serve(async (req) => {
         amount: parseFloat(order.total_amount),
         br_code: pixTransactionData.qr_code,
         status: 'pending',
-        expires_at: expiresAt
+        expires_at: expiresAt,
+        mercadopago_payment_id: mercadoPagoResult.id.toString() // 🔑 STORING REAL MERCADOPAGO ID
       });
 
     if (insertError) {
-      console.error('[CREATE-ORDER-PIX] Error storing PIX transaction:', insertError);
+      console.error('[CREATE-ORDER-PIX] ❌ Error storing PIX transaction:', insertError);
       // Não fazer rollback aqui pois PIX e pedido já foram criados com sucesso
+    } else {
+      console.log('[CREATE-ORDER-PIX] ✅ PIX transaction stored with MercadoPago ID:', mercadoPagoResult.id);
     }
 
     // ETAPA 8: Gerar dados finais do PIX
@@ -280,16 +332,27 @@ serve(async (req) => {
       amount: parseFloat(order.total_amount).toFixed(2),
       expiresAt,
       mercadoPagoId: mercadoPagoResult.id,
-      ticketUrl: pixTransactionData.ticket_url || null
+      ticketUrl: pixTransactionData.ticket_url || null,
+      isRealPix: true, // Flag indicating this is a real PIX
+      pixKeyUsed: pixKey.substring(0, 10) + '...' // Partial key for confirmation
     };
 
-    console.log('[CREATE-ORDER-PIX] ✅ PIX CREATED FIRST → ORDER CREATED SUCCESSFULLY');
+    console.log('[CREATE-ORDER-PIX] 🎉 ✅ REAL PIX CREATED FIRST → ORDER CREATED SUCCESSFULLY - FASE 1 COMPLETE');
+    console.log('[CREATE-ORDER-PIX] 📊 Summary:', {
+      orderId: order.id,
+      mercadopagoId: mercadoPagoResult.id,
+      amount: order.total_amount,
+      pixKey: pixKey.substring(0, 10) + '...',
+      liveMode: mercadoPagoResult.live_mode
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
         order,
-        pixData
+        pixData,
+        phase1Complete: true,
+        realPixImplemented: true
       }),
       { 
         status: 200, 
@@ -298,7 +361,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[CREATE-ORDER-PIX] Error processing request:', error);
+    console.error('[CREATE-ORDER-PIX] ❌ Error processing request:', error);
     return new Response(
       JSON.stringify({ 
         success: false,

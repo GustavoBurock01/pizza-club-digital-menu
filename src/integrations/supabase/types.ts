@@ -255,6 +255,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          mercadopago_payment_id: string | null
           order_id: string
           status: string
           updated_at: string
@@ -266,6 +267,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id: string
+          mercadopago_payment_id?: string | null
           order_id: string
           status?: string
           updated_at?: string
@@ -277,6 +279,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          mercadopago_payment_id?: string | null
           order_id?: string
           status?: string
           updated_at?: string
