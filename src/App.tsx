@@ -146,6 +146,41 @@ const App = () => {
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
+              <Route path="/attendant/orders" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/attendant/kitchen" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/attendant/delivery" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/attendant/reports" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/attendant/customers" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
               <Route path="/admin/orders" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>

@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface AttendantStats {
   pendingOrders: number;
@@ -9,6 +10,30 @@ interface AttendantStats {
 }
 
 export function useAttendantStats() {
+  const queryClient = useQueryClient();
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('stats_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["attendant-stats"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["attendant-stats"],
     queryFn: async (): Promise<AttendantStats> => {
@@ -45,7 +70,7 @@ export function useAttendantStats() {
         todayCustomers: uniqueCustomers,
       };
     },
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchInterval: 10000, // Atualizar a cada 10 segundos
   });
 
   return {
