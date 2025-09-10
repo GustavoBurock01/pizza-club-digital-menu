@@ -5,10 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from 'react-router-dom';
+import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export const CartDrawer = () => {
   const { items, removeItem, updateQuantity, getSubtotal, getTotal, getItemCount, deliveryFee, clearCart } = useUnifiedStore();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -145,7 +150,18 @@ export const CartDrawer = () => {
                 <div className="space-y-2 pt-2">
                   <Button 
                     className="w-full gradient-pizza" 
-                    onClick={() => navigate('/checkout')}
+                    onClick={() => {
+                      if (!user?.id || !checkCheckoutRateLimit(user.id)) {
+                        toast({
+                          title: "Muitos cliques",
+                          description: "Aguarde um momento antes de tentar novamente.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      navigate('/checkout');
+                    }}
+                    disabled={items.length === 0}
                   >
                     Finalizar Pedido
                   </Button>

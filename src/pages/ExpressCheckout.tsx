@@ -9,6 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import { CheckoutValidation } from '@/components/CheckoutValidation';
 import { supabase } from '@/integrations/supabase/client';
+import { CheckoutButton } from '@/components/ProtectedButton';
+import { useOrderProtection } from '@/hooks/useOrderProtection';
+import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
+import { idempotencyManager } from '@/utils/idempotency';
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -36,6 +40,7 @@ const ExpressCheckout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { profile, isProfileComplete } = useProfile();
+  const { protectOrderCreation } = useOrderProtection();
 
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
@@ -112,6 +117,18 @@ const ExpressCheckout = () => {
   };
 
   const handleCreateOrder = async () => {
+    if (loading) return; // Proteção básica contra duplo clique
+    
+    // Verificar rate limiting
+    if (!user?.id || !checkCheckoutRateLimit(user.id)) {
+      toast({
+        title: "Muitas tentativas",
+        description: "Aguarde um momento antes de tentar novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setStep('processing');
     setLoading(true);
 
@@ -126,7 +143,7 @@ const ExpressCheckout = () => {
       } else {
         // Para pagamentos presenciais (dinheiro, cartões presenciais), criar pedido imediatamente
         console.log('[CHECKOUT] Processing in-person payment');
-        await handlePresencialPayment();
+        await handlePresencialPaymentProtected();
       }
     } catch (error: any) {
       setStep('payment');
@@ -225,6 +242,26 @@ const ExpressCheckout = () => {
       title: "Redirecionando para pagamento",
       description: "Complete o pagamento para confirmar seu pedido.",
     });
+  };
+
+  const handlePresencialPaymentProtected = async () => {
+    await protectOrderCreation(
+      {
+        user_id: user?.id,
+        items: items.map(item => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          customizations: item.customizations
+        })),
+        total_amount: total,
+        delivery_method: deliveryMethod,
+        payment_method: paymentMethod
+      },
+      handlePresencialPayment,
+      { userId: user?.id || '' }
+    );
   };
 
   const handlePresencialPayment = async () => {
@@ -788,7 +825,7 @@ const ExpressCheckout = () => {
                       </div>
                     </div>
 
-                    {step !== 'processing' && (
+                    {step !== 'processing' && step !== 'payment' && (
                       <Button 
                         onClick={handleNext}
                         disabled={!isStepValid || loading}
@@ -796,8 +833,17 @@ const ExpressCheckout = () => {
                       >
                         {step === 'review' && 'Continuar'}
                         {step === 'address' && 'Escolher Pagamento'}
-                        {step === 'payment' && `Finalizar • ${formatPrice(total)}`}
                       </Button>
+                    )}
+
+                    {step === 'payment' && (
+                      <CheckoutButton 
+                        onClick={async () => await handleCreateOrder()}
+                        disabled={!isStepValid}
+                        className="text-white h-12"
+                      >
+                        Finalizar • {formatPrice(total)}
+                      </CheckoutButton>
                     )}
                   </CardContent>
                 </Card>

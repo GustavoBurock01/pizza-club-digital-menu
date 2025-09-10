@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard, Lock, CheckCircle, XCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { PaymentButton } from '@/components/ProtectedButton';
+import { useOrderProtection } from '@/hooks/useOrderProtection';
+import { useAuth } from '@/hooks/useAuth';
+import { checkPaymentRateLimit } from '@/utils/rateLimiting';
 
 declare global {
   interface Window {
@@ -33,6 +37,8 @@ interface CardForm {
 }
 
 export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentError }: IntegratedCardPaymentProps) => {
+  const { user } = useAuth();
+  const { protectOrderCreation } = useOrderProtection();
   const [cardForm, setCardForm] = useState<CardForm>({
     cardNumber: '',
     cardholderName: '',
@@ -514,24 +520,26 @@ export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentEr
         )}
 
         {/* Botão de pagamento */}
-        <Button 
-          onClick={processPayment}
+        <PaymentButton 
+          onClick={async () => {
+            if (!user?.id || !checkPaymentRateLimit(user.id)) {
+              toast({
+                title: "Muitas tentativas",
+                description: "Aguarde antes de tentar novamente.",
+                variant: "destructive"
+              });
+              return;
+            }
+            await processPayment();
+          }}
           disabled={loading || paymentStatus === 'processing' || !mp}
-          className="w-full gradient-pizza"
+          className="gradient-pizza"
           size="lg"
+          loadingText="Processando pagamento..."
         >
-          {loading ? (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              Processando pagamento...
-            </>
-          ) : (
-            <>
-              <Lock className="w-4 w-4 mr-2" />
-              Pagar {orderData.total_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </>
-          )}
-        </Button>
+          <Lock className="w-4 w-4 mr-2" />
+          Pagar {orderData.total_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </PaymentButton>
 
         {paymentStatus === 'error' && (
           <div className="text-center">

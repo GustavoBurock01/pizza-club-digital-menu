@@ -70,7 +70,9 @@ export const RATE_LIMITS = {
   ORDERS_PER_HOUR: 5,
   REGISTRATION_PER_IP: 3,
   LOGIN_ATTEMPTS: 5,
-  PASSWORD_RESET: 3
+  PASSWORD_RESET: 3,
+  PAYMENT_ATTEMPTS: 3,
+  CHECKOUT_CLICKS: 10 // Por minuto
 } as const;
 
 // Utilitários para diferentes tipos de rate limiting
@@ -95,5 +97,21 @@ export const checkLoginRateLimit = (identifier: string): boolean => {
     `login:${identifier}`, 
     RATE_LIMITS.LOGIN_ATTEMPTS, 
     15 * 60 * 1000 // 15 minutos
+  );
+};
+
+export const checkPaymentRateLimit = (userId: string): boolean => {
+  return rateLimiter.isAllowed(
+    `payment:${userId}`, 
+    RATE_LIMITS.PAYMENT_ATTEMPTS, 
+    15 * 60 * 1000 // 15 minutos
+  );
+};
+
+export const checkCheckoutRateLimit = (userId: string): boolean => {
+  return rateLimiter.isAllowed(
+    `checkout:${userId}`, 
+    RATE_LIMITS.CHECKOUT_CLICKS, 
+    60 * 1000 // 1 minuto
   );
 };
