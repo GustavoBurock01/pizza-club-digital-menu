@@ -6,6 +6,8 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
+import { CheckoutValidation } from '@/components/CheckoutValidation';
 import { supabase } from '@/integrations/supabase/client';
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
@@ -33,6 +35,7 @@ const ExpressCheckout = () => {
   const { addresses } = useAddresses();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile, isProfileComplete } = useProfile();
 
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
@@ -78,6 +81,10 @@ const ExpressCheckout = () => {
         if (!isGuest && selectedAddressId) return true;
         return customerData.street && customerData.number && customerData.neighborhood;
       case 'payment':
+        // Verificar se dados obrigatórios estão completos
+        if (!profile?.full_name) return false;
+        if (deliveryMethod === 'delivery' && !profile?.phone) return false;
+        
         if (paymentMethod === 'cash' && needsChange) {
           return changeAmount && parseFloat(changeAmount) > total;
         }
@@ -85,7 +92,7 @@ const ExpressCheckout = () => {
       default:
         return false;
     }
-  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total]);
+  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total, profile]);
 
   // ===== HANDLERS =====
   const handleNext = () => {
@@ -134,6 +141,28 @@ const ExpressCheckout = () => {
   };
 
   const handleOnlinePayment = async () => {
+    // Obter dados do perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user?.id)
+      .single();
+
+    // Validar dados obrigatórios ANTES de enviar
+    const customerName = profile?.full_name || user?.email || 'Cliente';
+    const customerPhone = profile?.phone || '';
+
+    console.log('[CHECKOUT] Customer data:', {
+      name: customerName,
+      phone: customerPhone,
+      delivery_method: deliveryMethod
+    });
+
+    // Validação crítica: telefone obrigatório para entrega
+    if (deliveryMethod === 'delivery' && !customerPhone) {
+      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+    }
+
     // Preparar dados do pedido para pagamento online
     const orderData = {
       user_id: user?.id,
@@ -141,8 +170,9 @@ const ExpressCheckout = () => {
       total_amount: total,
       delivery_fee: deliveryFee,
       payment_method: paymentMethod,
-      customer_name: user?.email || 'Cliente',
-      customer_phone: user?.phone || '',
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      notes: undefined as string | undefined,
       items: items.map(item => ({
         product_id: item.productId,
         quantity: item.quantity,
@@ -170,12 +200,16 @@ const ExpressCheckout = () => {
       }
     }
 
-    // Preparar notas
+    // Preparar notas (sem sobrescrever customer_name)
     let notes = deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined;
     if (paymentMethod === 'cash' && needsChange) {
       notes = `${notes ? notes + '. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
     }
-    orderData.customer_name = notes || orderData.customer_name;
+    
+    // Adicionar notas sem sobrescrever o nome do cliente
+    if (notes) {
+      orderData.notes = notes;
+    }
 
     // Salvar no localStorage e navegar para pagamento
     localStorage.setItem('pendingOrder', JSON.stringify(orderData));
@@ -194,6 +228,21 @@ const ExpressCheckout = () => {
   };
 
   const handlePresencialPayment = async () => {
+    // Obter dados do perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user?.id)
+      .single();
+
+    const customerName = profile?.full_name || user?.email || 'Cliente';
+    const customerPhone = profile?.phone || '';
+
+    // Validação crítica: telefone obrigatório para entrega
+    if (deliveryMethod === 'delivery' && !customerPhone) {
+      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+    }
+
     let addressId = selectedAddressId;
 
     // Create address if needed
@@ -228,8 +277,8 @@ const ExpressCheckout = () => {
         delivery_method: deliveryMethod,
         status: 'pending',
         payment_status: 'pending',
-        customer_name: user?.email || 'Cliente',
-        customer_phone: user?.phone || '',
+        customer_name: customerName,
+        customer_phone: customerPhone,
         payment_method: paymentMethod,
         notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
       })
@@ -497,6 +546,12 @@ const ExpressCheckout = () => {
                 {/* STEP: PAYMENT */}
                 {step === 'payment' && (
                   <div className="space-y-6">
+                    {/* Validação de dados obrigatórios */}
+                    <CheckoutValidation 
+                      deliveryMethod={deliveryMethod}
+                      onNavigateToProfile={() => navigate('/account')}
+                    />
+                    
                     {/* Payment Category Selection */}
                     <Card>
                       <CardHeader>

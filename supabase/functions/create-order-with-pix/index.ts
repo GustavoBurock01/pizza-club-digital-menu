@@ -217,23 +217,40 @@ serve(async (req) => {
     
     const orderData = JSON.parse(body);
     
+    console.log('[CREATE-ORDER-PIX] 📋 Order data received:', {
+      items_count: orderData.items?.length,
+      total_amount: orderData.total_amount,
+      delivery_method: orderData.delivery_method,
+      customer_name: orderData.customer_name || 'NOT_PROVIDED',
+      customer_phone: orderData.customer_phone || 'NOT_PROVIDED',
+      user_id: orderData.user_id
+    });
+
     // Validação de dados obrigatórios
     if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+      console.error('[CREATE-ORDER-PIX] ❌ Missing items');
       throw new Error('Itens do pedido são obrigatórios');
     }
 
     if (!orderData.total_amount || isNaN(parseFloat(orderData.total_amount))) {
+      console.error('[CREATE-ORDER-PIX] ❌ Invalid total amount:', orderData.total_amount);
       throw new Error('Valor total do pedido é obrigatório');
     }
 
-    if (!orderData.customer_name) {
+    if (!orderData.customer_name || orderData.customer_name.trim() === '') {
+      console.error('[CREATE-ORDER-PIX] ❌ Missing customer name:', orderData.customer_name);
       throw new Error('Nome do cliente é obrigatório');
     }
 
     // Para delivery, telefone é obrigatório. Para retirada no balcão, é opcional
-    if (orderData.delivery_method === 'delivery' && !orderData.customer_phone) {
-      throw new Error('Telefone é obrigatório para entrega');
+    if (orderData.delivery_method === 'delivery') {
+      if (!orderData.customer_phone || orderData.customer_phone.trim() === '') {
+        console.error('[CREATE-ORDER-PIX] ❌ Missing phone for delivery:', orderData.customer_phone);
+        throw new Error('Telefone é obrigatório para entrega');
+      }
     }
+
+    console.log('[CREATE-ORDER-PIX] ✅ Basic validation passed');
 
     const totalValue = parseFloat(orderData.total_amount);
     
