@@ -441,40 +441,52 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: string
+          last_webhook_event: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           plan_name: string
           plan_price: number
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
+          sync_status: string | null
           updated_at: string | null
           user_id: string | null
+          webhook_event_id: string | null
         }
         Insert: {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          last_webhook_event?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           plan_name?: string
           plan_price?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          sync_status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          webhook_event_id?: string | null
         }
         Update: {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          last_webhook_event?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           plan_name?: string
           plan_price?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          sync_status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          webhook_event_id?: string | null
         }
         Relationships: [
           {
