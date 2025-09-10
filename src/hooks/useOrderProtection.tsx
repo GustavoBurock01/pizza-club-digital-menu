@@ -79,7 +79,7 @@ class OrderProtectionManager {
       isVip?: boolean;
     }
   ): Promise<any> {
-    const { userId, timeoutMs = 30000, enableIdempotency = true, isVip = false } = options;
+    const { userId, timeoutMs = 60000, enableIdempotency = true, isVip = false } = options;
     let stockReserved = false;
     let idempotentKey: string | null = null;
     const stockItems = orderData.items?.map((item: any) => ({

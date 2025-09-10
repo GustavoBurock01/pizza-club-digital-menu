@@ -65,21 +65,44 @@ class RateLimiter {
 // Instância global para rate limiting
 export const rateLimiter = new RateLimiter();
 
-// Constantes de rate limiting otimizadas para pizzaria
+// Constantes de rate limiting para alta concorrência
 export const RATE_LIMITS = {
-  ORDERS_PER_HOUR: 25, // Aumentado para pizzaria com alta demanda
-  ORDERS_PER_HOUR_VIP: 50, // Limite maior para usuários VIP/frequentes
-  REGISTRATION_PER_IP: 5,
-  LOGIN_ATTEMPTS: 10, // Mais tentativas para clientes legítimos
-  PASSWORD_RESET: 3,
-  PAYMENT_ATTEMPTS: 5, // Mais tentativas para pagamentos
-  CHECKOUT_CLICKS: 20, // Mais cliques por minuto para alta demanda
-  CONCURRENT_ORDERS: 3 // Máximo de pedidos simultâneos por usuário
+  ORDERS_PER_HOUR: 100, // Aumentado para alta concorrência
+  ORDERS_PER_HOUR_VIP: 200 as const, // Limite dobrado para usuários VIP
+  ORDERS_PER_HOUR_PEAK: 150 as const, // Limite específico para horários de pico
+  REGISTRATION_PER_IP: 10, // Aumentado para evitar bloqueios legítimos
+  LOGIN_ATTEMPTS: 15, // Mais tentativas para clientes legítimos
+  PASSWORD_RESET: 5,
+  PAYMENT_ATTEMPTS: 8, // Mais tentativas para pagamentos
+  CHECKOUT_CLICKS: 50, // Mais cliques por minuto para alta demanda
+  CONCURRENT_ORDERS: 10, // Aumentado para permitir múltiplos pedidos simultâneos
+  MAX_PROCESSING_CONCURRENT: 5 // Novo: limita processamento simultâneo global
 } as const;
+
+// Horários de pico (formato 24h)
+export const PEAK_HOURS = {
+  START: 18, // 18:00
+  END: 22   // 22:00
+} as const;
+
+// Verificar se está em horário de pico
+export const isPeakHour = (): boolean => {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= PEAK_HOURS.START && hour <= PEAK_HOURS.END;
+};
 
 // Utilitários para diferentes tipos de rate limiting
 export const checkOrderRateLimit = (userId: string, isVip: boolean = false): boolean => {
-  const limit = isVip ? RATE_LIMITS.ORDERS_PER_HOUR_VIP : RATE_LIMITS.ORDERS_PER_HOUR;
+  const isPeak = isPeakHour();
+  let limit = 100; // RATE_LIMITS.ORDERS_PER_HOUR
+  
+  if (isVip) {
+    limit = 200; // RATE_LIMITS.ORDERS_PER_HOUR_VIP
+  } else if (isPeak) {
+    limit = 150; // RATE_LIMITS.ORDERS_PER_HOUR_PEAK
+  }
+  
   return rateLimiter.isAllowed(
     `order:${userId}`, 
     limit, 
@@ -124,5 +147,14 @@ export const checkCheckoutRateLimit = (userId: string): boolean => {
     `checkout:${userId}`, 
     RATE_LIMITS.CHECKOUT_CLICKS, 
     60 * 1000 // 1 minuto
+  );
+};
+
+// Novo: Controle de processamento simultâneo global
+export const checkGlobalProcessingLimit = (): boolean => {
+  return rateLimiter.isAllowed(
+    'global:processing',
+    RATE_LIMITS.MAX_PROCESSING_CONCURRENT,
+    30 * 1000 // 30 segundos
   );
 };

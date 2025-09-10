@@ -52,7 +52,7 @@ export const ProtectedButton: React.FC<ProtectedButtonProps> = ({
 export const CheckoutButton: React.FC<ProtectedButtonProps> = (props) => {
   return (
     <ProtectedButton
-      debounceMs={2000} // 2 segundos para checkout
+      debounceMs={1500} // Reduzido para melhor UX com alta concorrência
       loadingText="Criando pedido..."
       className="w-full gradient-pizza"
       {...props}
@@ -64,7 +64,7 @@ export const CheckoutButton: React.FC<ProtectedButtonProps> = (props) => {
 export const PaymentButton: React.FC<ProtectedButtonProps> = (props) => {
   return (
     <ProtectedButton
-      debounceMs={3000} // 3 segundos para pagamento
+      debounceMs={2000} // Reduzido para melhor UX
       loadingText="Processando pagamento..."
       className="w-full"
       {...props}
