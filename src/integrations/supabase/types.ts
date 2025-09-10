@@ -635,6 +635,10 @@ export type Database = {
         Args: { cpf_input: string }
         Returns: boolean
       }
+      validate_password_strength: {
+        Args: { password_input: string }
+        Returns: Json
+      }
       validate_product_availability: {
         Args: { product_id: string }
         Returns: boolean
