@@ -398,6 +398,36 @@ export type Database = {
         }
         Relationships: []
       }
+      security_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -587,9 +617,27 @@ export type Database = {
         Args: { user_id?: string }
         Returns: boolean
       }
+      log_security_event: {
+        Args: {
+          p_action?: string
+          p_details?: Json
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
       refresh_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_cpf_format: {
+        Args: { cpf_input: string }
+        Returns: boolean
+      }
+      validate_product_availability: {
+        Args: { product_id: string }
+        Returns: boolean
       }
     }
     Enums: {
