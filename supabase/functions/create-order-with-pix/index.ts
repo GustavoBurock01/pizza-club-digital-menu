@@ -226,8 +226,13 @@ serve(async (req) => {
       throw new Error('Valor total do pedido é obrigatório');
     }
 
-    if (!orderData.customer_name || !orderData.customer_phone) {
-      throw new Error('Dados do cliente são obrigatórios');
+    if (!orderData.customer_name) {
+      throw new Error('Nome do cliente é obrigatório');
+    }
+
+    // Para delivery, telefone é obrigatório. Para retirada no balcão, é opcional
+    if (orderData.delivery_method === 'delivery' && !orderData.customer_phone) {
+      throw new Error('Telefone é obrigatório para entrega');
     }
 
     const totalValue = parseFloat(orderData.total_amount);
