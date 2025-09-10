@@ -82,10 +82,12 @@ serve(async (req) => {
     let planPrice = 0;
     let expiresAt = null;
     let stripeSubscriptionId = null;
+    let stripePriceId = null; // Adicionar variável para priceId
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       stripeSubscriptionId = subscription.id;
+      stripePriceId = subscription.items.data[0].price.id; // Definir priceId aqui
       expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: expiresAt });
       
@@ -131,7 +133,7 @@ serve(async (req) => {
     await supabaseClient.from("subscriptions").upsert({
       user_id: user.id,
       stripe_subscription_id: stripeSubscriptionId,
-      stripe_price_id: hasActiveSub ? subscription.items.data[0].price.id : null,
+      stripe_price_id: stripePriceId, // Usar a variável definida no escopo correto
       status: hasActiveSub ? 'active' : 'inactive',
       plan_name: planName,
       plan_price: planPrice,
