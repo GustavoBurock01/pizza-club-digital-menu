@@ -1019,6 +1019,30 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_order_details_for_staff: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          city: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          delivery_fee: number
+          id: string
+          items_count: number
+          neighborhood: string
+          notes: string
+          number: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: string
+          status: Database["public"]["Enums"]["order_status"]
+          street: string
+          total_amount: number
+          total_items: number
+          updated_at: string
+          user_id: string
+        }[]
+      }
       has_any_role: {
         Args: { required_roles: string[] }
         Returns: boolean

@@ -11,7 +11,7 @@ interface UnifiedProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
   requireSubscription?: boolean;
-  requireRole?: 'customer' | 'admin';
+  requireRole?: 'customer' | 'admin' | 'attendant';
 }
 
 export const UnifiedProtectedRoute = ({ 
@@ -59,6 +59,11 @@ export const UnifiedProtectedRoute = ({
   // Role-based checks
   if (user && requireRole) {
     if (requireRole === 'admin' && !isAdmin) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    
+    if (requireRole === 'attendant' && !isAdmin) {
+      // For now, only admins can access attendant panel (we'll add proper attendant role later)
       return <Navigate to="/dashboard" replace />;
     }
     

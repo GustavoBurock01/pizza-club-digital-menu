@@ -25,6 +25,9 @@ import ExpressCheckout from "./pages/ExpressCheckout";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
+// Lazy load attendant dashboard
+const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
+
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 
@@ -131,6 +134,15 @@ const App = () => {
               <Route path="/admin" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <AdminDashboard />
+                </UnifiedProtectedRoute>
+              } />
+              
+              {/* Attendant Routes */}
+              <Route path="/attendant" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantDashboard />
+                  </Suspense>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/admin/orders" element={
