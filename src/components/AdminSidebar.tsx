@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, Package, Users, BarChart3, Settings, LogOut, Headphones } from "lucide-react";
+import { Home, ShoppingCart, Package, Users, BarChart3, Settings, LogOut, Headphones, Archive } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -28,6 +28,11 @@ const items = [
     title: "Produtos",
     url: "/admin/products", 
     icon: Package,
+  },
+  {
+    title: "Estoque",
+    url: "/admin/stock",
+    icon: Archive,
   },
   {
     title: "Clientes",

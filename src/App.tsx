@@ -46,6 +46,7 @@ const CardPaymentPage = lazy(() => import("./pages/CardPaymentPage"));
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
+const AdminStock = lazy(() => import("./pages/AdminStock"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
 
@@ -204,6 +205,13 @@ const App = () => {
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminProducts />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/admin/stock" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AdminStock />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
