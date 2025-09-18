@@ -61,14 +61,21 @@ const SubscriptionPlansPage = () => {
         </Card>
 
         {/* Footer */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 space-x-4">
+          <Button 
+            variant="outline" 
+            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao Dashboard
+          </Button>
           <Button 
             variant="outline" 
             className="bg-white/20 border-white/30 text-white hover:bg-white/30"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Início
+            Página Inicial
           </Button>
         </div>
       </div>

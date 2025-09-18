@@ -53,12 +53,7 @@ export const UnifiedProtectedRoute = ({
 
   // Redirect authenticated users away from auth page
   if (!requireAuth && user && location.pathname === '/auth') {
-    // Check if user has subscription or subscription history to determine redirect
-    if (subscription?.status === 'active') {
-      return <Navigate to="/dashboard" replace />;
-    } else {
-      return <Navigate to="/plans" replace />;
-    }
+    return <Navigate to="/dashboard" replace />;
   }
 
   // Role-based checks
@@ -77,14 +72,9 @@ export const UnifiedProtectedRoute = ({
     }
   }
 
-  // Subscription check - redirect to plans if subscription required but not active
+  // Subscription check - only redirect to plans for routes that explicitly require subscription
   if (requireSubscription && user && !subscription.loading && !subscription.subscribed) {
     return <Navigate to="/plans" replace />;
-  }
-
-  // For customer dashboard - check if user needs subscription
-  if (user && !requireSubscription && location.pathname === '/dashboard') {
-    // Allow access to dashboard even without subscription, but the dashboard will show subscription prompts
   }
 
   return <>{children}</>;

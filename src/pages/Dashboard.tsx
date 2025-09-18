@@ -178,21 +178,47 @@ const Dashboard = () => {
           <div>
             <h2 className="text-xl font-semibold mb-4">Ações Rápidas</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/menu')}>
+              <Card 
+                className={`transition-shadow ${
+                  subscription?.status === 'active' 
+                    ? 'hover:shadow-lg cursor-pointer' 
+                    : 'opacity-60 cursor-not-allowed'
+                }`} 
+                onClick={() => {
+                  if (subscription?.status === 'active') {
+                    navigate('/menu');
+                  } else {
+                    navigate('/plans');
+                  }
+                }}
+              >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
                     <ShoppingCart className="h-6 w-6 text-orange-600" />
                   </div>
                   <CardTitle className="text-lg">Novo Pedido</CardTitle>
                   <CardDescription className="text-sm">
-                    Explore nosso cardápio
+                    {subscription?.status === 'active' 
+                      ? 'Explore nosso cardápio'
+                      : '🔒 Assine para acessar'
+                    }
                   </CardDescription>
                 </CardHeader>
               </Card>
 
               <Card 
-                className="hover:shadow-lg transition-shadow cursor-pointer" 
-                onClick={repeatLastOrder}
+                className={`transition-shadow ${
+                  subscription?.status === 'active' && recentOrders.length > 0
+                    ? 'hover:shadow-lg cursor-pointer' 
+                    : 'opacity-60 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  if (subscription?.status === 'active' && recentOrders.length > 0) {
+                    repeatLastOrder();
+                  } else if (subscription?.status !== 'active') {
+                    navigate('/plans');
+                  }
+                }}
               >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
@@ -200,19 +226,40 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Repetir Último</CardTitle>
                   <CardDescription className="text-sm">
-                    {recentOrders.length > 0 ? 'Peça novamente' : 'Nenhum pedido anterior'}
+                    {subscription?.status !== 'active' 
+                      ? '🔒 Assine para acessar'
+                      : recentOrders.length > 0 
+                        ? 'Peça novamente' 
+                        : 'Nenhum pedido anterior'
+                    }
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/menu')}>
+              <Card 
+                className={`transition-shadow ${
+                  subscription?.status === 'active' 
+                    ? 'hover:shadow-lg cursor-pointer' 
+                    : 'opacity-60 cursor-not-allowed'
+                }`} 
+                onClick={() => {
+                  if (subscription?.status === 'active') {
+                    navigate('/menu');
+                  } else {
+                    navigate('/plans');
+                  }
+                }}
+              >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
                     <Sparkles className="h-6 w-6 text-yellow-600" />
                   </div>
                   <CardTitle className="text-lg">Cardápio</CardTitle>
                   <CardDescription className="text-sm">
-                    Veja todas as opções
+                    {subscription?.status === 'active' 
+                      ? 'Veja todas as opções'
+                      : '🔒 Assine para acessar'
+                    }
                   </CardDescription>
                 </CardHeader>
               </Card>
