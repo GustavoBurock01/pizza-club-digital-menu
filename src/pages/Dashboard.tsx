@@ -27,7 +27,6 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
-  const [showPlans, setShowPlans] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -163,29 +162,16 @@ const Dashboard = () => {
               <Sparkles className="h-4 w-4 text-orange-600" />
               <AlertDescription className="flex items-center justify-between">
                 <span className="text-orange-800 font-medium">
-                  Assinatura necessária para acessar o cardápio!
+                  Assinatura necessária para acessar o cardápio completo!
                 </span>
                 <Button 
                   className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                  onClick={() => setShowPlans(true)}
+                  onClick={() => navigate('/plans')}
                 >
                   Ver Planos
                 </Button>
               </AlertDescription>
             </Alert>
-          )}
-
-          {/* Planos de assinatura */}
-          {showPlans && subscription?.status !== 'active' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Escolha seu Plano</h2>
-                <Button variant="outline" onClick={() => setShowPlans(false)}>
-                  Fechar
-                </Button>
-              </div>
-              <SubscriptionPlans />
-            </div>
           )}
 
           {/* Ações Rápidas */}
@@ -293,7 +279,7 @@ const Dashboard = () => {
                     <CardContent className="pt-0">
                       <Button 
                         className="w-full gradient-pizza text-white"
-                        onClick={() => setShowPlans(true)}
+                        onClick={() => navigate('/plans')}
                       >
                         Ver Planos
                       </Button>
@@ -337,7 +323,7 @@ const Dashboard = () => {
                       {subscription?.status !== 'active' && (
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={() => setShowPlans(true)}
+                          onClick={() => navigate('/plans')}
                         >
                           Ver Planos
                         </Button>
