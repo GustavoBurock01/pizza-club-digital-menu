@@ -85,7 +85,7 @@ export default function AttendantCustomers() {
   const totalCustomers = customers.length;
   const vipCustomers = customers.filter((c: any) => c.totalSpent >= 500).length;
   const averageSpent = customers.length > 0 
-    ? customers.reduce((sum: number, c: any) => sum + c.totalSpent, 0) / customers.length 
+    ? (customers as any[]).reduce((sum: number, c: any) => sum + (c.totalSpent || 0), 0) / customers.length 
     : 0;
   const topCustomer = customers[0];
 
@@ -189,10 +189,10 @@ export default function AttendantCustomers() {
                   <div>
                     <p className="text-sm text-muted-foreground">Top Cliente</p>
                     <p className="text-sm font-bold text-amber-600">
-                      {topCustomer?.name || 'N/A'}
+                      {(topCustomer as any)?.name || 'N/A'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {topCustomer ? formatCurrency(topCustomer.totalSpent) : ''}
+                      {topCustomer ? formatCurrency((topCustomer as any).totalSpent || 0) : ''}
                     </p>
                   </div>
                 </div>

@@ -22,7 +22,7 @@ export const UnifiedProtectedRoute = ({
 }: UnifiedProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useSubscription();
-  const { isAdmin, loading: roleLoading } = useRole();
+  const { role, isAdmin, isAttendant, isCustomer, loading: roleLoading } = useRole();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
 
@@ -39,7 +39,9 @@ export const UnifiedProtectedRoute = ({
         <div className="text-center">
           <LoadingSpinner />
           <p className="mt-4">
-            {requireRole === 'admin' ? 'Verificando permissões de administrador...' : 'Carregando...'}
+            {requireRole === 'admin' ? 'Verificando permissões de administrador...' : 
+             requireRole === 'attendant' ? 'Verificando permissões de atendente...' : 
+             'Carregando...'}
           </p>
         </div>
       </div>
@@ -51,24 +53,49 @@ export const UnifiedProtectedRoute = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Redirect authenticated users away from auth page
+  // Redirect authenticated users away from auth page to their appropriate dashboard
   if (!requireAuth && user && location.pathname === '/auth') {
+    if (role) {
+      switch (role) {
+        case 'admin':
+          return <Navigate to="/admin" replace />;
+        case 'attendant':
+          return <Navigate to="/attendant" replace />;
+        default:
+          return <Navigate to="/dashboard" replace />;
+      }
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Role-based checks
-  if (user && requireRole) {
+  // Role-based checks - only redirect if user has a role and doesn't match required role
+  if (user && requireRole && role) {
+    // Redirect based on user role mismatch
     if (requireRole === 'admin' && !isAdmin) {
+      // Non-admin trying to access admin routes
+      if (isAttendant) {
+        return <Navigate to="/attendant" replace />;
+      }
       return <Navigate to="/dashboard" replace />;
     }
     
-    if (requireRole === 'attendant' && !isAdmin) {
-      // For now, only admins can access attendant panel (we'll add proper attendant role later)
+    if (requireRole === 'attendant' && !isAttendant) {
+      // Non-attendant trying to access attendant routes
+      if (isAdmin) {
+        return <Navigate to="/admin" replace />;
+      }
       return <Navigate to="/dashboard" replace />;
     }
     
-    if (requireRole === 'customer' && isAdmin) {
-      return <Navigate to="/admin" replace />;
+    if (requireRole === 'customer' && !isCustomer) {
+      // Non-customer trying to access customer routes
+      if (isAdmin) {
+        return <Navigate to="/admin" replace />;
+      }
+      if (isAttendant) {
+        return <Navigate to="/attendant" replace />;
+      }
+      return <Navigate to="/dashboard" replace />;
     }
   }
 

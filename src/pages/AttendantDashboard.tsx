@@ -7,13 +7,14 @@ import { AttendantOrdersTable } from "@/components/AttendantOrdersTable";
 import { AttendantSidebar } from "@/components/AttendantSidebar";
 import { AttendantNotifications } from "@/components/AttendantNotifications";
 import { AttendantFilters } from "@/components/AttendantFilters";
-import { useAttendantStats } from "@/hooks/useAttendantStats";
+import { useAttendantSystem } from "@/hooks/useAttendantSystem";
+import { attendantOptimizer } from "@/utils/attendantOptimizer";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 
 export default function AttendantDashboard() {
-  const { stats, loading } = useAttendantStats();
+  const { stats, statsLoading: loading } = useAttendantSystem();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     status: 'all',
@@ -22,15 +23,20 @@ export default function AttendantDashboard() {
   });
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Som de notificação para novos pedidos
+  // Performance optimization
+  useEffect(() => {
+    attendantOptimizer.checkPerformance();
+  }, []);
+
+  // Som de notificação para novos pedidos (otimizado)
   useEffect(() => {
     if (soundEnabled && stats?.pendingOrders && stats.pendingOrders > 0) {
-      // Aqui poderia tocar um som de notificação
-      console.log('🔔 Novos pedidos pendentes!');
+      attendantOptimizer.playNotificationSound();
     }
   }, [stats?.pendingOrders, soundEnabled]);
 
   const handleRefresh = () => {
+    attendantOptimizer.clearCache();
     setLastRefresh(new Date());
     toast.success("Dados atualizados com sucesso!");
   };

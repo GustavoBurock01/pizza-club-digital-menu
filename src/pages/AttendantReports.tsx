@@ -239,9 +239,9 @@ export default function AttendantReports() {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{count} pedidos</p>
+                      <p className="font-medium">{count as number} pedidos</p>
                       <p className="text-xs text-muted-foreground">
-                        {totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : 0}%
+                        {totalOrders > 0 ? (((count as number) / totalOrders) * 100).toFixed(1) : 0}%
                       </p>
                     </div>
                   </div>
@@ -265,9 +265,9 @@ export default function AttendantReports() {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{count} pedidos</p>
+                      <p className="font-medium">{count as number} pedidos</p>
                       <p className="text-xs text-muted-foreground">
-                        {totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : 0}%
+                        {totalOrders > 0 ? (((count as number) / totalOrders) * 100).toFixed(1) : 0}%
                       </p>
                     </div>
                   </div>

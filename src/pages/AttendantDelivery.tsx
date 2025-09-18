@@ -346,11 +346,11 @@ export default function AttendantDelivery() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-sm">{neighborhood}</h4>
-                        <Badge variant="secondary">{orders.length}</Badge>
+                        <Badge variant="secondary">{(orders as any[]).length}</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Valor total: {formatCurrency(
-                          orders.reduce((sum, order) => sum + Number(order.total_amount), 0)
+                          (orders as any[]).reduce((sum, order) => sum + Number(order.total_amount), 0)
                         )}
                       </p>
                     </CardContent>
