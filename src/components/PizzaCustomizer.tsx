@@ -44,6 +44,7 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [crustPopoverOpen, setCrustPopoverOpen] = useState(false);
+  const [extrasPopoverOpen, setExtrasPopoverOpen] = useState(false);
   
   const { addItem } = useUnifiedStore();
   const { toast } = useToast();
@@ -162,19 +163,53 @@ export const PizzaCustomizer = ({ product, isOpen, onClose }: PizzaCustomizerPro
 
           {/* Extras */}
           <div className="space-y-3">
-            <Label>Ingredientes extras (+R$ 3,00 cada)</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {EXTRA_OPTIONS.map((extra) => (
-                <div key={extra} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={extra}
-                    checked={selectedExtras.includes(extra)}
-                    onCheckedChange={(checked) => handleExtraChange(extra, !!checked)}
-                  />
-                  <Label htmlFor={extra} className="text-sm">{extra}</Label>
+            <Label>Adicionais (+R$ 3,00 cada)</Label>
+            <Popover open={extrasPopoverOpen} onOpenChange={setExtrasPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={extrasPopoverOpen}
+                  className="w-full justify-between"
+                >
+                  {selectedExtras.length === 0 
+                    ? "Selecione os adicionais" 
+                    : `${selectedExtras.length} adicional(is) selecionado(s)`
+                  }
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <div className="p-2 max-h-60 overflow-y-auto">
+                  {EXTRA_OPTIONS.map((extra) => (
+                    <div key={extra} className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded">
+                      <Checkbox
+                        id={extra}
+                        checked={selectedExtras.includes(extra)}
+                        onCheckedChange={(checked) => handleExtraChange(extra, !!checked)}
+                      />
+                      <Label htmlFor={extra} className="text-sm flex-1 cursor-pointer">{extra}</Label>
+                      <span className="text-xs text-muted-foreground">+R$ 3,00</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </PopoverContent>
+            </Popover>
+            {selectedExtras.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedExtras.map((extra) => (
+                  <Button
+                    key={extra}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExtraChange(extra, false)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {extra} ×
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
