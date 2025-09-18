@@ -43,21 +43,46 @@ export function useAttendantOrders() {
     };
   }, [queryClient]);
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, error } = useQuery({
     queryKey: ["attendant-orders"],
     queryFn: async () => {
+      // Query simplificada para buscar pedidos com dados do cliente
       const { data, error } = await supabase
-        .rpc("get_order_details_for_staff");
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error("Erro ao buscar pedidos:", error);
         throw error;
       }
 
-      return data || [];
+      // Transformar dados para o formato esperado
+      const transformedData = data?.map(order => ({
+        ...order,
+        customer_name: order.customer_name || order.profiles?.full_name || 'Cliente sem nome',
+        customer_phone: order.customer_phone || order.profiles?.phone || '',
+        customer_email: '', // Campo não disponível na tabela orders
+        items_count: 1, // Temporário - será calculado corretamente depois
+        street: '', // Endereço será buscado da tabela addresses
+        number: '',
+        neighborhood: '',
+        city: ''
+      })) || [];
+
+      return transformedData;
     },
     staleTime: 30000, // Cache por 30 segundos
     refetchInterval: 15000, // Refetch a cada 15 segundos (otimizado)
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const updateOrderMutation = useMutation({
