@@ -150,6 +150,9 @@ const Payment = () => {
       setPixData(data.pixData);
       localStorage.removeItem('pendingOrder');
       
+      // Limpar carrinho imediatamente após criar pedido PIX
+      clearCart();
+      
       // Calculate time left until expiration
       const expiresAt = new Date(data.pixData.expiresAt);
       const now = new Date();
@@ -223,8 +226,7 @@ const Payment = () => {
       if (data.status === 'paid') {
         setPaymentStatus('success');
         
-        // Limpar carrinho após sucesso do pagamento
-        clearCart();
+        // NÃO limpar carrinho aqui - já foi limpo quando o pedido foi criado
         
         toast({
           title: "Pagamento aprovado!",
