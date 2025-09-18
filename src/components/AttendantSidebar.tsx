@@ -29,16 +29,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const menuItems = [
   { 
-    title: "Dashboard", 
+    title: "Operações", 
     url: "/attendant", 
+    icon: Package,
+    badge: "pending"
+  },
+  { 
+    title: "Dashboard", 
+    url: "/attendant/dashboard", 
     icon: Home,
     badge: null
   },
   { 
-    title: "Pedidos Ativos", 
+    title: "Pedidos", 
     url: "/attendant/orders", 
     icon: Package,
-    badge: "pending"
+    badge: null
   },
   { 
     title: "Cozinha", 

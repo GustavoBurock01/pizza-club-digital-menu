@@ -76,5 +76,6 @@ export function useAttendantStats() {
   return {
     stats,
     loading: isLoading,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["attendant-stats"] }),
   };
 }

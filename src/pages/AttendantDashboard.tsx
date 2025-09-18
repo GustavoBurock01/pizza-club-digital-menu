@@ -14,7 +14,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 
 export default function AttendantDashboard() {
-  const { stats, statsLoading: loading } = useAttendantSystem();
+  const { stats, orders, statsLoading, ordersLoading, refreshData } = useAttendantSystem();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     status: 'all',
@@ -36,9 +36,8 @@ export default function AttendantDashboard() {
   }, [stats?.pendingOrders, soundEnabled]);
 
   const handleRefresh = () => {
-    attendantOptimizer.clearCache();
+    refreshData();
     setLastRefresh(new Date());
-    toast.success("Dados atualizados com sucesso!");
   };
 
   const toggleSound = () => {
@@ -46,7 +45,7 @@ export default function AttendantDashboard() {
     toast.info(soundEnabled ? "Sons desabilitados" : "Sons habilitados");
   };
 
-  if (loading) {
+  if (statsLoading || ordersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />

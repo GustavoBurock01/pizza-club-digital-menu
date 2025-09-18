@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 
 // Lazy load attendant dashboard
 const AttendantDashboard = lazy(() => import("./pages/AttendantDashboard"));
+const AttendantOperations = lazy(() => import("./pages/AttendantOperations"));
 const AttendantOrders = lazy(() => import("./pages/AttendantOrders"));
 const AttendantKitchen = lazy(() => import("./pages/AttendantKitchen"));
 const AttendantDelivery = lazy(() => import("./pages/AttendantDelivery"));
@@ -160,6 +161,13 @@ const App = () => {
               
               {/* Attendant Routes */}
               <Route path="/attendant" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantOperations />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/attendant/dashboard" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AttendantDashboard />

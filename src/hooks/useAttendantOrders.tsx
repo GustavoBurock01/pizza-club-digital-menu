@@ -94,5 +94,6 @@ export function useAttendantOrders() {
     loading: isLoading,
     updateOrderStatus,
     isUpdating: updateOrderMutation.isPending,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["attendant-orders"] }),
   };
 }
