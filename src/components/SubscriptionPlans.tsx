@@ -1,170 +1,144 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Check, Clock } from "lucide-react";
+import { Crown, Check, Star, Shield, Clock } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-
-interface Plan {
-  id: 'trial' | 'monthly' | 'annual';
-  name: string;
-  price: number;
-  originalPrice?: number;
-  period: string;
-  features: string[];
-  badge?: string;
-  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
-  popular?: boolean;
-}
-
-const plans: Plan[] = [
-  {
-    id: 'trial',
-    name: 'Trial',
-    price: 1.00,
-    period: '7 dias',
-    features: [
-      'Acesso completo por 7 dias',
-      'Todos os produtos do cardápio',
-      'Suporte prioritário',
-      'Cancelamento a qualquer momento'
-    ],
-    badge: 'Teste',
-    badgeVariant: 'outline'
-  },
-  {
-    id: 'monthly',
-    name: 'Mensal',
-    price: 9.90,
-    period: 'mês',
-    features: [
-      'Acesso completo ao cardápio',
-      'Pedidos ilimitados',
-      'Suporte prioritário',
-      'Cancelamento a qualquer momento'
-    ]
-  },
-  {
-    id: 'annual',
-    name: 'Anual',
-    price: 99.90,
-    originalPrice: 118.80,
-    period: 'ano',
-    features: [
-      'Acesso completo ao cardápio',
-      'Pedidos ilimitados',
-      'Suporte prioritário',
-      'Economia de R$ 18,90',
-      'Cancelamento a qualquer momento'
-    ],
-    badge: 'Mais Popular',
-    badgeVariant: 'default',
-    popular: true
-  }
-];
 
 interface SubscriptionPlansProps {
   currentPlan?: string;
-  onSelectPlan?: (planId: 'trial' | 'monthly' | 'annual') => void;
+  onSelectPlan?: (planId: 'annual') => void;
 }
 
 export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPlansProps) => {
   const { createCheckout, subscription } = useSubscription();
 
-  const handleSelectPlan = (planId: 'trial' | 'monthly' | 'annual') => {
+  const handleSelectPlan = () => {
     if (onSelectPlan) {
-      onSelectPlan(planId);
+      onSelectPlan('annual');
     } else {
-      createCheckout(planId);
+      createCheckout('annual');
     }
   };
 
-  const isCurrentPlan = (planId: string) => {
-    return subscription?.status === 'active' && 
-           subscription?.plan_name?.toLowerCase() === planId.toLowerCase();
-  };
+  const isCurrentPlan = subscription?.status === 'active';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-      {plans.map((plan) => (
-        <Card 
-          key={plan.id}
-          className={`relative transition-all duration-200 hover:shadow-lg ${
-            plan.popular 
-              ? 'border-orange-500 shadow-lg scale-105' 
-              : 'border-gray-200 hover:border-orange-300'
-          } ${isCurrentPlan(plan.id) ? 'ring-2 ring-green-500' : ''}`}
-        >
-          {plan.badge && (
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge variant={plan.badgeVariant || 'default'} className="px-3 py-1">
-                {plan.badge}
-              </Badge>
-            </div>
-          )}
+    <div className="max-w-2xl mx-auto">
+      {/* Oferta Especial Badge */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-bold text-lg shadow-lg animate-pulse">
+          <Star className="h-5 w-5" />
+          OFERTA EXCLUSIVA VIP
+          <Star className="h-5 w-5" />
+        </div>
+      </div>
 
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
-              {plan.id === 'trial' ? (
-                <Clock className="h-6 w-6 text-orange-600" />
-              ) : (
-                <Crown className="h-6 w-6 text-orange-600" />
-              )}
+      {/* Card Principal */}
+      <Card className="relative border-2 border-orange-500 shadow-2xl bg-gradient-to-br from-white to-orange-50/30">
+        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+          <Badge className="bg-red-500 text-white px-4 py-2 text-sm font-bold">
+            🔥 MELHOR VALOR
+          </Badge>
+        </div>
+
+        <CardHeader className="text-center pb-6 pt-8">
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mb-6 shadow-lg">
+            <Crown className="h-10 w-10 text-white" />
+          </div>
+          
+          <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
+            Assinatura VIP Pizza Premium
+          </CardTitle>
+          
+          <p className="text-lg text-gray-600 mb-6">
+            Acesso ilimitado às pizzas artesanais mais premiadas da cidade
+          </p>
+          
+          <div className="bg-white rounded-xl p-6 shadow-inner border">
+            <div className="flex items-baseline justify-center gap-2 mb-2">
+              <span className="text-sm text-gray-500">apenas</span>
+              <span className="text-5xl font-black text-red-600">
+                R$ 8,32
+              </span>
+              <span className="text-lg text-gray-600">/mês</span>
             </div>
             
-            <CardTitle className="text-xl">{plan.name}</CardTitle>
-            
-            <div className="mt-4">
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-3xl font-bold text-pizza-dark">
-                  R$ {plan.price.toFixed(2)}
-                </span>
-                <span className="text-muted-foreground">/{plan.period}</span>
+            <div className="text-center">
+              <span className="text-sm text-gray-500 line-through">
+                R$ 9,90/mês (cobrança mensal)
+              </span>
+              <div className="text-lg font-bold text-green-600 mt-1">
+                💰 Economize R$ 18,90 por ano!
               </div>
-              
-              {plan.originalPrice && (
-                <div className="mt-1">
-                  <span className="text-sm text-muted-foreground line-through">
-                    R$ {plan.originalPrice.toFixed(2)}/{plan.period}
-                  </span>
-                  <span className="text-sm text-green-600 ml-2 font-medium">
-                    Economize {Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)}%
-                  </span>
-                </div>
-              )}
+              <div className="text-sm text-gray-600 mt-2">
+                <strong>Pagamento anual: R$ 99,90</strong>
+              </div>
             </div>
-          </CardHeader>
+          </div>
+        </CardHeader>
 
-          <CardContent className="pt-0">
-            <ul className="space-y-3 mb-6">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">{feature}</span>
-                </li>
-              ))}
-            </ul>
+        <CardContent className="px-8 pb-8">
+          {/* Benefícios VIP */}
+          <div className="space-y-4 mb-8">
+            <h3 className="text-xl font-bold text-center mb-6 text-gray-900">
+              🏆 Benefícios Exclusivos VIP
+            </h3>
+            
+            {[
+              { icon: "🍕", text: "Cardápio premium com receitas exclusivas não disponíveis em outros lugares" },
+              { icon: "⚡", text: "Entrega prioritária em até 30 minutos ou menos" },
+              { icon: "💎", text: "Ingredientes artesanais importados e selecionados" },
+              { icon: "🎯", text: "Pedidos ilimitados sem taxa de entrega" },
+              { icon: "👑", text: "Suporte VIP 24/7 com atendimento prioritário" },
+              { icon: "💝", text: "Descontos especiais em bebidas e sobremesas" }
+            ].map((benefit, index) => (
+              <div key={index} className="flex items-start gap-4 p-3 bg-white/50 rounded-lg">
+                <div className="text-2xl">{benefit.icon}</div>
+                <div className="flex items-center gap-3 flex-1">
+                  <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="text-gray-700 font-medium">{benefit.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
+          {/* CTA Principal */}
+          <div className="space-y-4">
             <Button
-              className={`w-full ${
-                plan.popular 
-                  ? 'gradient-pizza text-white' 
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-              } ${isCurrentPlan(plan.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => handleSelectPlan(plan.id)}
-              disabled={isCurrentPlan(plan.id)}
+              className="w-full h-16 text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg transform hover:scale-105 transition-all duration-200"
+              onClick={handleSelectPlan}
+              disabled={isCurrentPlan}
             >
-              {isCurrentPlan(plan.id) ? (
+              {isCurrentPlan ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Plano Atual
+                  <Check className="h-6 w-6 mr-3" />
+                  ASSINATURA ATIVA
                 </>
               ) : (
-                `Escolher ${plan.name}`
+                <>
+                  <Crown className="h-6 w-6 mr-3" />
+                  QUERO MINHA ASSINATURA VIP AGORA!
+                </>
               )}
             </Button>
-          </CardContent>
-        </Card>
-      ))}
+            
+            {!isCurrentPlan && (
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center gap-2 text-green-600 font-medium">
+                  <Shield className="h-4 w-4" />
+                  <span>30 dias de garantia total</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Se não ficar 100% satisfeito, devolvemos seu dinheiro
+                </p>
+                <p className="text-xs text-gray-500">
+                  Cancelamento simples a qualquer momento
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

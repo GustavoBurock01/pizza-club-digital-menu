@@ -25,29 +25,32 @@ const SubscriptionPlansPage = () => {
     <div className="min-h-screen gradient-pizza p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center text-white mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="bg-white p-3 rounded-full shadow-lg">
-              <Crown className="h-8 w-8 text-pizza-red" />
+        <div className="text-center text-white mb-12">
+          <div className="flex justify-center mb-6">
+            <div className="bg-gradient-to-br from-orange-400 to-red-500 p-4 rounded-full shadow-2xl">
+              <Crown className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-2">
-            Bem-vindo ao Pizza Premium, {userName}! 🍕
+          <h1 className="text-5xl font-black mb-4 bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">
+            Olá, {userName}! 👋
           </h1>
-          <p className="text-xl text-white/90 mb-6">
-            Escolha seu plano e tenha acesso ao cardápio exclusivo de pizzas artesanais
+          <p className="text-2xl text-white/90 mb-2 font-medium">
+            Bem-vindo ao clube VIP mais exclusivo de pizzas da cidade!
+          </p>
+          <p className="text-lg text-white/80 mb-8 max-w-3xl mx-auto">
+            Junte-se a centenas de clientes que já descobriram o segredo das melhores pizzas artesanais
           </p>
           
           {subscription?.hasSubscriptionHistory ? (
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-white/90">
-                Sua assinatura expirou. Escolha um novo plano para continuar aproveitando nosso cardápio exclusivo!
+            <div className="bg-red-500/20 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto border border-red-300/30">
+              <p className="text-white text-lg font-medium">
+                🔥 <strong>Oferta especial de retorno!</strong> Sua assinatura expirou, mas você ainda pode aproveitar nosso preço VIP exclusivo.
               </p>
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-white/90">
-                Como novo cliente, você tem acesso ao nosso <strong>Trial de 7 dias por apenas R$ 1,00!</strong>
+            <div className="bg-orange-500/20 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto border border-orange-300/30">
+              <p className="text-white text-lg font-medium">
+                🎉 <strong>Oferta de lançamento!</strong> Seja um dos primeiros membros VIP e garante o melhor preço que já oferecemos.
               </p>
             </div>
           )}
