@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2 } from 'lucide-react';
 import { PaymentCategory, PaymentMethod } from '@/types';
 
 interface CustomerData {
@@ -34,7 +34,7 @@ interface CustomerData {
 }
 
 const ExpressCheckout = () => {
-  const { items, getSubtotal, getTotal, clearCart } = useUnifiedStore();
+  const { items, getSubtotal, getTotal, clearCart, removeItem } = useUnifiedStore();
   const { user } = useAuth();
   const { addresses } = useAddresses();
   const { toast } = useToast();
@@ -444,7 +444,7 @@ const ExpressCheckout = () => {
                     <CardHeader>
                       <CardTitle>Seus Itens ({items.length})</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                     <CardContent className="space-y-4">
                       {items.map((item) => (
                         <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
                           <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center">
@@ -462,6 +462,15 @@ const ExpressCheckout = () => {
                               <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
                             </div>
                           </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(item.id)}
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       ))}
                     </CardContent>
