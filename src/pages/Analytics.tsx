@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { AdminSidebar } from '@/components/AdminSidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import {
   BarChart,
@@ -437,7 +437,7 @@ export default function Analytics() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AdminSidebar />
+        <AppSidebar />
         <main className="flex-1 p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div>

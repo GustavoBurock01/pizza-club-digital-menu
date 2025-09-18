@@ -1,13 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AdminProduct } from '@/hooks/useAdminProducts';
+import { AdminProduct, useUnifiedAdminData } from '@/hooks/useUnifiedAdminData';
 import { formatCurrency } from '@/utils/formatting';
 
 interface AdminProductsListProps {
   products: AdminProduct[];
 }
 
-export const AdminProductsList = ({ products }: AdminProductsListProps) => {
+export function AdminProductsList() {
+  const { products } = useUnifiedAdminData();
   return (
     <Card>
       <CardHeader>

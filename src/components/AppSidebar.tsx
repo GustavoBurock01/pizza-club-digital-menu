@@ -67,6 +67,7 @@ const adminItems = [
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Clientes", url: "/admin/customers", icon: Users },
   { title: "Produtos", url: "/admin/products", icon: Package },
+  { title: "Estoque", url: "/admin/stock", icon: Package },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 

@@ -1,5 +1,5 @@
 import { useAtomicStock } from "@/hooks/useAtomicStock";
-import { useAdminProducts } from "@/hooks/useAdminProducts";
+import { useUnifiedAdminData } from "@/hooks/useUnifiedAdminData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,7 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export function StockDashboard() {
   const { systemStats, productStock, isLoading: stockLoading, loadSystemStats, loadProductStock } = useAtomicStock();
-  const { products, stats, loading: productsLoading } = useAdminProducts();
+  const { products, stats, loading: productsLoading } = useUnifiedAdminData();
 
   if (stockLoading || productsLoading) {
     return <LoadingSpinner />;

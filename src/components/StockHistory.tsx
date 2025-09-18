@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAtomicStock } from "@/hooks/useAtomicStock";
-import { useAdminProducts } from "@/hooks/useAdminProducts";
+import { useUnifiedAdminData } from "@/hooks/useUnifiedAdminData";
 import { getStockAuditLogs } from '@/utils/atomicStockControl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

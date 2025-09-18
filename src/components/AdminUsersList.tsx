@@ -1,13 +1,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AdminCustomer } from '@/hooks/useAdminCustomers';
+import { AdminCustomer, useUnifiedAdminData } from '@/hooks/useUnifiedAdminData';
 import { formatDateTime } from '@/utils/formatting';
 
 interface AdminUsersListProps {
   users: AdminCustomer[];
 }
 
-export const AdminUsersList = ({ users }: AdminUsersListProps) => {
+export function AdminUsersList() {
+  const { stats } = useUnifiedAdminData();
+  const users = stats.topCustomers.map(customer => ({
+    id: customer.id,
+    full_name: customer.name,
+    email: '',
+    role: 'customer',
+    created_at: new Date().toISOString(),
+    totalOrders: customer.orderCount,
+    totalSpent: customer.totalSpent
+  }));
   return (
     <Card>
       <CardHeader>

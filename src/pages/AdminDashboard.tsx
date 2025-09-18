@@ -1,5 +1,5 @@
-import { useAdminData } from '@/hooks/useAdminData';
-import { AdminSidebar } from '@/components/AdminSidebar';
+import { useUnifiedAdminData } from '@/hooks/useUnifiedAdminData';
+import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,14 @@ import { formatCurrency } from '@/utils/formatting';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const { stats, loading, refreshStats } = useAdminData();
+  const { stats, loading, refreshAllData } = useUnifiedAdminData();
   const navigate = useNavigate();
 
   if (loading) {
     return (
       <SidebarProvider>
         <div className="flex min-h-screen w-full">
-          <AdminSidebar />
+        <AppSidebar />
           <main className="flex-1 p-6">
             <div className="flex items-center justify-center h-64">
               <LoadingSpinner />
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AdminSidebar />
+        <AppSidebar />
         <main className="flex-1 p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold">Dashboard Administrativo</h1>
               <p className="text-muted-foreground">Visão geral do negócio e principais métricas</p>
             </div>
-            <Button onClick={() => refreshStats()} variant="outline" size="sm">
+            <Button onClick={() => refreshAllData()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
@@ -190,11 +190,11 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.quantity} vendidos</p>
+                          <p className="text-sm text-muted-foreground">{product.totalSold} vendidos</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(product.revenue)}</p>
+                        <p className="font-semibold">{formatCurrency(product.totalRevenue)}</p>
                       </div>
                     </div>
                   ))}
