@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 
 export function StockHistory() {
   const { } = useAtomicStock();
-  const { products } = useAdminProducts();
+  const { products } = useUnifiedAdminData();
   
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);

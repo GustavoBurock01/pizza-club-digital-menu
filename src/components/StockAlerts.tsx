@@ -9,7 +9,7 @@ import { useState } from "react";
 
 export function StockAlerts() {
   const { productStock, systemStats, loadSystemStats } = useAtomicStock();
-  const { products, refreshProducts } = useAdminProducts();
+  const { products, refreshAllData } = useUnifiedAdminData();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -17,7 +17,7 @@ export function StockAlerts() {
     try {
       await Promise.all([
         loadSystemStats(),
-        refreshProducts()
+        refreshAllData()
       ]);
     } finally {
       setIsRefreshing(false);

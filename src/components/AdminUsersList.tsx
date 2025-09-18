@@ -13,6 +13,7 @@ export function AdminUsersList() {
     id: customer.id,
     full_name: customer.name,
     email: '',
+    phone: '', // Add phone property
     role: 'customer',
     created_at: new Date().toISOString(),
     totalOrders: customer.orderCount,

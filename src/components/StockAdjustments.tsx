@@ -12,7 +12,7 @@ import { Plus, Minus, RefreshCw } from "lucide-react";
 
 export function StockAdjustments() {
   const { productStock, loadProductStock } = useAtomicStock();
-  const { products } = useAdminProducts();
+  const { products } = useUnifiedAdminData();
   const { toast } = useToast();
   
   const [selectedProduct, setSelectedProduct] = useState<string>('');
