@@ -1443,6 +1443,15 @@ export type Database = {
         Args: { product_id: string }
         Returns: boolean
       }
+      validate_subscription_consistency: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          inconsistency_type: string
+          local_status: string
+          sync_status: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       order_status:

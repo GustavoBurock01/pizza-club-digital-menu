@@ -31,12 +31,13 @@ export const useSubscription = () => {
     if (!user || !session) return false;
 
     try {
-      // CORREÇÃO 7: Verifica apenas registros válidos (com status não-nulo)
+      // FASE 2: Verificar histórico apenas de assinaturas reais (não registros órfãos)
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('id, created_at, status')
+        .select('id, status, created_at, sync_status')
         .eq('user_id', user.id)
-        .not('status', 'is', null)
+        .neq('status', 'pending') // Ignorar registros pendentes
+        .neq('sync_status', 'pending') // Ignorar sync pendente
         .limit(1);
 
       if (error) {
@@ -44,9 +45,8 @@ export const useSubscription = () => {
         return false;
       }
 
-      // CORREÇÃO 8: Considera histórico apenas se houve status ativo anteriormente
-      return data && data.length > 0 && 
-             data.some(sub => sub.status === 'active');
+      // Usuário tem histórico apenas se teve assinatura real (não registros órfãos)
+      return data && data.length > 0;
     } catch (error: any) {
       console.error('Error checking subscription history:', error);
       return false;
@@ -59,38 +59,36 @@ export const useSubscription = () => {
       return;
     }
 
-    // CORREÇÃO 1: Cache baseado no usuário específico para evitar dados compartilhados
+    // FASE 2: Cache inteligente baseado no histórico
     const userCacheKey = `subscription_data_${user.id}`;
     const userLastCheckKey = `subscription_last_check_${user.id}`;
     
-    const lastCheck = localStorage.getItem(userLastCheckKey);
-    const fourHoursInMs = 4 * 60 * 60 * 1000; // 4 horas em millisegundos
-    const now = Date.now();
+    // Primeiro verifica o histórico de assinaturas
+    const hasHistory = await checkSubscriptionHistory();
+    const shouldUseCache = hasHistory && !forceCheck;
     
-    // CORREÇÃO 2: Para novos usuários, sempre força verificação na primeira vez
-    const isFirstCheck = !localStorage.getItem(userLastCheckKey);
-    
-    if (!forceCheck && !isFirstCheck && lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
-      // Usa dados do cache se não passou 4 horas E não é primeira verificação
-      const cachedData = localStorage.getItem(userCacheKey);
-      if (cachedData) {
-        try {
-          const parsedData = JSON.parse(cachedData);
-          setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
-          return;
-        } catch {
-          // Remove cache corrompido
-          localStorage.removeItem(userCacheKey);
-          localStorage.removeItem(userLastCheckKey);
+    if (shouldUseCache) {
+      const lastCheck = localStorage.getItem(userLastCheckKey);
+      const fourHoursInMs = 4 * 60 * 60 * 1000;
+      const now = Date.now();
+      
+      if (lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
+        const cachedData = localStorage.getItem(userCacheKey);
+        if (cachedData) {
+          try {
+            const parsedData = JSON.parse(cachedData);
+            setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
+            return;
+          } catch {
+            localStorage.removeItem(userCacheKey);
+            localStorage.removeItem(userLastCheckKey);
+          }
         }
       }
     }
 
     try {
       setSubscription(prev => ({ ...prev, loading: true }));
-      
-      // Primeiro verifica o histórico de assinaturas
-      const hasHistory = await checkSubscriptionHistory();
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
@@ -112,14 +110,18 @@ export const useSubscription = () => {
 
       setSubscription(subscriptionData);
       
-      // CORREÇÃO 3: Salva no cache específico do usuário
-      const userCacheKey = `subscription_data_${user.id}`;
-      const userLastCheckKey = `subscription_last_check_${user.id}`;
-      
-      localStorage.setItem(userLastCheckKey, now.toString());
-      localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
+      // Cache apenas para usuários com histórico válido
+      if (hasHistory) {
+        const now = Date.now();
+        localStorage.setItem(userLastCheckKey, now.toString());
+        localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
+      } else {
+        // Limpar cache para novos usuários
+        localStorage.removeItem(userCacheKey);
+        localStorage.removeItem(userLastCheckKey);
+      }
 
-      // CORREÇÃO 4: Remove caches de outros usuários para economizar espaço
+      // Limpar caches de outros usuários
       Object.keys(localStorage).forEach(key => {
         if ((key.startsWith('subscription_data_') || key.startsWith('subscription_last_check_')) && 
             !key.includes(user.id)) {
