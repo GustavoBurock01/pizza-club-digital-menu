@@ -31,11 +31,12 @@ export const useSubscription = () => {
     if (!user || !session) return false;
 
     try {
-      // Verifica se já existe registro de assinatura na tabela subscriptions
+      // CORREÇÃO 7: Verifica apenas registros válidos (com status não-nulo)
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('id, created_at')
+        .select('id, created_at, status')
         .eq('user_id', user.id)
+        .not('status', 'is', null)
         .limit(1);
 
       if (error) {
@@ -43,7 +44,9 @@ export const useSubscription = () => {
         return false;
       }
 
-      return data && data.length > 0;
+      // CORREÇÃO 8: Considera histórico apenas se houve status ativo anteriormente
+      return data && data.length > 0 && 
+             data.some(sub => sub.status === 'active');
     } catch (error: any) {
       console.error('Error checking subscription history:', error);
       return false;
@@ -56,14 +59,20 @@ export const useSubscription = () => {
       return;
     }
 
-    // Cache inteligente - só consulta se passou mais de 4 horas ou se forçado
-    const lastCheck = localStorage.getItem('subscription_last_check');
+    // CORREÇÃO 1: Cache baseado no usuário específico para evitar dados compartilhados
+    const userCacheKey = `subscription_data_${user.id}`;
+    const userLastCheckKey = `subscription_last_check_${user.id}`;
+    
+    const lastCheck = localStorage.getItem(userLastCheckKey);
     const fourHoursInMs = 4 * 60 * 60 * 1000; // 4 horas em millisegundos
     const now = Date.now();
     
-    if (!forceCheck && lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
-      // Usa dados do cache se não passou 4 horas
-      const cachedData = localStorage.getItem('subscription_data');
+    // CORREÇÃO 2: Para novos usuários, sempre força verificação na primeira vez
+    const isFirstCheck = !localStorage.getItem(userLastCheckKey);
+    
+    if (!forceCheck && !isFirstCheck && lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
+      // Usa dados do cache se não passou 4 horas E não é primeira verificação
+      const cachedData = localStorage.getItem(userCacheKey);
       if (cachedData) {
         try {
           const parsedData = JSON.parse(cachedData);
@@ -71,8 +80,8 @@ export const useSubscription = () => {
           return;
         } catch {
           // Remove cache corrompido
-          localStorage.removeItem('subscription_data');
-          localStorage.removeItem('subscription_last_check');
+          localStorage.removeItem(userCacheKey);
+          localStorage.removeItem(userLastCheckKey);
         }
       }
     }
@@ -103,16 +112,20 @@ export const useSubscription = () => {
 
       setSubscription(subscriptionData);
       
-      // Salva no cache com timestamp
-      localStorage.setItem('subscription_last_check', now.toString());
-      localStorage.setItem('subscription_data', JSON.stringify(subscriptionData));
+      // CORREÇÃO 3: Salva no cache específico do usuário
+      const userCacheKey = `subscription_data_${user.id}`;
+      const userLastCheckKey = `subscription_last_check_${user.id}`;
+      
+      localStorage.setItem(userLastCheckKey, now.toString());
+      localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
 
-      // Se dados mudaram, limpa cache para próxima verificação ser mais rápida
-      const previousData = localStorage.getItem('subscription_data_previous');
-      if (previousData && previousData !== JSON.stringify(subscriptionData)) {
-        localStorage.removeItem('subscription_last_check');
-      }
-      localStorage.setItem('subscription_data_previous', JSON.stringify(subscriptionData));
+      // CORREÇÃO 4: Remove caches de outros usuários para economizar espaço
+      Object.keys(localStorage).forEach(key => {
+        if ((key.startsWith('subscription_data_') || key.startsWith('subscription_last_check_')) && 
+            !key.includes(user.id)) {
+          localStorage.removeItem(key);
+        }
+      });
 
     } catch (error: any) {
       console.error('Error checking subscription:', error);
@@ -154,9 +167,11 @@ export const useSubscription = () => {
 
       if (error) throw error;
 
-      // Invalidate cache since we're about to create a new subscription
-      localStorage.removeItem('subscription_last_check');
-      localStorage.removeItem('subscription_data');
+      // CORREÇÃO 5: Invalida cache específico do usuário
+      if (user) {
+        localStorage.removeItem(`subscription_last_check_${user.id}`);
+        localStorage.removeItem(`subscription_data_${user.id}`);
+      }
 
       // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
@@ -245,8 +260,11 @@ export const useSubscription = () => {
   // Auto-refresh on focus to catch webhook updates
   useEffect(() => {
     const handleFocus = () => {
-      // Check if we should refresh on focus (every 10 minutes max)
-      const lastCheck = localStorage.getItem('subscription_last_check');
+      // CORREÇÃO 6: Verifica cache específico do usuário
+      if (!user) return;
+      
+      const userLastCheckKey = `subscription_last_check_${user.id}`;
+      const lastCheck = localStorage.getItem(userLastCheckKey);
       const tenMinutesInMs = 10 * 60 * 1000;
       const now = Date.now();
       
