@@ -50,6 +50,7 @@ const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const AdminStock = lazy(() => import("./pages/AdminStock"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -70,6 +71,11 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={
+                <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                  <ResetPassword />
+                </Suspense>
+              } />
               <Route path="/plans" element={
                 <UnifiedProtectedRoute requireAuth={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
