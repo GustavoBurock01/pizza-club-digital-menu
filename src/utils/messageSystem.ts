@@ -49,6 +49,31 @@ class MessageSystem {
       type: 'success',
       title: 'Email enviado',
       description: 'Verifique sua caixa de entrada para redefinir sua senha.'
+    }),
+    passwordResetError: (): SystemMessage => ({
+      type: 'error',
+      title: 'Erro ao enviar email',
+      description: 'Não foi possível enviar o email de recuperação. Tente novamente.'
+    }),
+    accountBlocked: (): SystemMessage => ({
+      type: 'error',
+      title: 'Conta bloqueada',
+      description: 'Sua conta foi temporariamente bloqueada por segurança.'
+    }),
+    temporaryBlock: (minutes: number): SystemMessage => ({
+      type: 'warning',
+      title: 'Acesso bloqueado temporariamente',
+      description: `Aguarde ${minutes} minuto(s) para tentar novamente.`
+    }),
+    registrationSuccess: (): SystemMessage => ({
+      type: 'success',
+      title: 'Conta criada com sucesso',
+      description: 'Sua conta foi criada. Bem-vindo!'
+    }),
+    registrationError: (error?: string): SystemMessage => ({
+      type: 'error',
+      title: 'Erro no cadastro',
+      description: error || 'Não foi possível criar sua conta. Tente novamente.'
     })
   };
 
@@ -78,6 +103,36 @@ class MessageSystem {
       type: 'error',
       title: 'Produto indisponível',
       description: `${productName} não possui estoque suficiente no momento.`
+    }),
+    itemRemoved: (): SystemMessage => ({
+      type: 'info',
+      title: 'Item removido',
+      description: 'Item removido do carrinho.'
+    }),
+    itemRemovedNamed: (itemName: string): SystemMessage => ({
+      type: 'info',
+      title: 'Item removido',
+      description: `${itemName} foi removido do carrinho.`
+    }),
+    cartCleared: (): SystemMessage => ({
+      type: 'info',
+      title: 'Carrinho limpo',
+      description: 'Todos os itens foram removidos do carrinho.'
+    }),
+    rateLimitExceeded: (): SystemMessage => ({
+      type: 'warning',
+      title: 'Muitos cliques',
+      description: 'Aguarde um momento antes de tentar novamente.'
+    }),
+    cashOrderCreated: (orderNumber: string): SystemMessage => ({
+      type: 'success',
+      title: 'Pedido criado',
+      description: `Pedido #${orderNumber} criado com pagamento em dinheiro.`
+    }),
+    orderCreated: (orderNumber: string): SystemMessage => ({
+      type: 'success',
+      title: 'Pedido confirmado',
+      description: `Pedido #${orderNumber} foi confirmado e está sendo preparado.`
     })
   };
 
@@ -180,6 +235,75 @@ class MessageSystem {
       type: 'error',
       title: 'CEP não encontrado',
       description: 'CEP não encontrado. Verifique e tente novamente.'
+    }),
+    emailRequired: (): SystemMessage => ({
+      type: 'error',
+      title: 'Email obrigatório',
+      description: 'Por favor, informe seu email para continuar.'
+    }),
+    validCEP: (): SystemMessage => ({
+      type: 'success',
+      title: 'CEP válido',
+      description: 'CEP encontrado e dados preenchidos automaticamente.'
+    }),
+    invalidCEP: (): SystemMessage => ({
+      type: 'error',
+      title: 'CEP inválido',
+      description: 'CEP não encontrado. Verifique o código e tente novamente.'
+    }),
+    fixErrors: (): SystemMessage => ({
+      type: 'warning',
+      title: 'Dados incompletos',
+      description: 'Por favor, corrija os campos destacados para continuar.'
+    }),
+    invalidCardData: (): SystemMessage => ({
+      type: 'error',
+      title: 'Dados do cartão inválidos',
+      description: 'Verifique os dados do cartão e tente novamente.'
+    })
+  };
+
+  // ===== MENSAGENS DE PAGAMENTO (ALIAS PARA COMPATIBILIDADE) =====
+  payment = {
+    processing: (): SystemMessage => this.payments.processing(),
+    success: (method: string): SystemMessage => this.payments.success(method),
+    failed: (reason?: string): SystemMessage => this.payments.failed(reason),
+    pixGenerated: (): SystemMessage => this.payments.pixGenerated(),
+    pixExpired: (): SystemMessage => this.payments.pixExpired(),
+    pixError: (): SystemMessage => ({
+      type: 'error',
+      title: 'Erro no PIX',
+      description: 'Não foi possível gerar o código PIX. Tente novamente.'
+    }),
+    paymentConfirmed: (): SystemMessage => ({
+      type: 'success',
+      title: 'Pagamento confirmado',
+      description: 'Seu pagamento foi processado com sucesso.'
+    }),
+    pixCodeCopied: (): SystemMessage => ({
+      type: 'success',
+      title: 'Código PIX copiado',
+      description: 'O código PIX foi copiado para a área de transferência.'
+    }),
+    copyError: (): SystemMessage => ({
+      type: 'error',
+      title: 'Erro ao copiar',
+      description: 'Não foi possível copiar o código PIX.'
+    }),
+    cardPaymentSuccess: (): SystemMessage => ({
+      type: 'success',
+      title: 'Pagamento aprovado',
+      description: 'Seu pagamento com cartão foi aprovado.'
+    }),
+    cardPaymentFailed: (): SystemMessage => ({
+      type: 'error',
+      title: 'Pagamento negado',
+      description: 'Seu pagamento com cartão foi negado.'
+    }),
+    cardPaymentError: (): SystemMessage => ({
+      type: 'error',
+      title: 'Erro no pagamento',
+      description: 'Erro ao processar pagamento com cartão.'
     })
   };
 

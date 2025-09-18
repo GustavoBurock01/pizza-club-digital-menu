@@ -129,7 +129,7 @@ export const UnifiedPaymentSystem = ({
       payment_method: 'cash' 
     }));
     
-    showMessage(messageSystem.orders.cashOrderCreated(), toast);
+    showMessage(messageSystem.orders.created('CASH'), toast);
     onPaymentSuccess();
   };
 
@@ -155,7 +155,7 @@ export const UnifiedPaymentSystem = ({
       setPollingInterval(5000);
       
       localStorage.removeItem('pendingOrder');
-      showMessage(messageSystem.orders.orderCreated(), toast);
+      showMessage(messageSystem.orders.created(data.order?.order_number), toast);
       
       startPixTimer(data.pixData.expiresAt);
       startPixPolling(data.pixData.transactionId);
@@ -164,7 +164,7 @@ export const UnifiedPaymentSystem = ({
       if (!isUnmountedRef.current) {
         console.error('[UNIFIED-PAYMENT] PIX creation error:', error);
         setPaymentStatus('error');
-        showMessage(messageSystem.payment.pixError(error.message), toast);
+        showMessage(messageSystem.payment.pixError(), toast);
       }
     } finally {
       if (!isUnmountedRef.current) {
@@ -277,13 +277,13 @@ export const UnifiedPaymentSystem = ({
         showMessage(messageSystem.payment.cardPaymentSuccess(), toast);
         onPaymentSuccess();
       } else {
-        showMessage(messageSystem.payment.cardPaymentFailed(data.status_detail), toast);
+        showMessage(messageSystem.payment.cardPaymentFailed(), toast);
         setPaymentStatus('failed');
       }
       
     } catch (error: any) {
       console.error('[UNIFIED-PAYMENT] Card payment error:', error);
-      showMessage(messageSystem.payment.cardPaymentError(error.message), toast);
+      showMessage(messageSystem.payment.cardPaymentError(), toast);
       setPaymentStatus('error');
     } finally {
       setIsLoading(false);

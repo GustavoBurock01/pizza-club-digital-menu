@@ -473,6 +473,24 @@ class PerformanceOptimizer {
     console.log('Setting up memory leak detection...');
   }
 
+  // ===== MÉTODOS UTILITÁRIOS =====
+  public debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+    let timeout: NodeJS.Timeout;
+    return ((...args: Parameters<T>) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    }) as T;
+  }
+
+  public preloadRoutes(routes: string[]) {
+    routes.forEach(route => {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = route;
+      document.head.appendChild(link);
+    });
+  }
+
   // ===== MÉTODOS PÚBLICOS =====
   public getMetrics(): PerformanceMetric[] {
     return this.metrics;
