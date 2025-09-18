@@ -67,6 +67,7 @@ export const useSubscription = () => {
     const hasHistory = await checkSubscriptionHistory();
     const shouldUseCache = hasHistory && !forceCheck;
     
+    // Para novos usuários (sem histórico), sempre verificar em tempo real
     if (shouldUseCache) {
       const lastCheck = localStorage.getItem(userLastCheckKey);
       const fourHoursInMs = 4 * 60 * 60 * 1000;
@@ -110,13 +111,13 @@ export const useSubscription = () => {
 
       setSubscription(subscriptionData);
       
-      // Cache apenas para usuários com histórico válido
-      if (hasHistory) {
+      // Cache apenas para usuários com histórico válido e dados consistentes
+      if (hasHistory && subscriptionData.subscribed) {
         const now = Date.now();
         localStorage.setItem(userLastCheckKey, now.toString());
         localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
       } else {
-        // Limpar cache para novos usuários
+        // Limpar cache para novos usuários ou dados inconsistentes
         localStorage.removeItem(userCacheKey);
         localStorage.removeItem(userLastCheckKey);
       }
