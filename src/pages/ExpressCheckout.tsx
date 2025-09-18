@@ -116,6 +116,33 @@ const ExpressCheckout = () => {
     }
   };
 
+  const handleBack = () => {
+    switch (step) {
+      case 'address':
+        setStep('review');
+        break;
+      case 'payment':
+        setStep('address');
+        break;
+      case 'review':
+      default:
+        navigate('/menu');
+        break;
+    }
+  };
+
+  const getBackButtonText = () => {
+    switch (step) {
+      case 'address':
+        return 'Revisar';
+      case 'payment':
+        return 'Entrega';
+      case 'review':
+      default:
+        return 'Menu';
+    }
+  };
+
   const handleCreateOrder = async () => {
     if (loading) return; // Proteção básica contra duplo clique
     
@@ -401,11 +428,11 @@ const ExpressCheckout = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/menu')}
+                onClick={handleBack}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Voltar
+                {getBackButtonText()}
               </Button>
               <h1 className="text-xl font-semibold">Checkout Express</h1>
             </div>
