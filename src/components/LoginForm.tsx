@@ -92,27 +92,6 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
     });
   };
 
-  const handleFailedAttempt = (errorMessage: string) => {
-    const newAttemptCount = attemptCount + 1;
-    setAttemptCount(newAttemptCount);
-    
-    // Log da tentativa falhada
-    logSecurityEvent('FAILED_LOGIN_ATTEMPT', { 
-      attemptNumber: newAttemptCount,
-      error: errorMessage 
-    });
-    
-    // Salvar no localStorage
-    localStorage.setItem('login_block', JSON.stringify({
-      timestamp: Date.now(),
-      attempts: newAttemptCount
-    }));
-    
-    if (newAttemptCount >= MAX_ATTEMPTS) {
-      setIsBlocked(true);
-      setBlockTimeLeft(15); // 15 minutos
-      setErrorMessage(`Muitas tentativas falhadas. Tente novamente em 15 minutos.`);
-      
   const handleFailedAttempt = async (errorMessage: string) => {
     const newAttemptCount = attemptCount + 1;
     setAttemptCount(newAttemptCount);
