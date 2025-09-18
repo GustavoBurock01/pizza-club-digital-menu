@@ -257,7 +257,8 @@ const ExpressCheckout = () => {
 
     // Salvar no localStorage e navegar para pagamento
     localStorage.setItem('pendingOrder', JSON.stringify(orderData));
-    clearCart();
+    // NÃO limpar o carrinho até o pagamento ser aprovado
+    // clearCart(); // Movido para depois da confirmação do pagamento
 
     if (paymentMethod === 'pix') {
       navigate('/payment/pix');

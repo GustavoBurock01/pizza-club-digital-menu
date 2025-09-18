@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useUnifiedStore } from '@/stores/simpleStore';
 
 interface Order {
   id: string;
@@ -35,6 +36,7 @@ const Payment = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { pathname } = useLocation();
+  const { clearCart } = useUnifiedStore();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
@@ -220,6 +222,10 @@ const Payment = () => {
 
       if (data.status === 'paid') {
         setPaymentStatus('success');
+        
+        // Limpar carrinho após sucesso do pagamento
+        clearCart();
+        
         toast({
           title: "Pagamento aprovado!",
           description: "Seu pedido foi confirmado com sucesso.",

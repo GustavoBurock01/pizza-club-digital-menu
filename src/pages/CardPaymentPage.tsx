@@ -8,11 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { IntegratedCardPayment } from '@/components/IntegratedCardPayment';
+import { useUnifiedStore } from '@/stores/simpleStore';
 
 const CardPaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { clearCart } = useUnifiedStore();
   
   const [orderData, setOrderData] = useState<any>(null);
   const [paymentStatus, setPaymentStatus] = useState<'form' | 'success' | 'error'>('form');
@@ -41,8 +43,9 @@ const CardPaymentPage = () => {
     setPaymentResult(result);
     setPaymentStatus('success');
     
-    // Limpar dados pendentes
+    // Limpar dados pendentes e carrinho
     localStorage.removeItem('pendingOrder');
+    clearCart(); // Limpar carrinho após sucesso do pagamento
     
     // Redirecionar após 3 segundos
     setTimeout(() => {
