@@ -44,19 +44,37 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // FASE 1: VERIFICAR PRIMEIRO NO BANCO SUPABASE
+    const { data: existingSubscription, error: dbError } = await supabaseClient
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .single();
+
+    if (!dbError && existingSubscription && existingSubscription.sync_status === 'webhook') {
+      logStep("Found active subscription in database (webhook synced)", existingSubscription);
+      return new Response(JSON.stringify({
+        subscribed: true,
+        status: existingSubscription.status,
+        plan_name: existingSubscription.plan_name,
+        plan_price: existingSubscription.plan_price,
+        expires_at: existingSubscription.expires_at
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    logStep("No active subscription in database, checking Stripe");
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, updating unsubscribed state");
-      await supabaseClient.from("subscriptions").upsert({
-        user_id: user.id,
-        status: 'inactive',
-        plan_name: 'Nenhum',
-        plan_price: 0,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      logStep("No Stripe customer found");
       
+      // NÃO criar registro falso, apenas retornar status
       return new Response(JSON.stringify({ 
         subscribed: false, 
         status: 'inactive',
@@ -129,18 +147,20 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
-    // Update Supabase subscriptions table with new columns
-    await supabaseClient.from("subscriptions").upsert({
-      user_id: user.id,
-      stripe_subscription_id: stripeSubscriptionId,
-      stripe_price_id: stripePriceId, // Usar a variável definida no escopo correto
-      status: hasActiveSub ? 'active' : 'inactive',
-      plan_name: planName,
-      plan_price: planPrice,
-      expires_at: expiresAt,
-      sync_status: 'manual',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+    // Update Supabase subscriptions table SOMENTE se houver assinatura ativa
+    if (hasActiveSub) {
+      await supabaseClient.from("subscriptions").upsert({
+        user_id: user.id,
+        stripe_subscription_id: stripeSubscriptionId,
+        stripe_price_id: stripePriceId,
+        status: 'active',
+        plan_name: planName,
+        plan_price: planPrice,
+        expires_at: expiresAt,
+        sync_status: 'manual',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    }
 
     logStep("Updated database with subscription info", { 
       subscribed: hasActiveSub, 
