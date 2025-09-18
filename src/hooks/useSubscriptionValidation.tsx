@@ -76,10 +76,14 @@ export const useSubscriptionValidation = (config?: Partial<HeartbeatConfig>) => 
       // Verificação local primeiro (mais rápida)
       const localValidation = validateLocalSubscription();
       if (!localValidation.isValid) {
-        await logSecurityEvent('SUBSCRIPTION_VALIDATION_FAILED', {
-          reason: localValidation.reason,
-          userId: user.id,
-          subscriptionStatus: subscription.status
+        await securityLogger.logEvent({
+          action: 'SUBSCRIPTION_VALIDATION_FAILED',
+          details: {
+            reason: localValidation.reason,
+            userId: user.id,
+            subscriptionStatus: subscription.status
+          },
+          severity: 'high'
         });
         
         cacheManager.set(cacheKey, localValidation, 30 * 1000, 'high'); // Cache por 30s
@@ -102,10 +106,14 @@ export const useSubscriptionValidation = (config?: Partial<HeartbeatConfig>) => 
       };
 
       // Log de segurança
-      await logSecurityEvent('SUBSCRIPTION_VALIDATION_SUCCESS', {
-        result,
-        userId: user.id,
-        validationType: 'realtime'
+      await securityLogger.logEvent({
+        action: 'SUBSCRIPTION_VALIDATION_SUCCESS',
+        details: {
+          result,
+          userId: user.id,
+          validationType: 'realtime'
+        },
+        severity: 'low'
       });
 
       // Cache por tempo baseado no status
@@ -120,9 +128,13 @@ export const useSubscriptionValidation = (config?: Partial<HeartbeatConfig>) => 
     } catch (error: any) {
       console.error('Erro na validação de assinatura:', error);
       
-      await logSecurityEvent('SUBSCRIPTION_VALIDATION_ERROR', {
-        error: error.message,
-        userId: user.id
+      await securityLogger.logEvent({
+        action: 'SUBSCRIPTION_VALIDATION_ERROR',
+        details: {
+          error: error.message,
+          userId: user.id
+        },
+        severity: 'medium'
       });
 
       const fallbackResult: ValidationResult = {
@@ -211,10 +223,14 @@ export const useSubscriptionValidation = (config?: Partial<HeartbeatConfig>) => 
 
   // ===== BLOQUEIO IMEDIATO =====
   const blockAccess = useCallback(async (reason: string) => {
-    await logSecurityEvent('ACCESS_BLOCKED', {
-      reason,
-      userId: user?.id,
-      timestamp: new Date().toISOString()
+    await securityLogger.logEvent({
+      action: 'ACCESS_BLOCKED',
+      details: {
+        reason,
+        userId: user?.id,
+        timestamp: new Date().toISOString()
+      },
+      severity: 'critical'
     });
 
     setValidationResult({

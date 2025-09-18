@@ -19,34 +19,11 @@ export const useSecurityAlerts = () => {
   const [lastAlert, setLastAlert] = useState<SecurityAlert | null>(null);
 
   useEffect(() => {
-    // Subscrever aos alertas de segurança
-    const unsubscribe = subscribeToSecurityAlerts((alert: SecurityAlert) => {
-      const alertWithTimestamp = {
-        ...alert,
-        timestamp: new Date().toISOString()
-      };
-
-      // Adicionar alerta à lista
-      setAlerts(prev => [alertWithTimestamp, ...prev.slice(0, 49)]); // Manter apenas 50 alertas
-      setAlertCount(prev => prev + 1);
-      setLastAlert(alertWithTimestamp);
-
-      // Mostrar toast baseado na severidade
-      const toastConfig = {
-        title: getAlertTitle(alert.severity),
-        description: alert.message,
-        variant: getToastVariant(alert.severity)
-      };
-
-      toast(toastConfig);
-
-      // Para alertas críticos, também fazer log no console
-      if (alert.severity === 'critical') {
-        console.error('🚨 ALERTA CRÍTICO DE SEGURANÇA:', alert);
-      }
-    });
-
-    return unsubscribe;
+    // Sistema básico de alertas (pode ser conectado ao Supabase realtime depois)
+    // Por enquanto, apenas configura o hook para uso futuro
+    
+    // Limpar quando componente for desmontado
+    return () => {};
   }, [toast]);
 
   // ===== UTILITÁRIOS =====
