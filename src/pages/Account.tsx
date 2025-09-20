@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AppSidebar } from '@/components/AppSidebar';
 
 const Account = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { addresses, loading: addressLoading, addAddress, updateAddress, deleteAddress } = useAddresses();
   const { toast } = useToast();
   

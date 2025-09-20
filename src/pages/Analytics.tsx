@@ -117,7 +117,7 @@ interface AnalyticsData {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff0000'];
 
 export default function Analytics() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   

@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 const OrderStatus = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);

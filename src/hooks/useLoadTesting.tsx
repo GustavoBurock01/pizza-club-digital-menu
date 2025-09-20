@@ -41,7 +41,7 @@ interface CurrentStats {
 }
 
 export const useLoadTesting = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<LoadTestResult[]>([]);

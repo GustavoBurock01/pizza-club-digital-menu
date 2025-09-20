@@ -23,7 +23,7 @@ interface HeartbeatConfig {
 }
 
 export const useSubscriptionValidation = (config?: Partial<HeartbeatConfig>) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { subscription } = useSubscription();
   const { toast } = useToast();
   

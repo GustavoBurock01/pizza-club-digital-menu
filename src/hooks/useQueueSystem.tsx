@@ -64,7 +64,7 @@ interface UseQueueSystemReturn {
 }
 
 export const useQueueSystem = (): UseQueueSystemReturn => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userQueueItems, setUserQueueItems] = useState<QueueItem[]>([]);

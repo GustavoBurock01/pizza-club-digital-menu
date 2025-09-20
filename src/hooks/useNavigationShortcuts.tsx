@@ -18,7 +18,7 @@ export const useNavigationShortcuts = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = useRole();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
 
   // ===== DEFINIR ATALHOS =====

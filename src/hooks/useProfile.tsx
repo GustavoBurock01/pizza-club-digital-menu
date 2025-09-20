@@ -15,7 +15,7 @@ interface Profile {
 }
 
 export const useProfile = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

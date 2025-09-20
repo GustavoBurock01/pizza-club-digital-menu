@@ -53,7 +53,7 @@ interface UseAdminOrdersOptions {
 const activeQueries = new Map<string, Promise<AdminOrder[]>>();
 
 export const useAdminOrdersOptimized = (options: UseAdminOrdersOptions = {}) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);

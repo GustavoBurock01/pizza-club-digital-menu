@@ -69,7 +69,7 @@ interface UseAtomicStockReturn {
 }
 
 export const useAtomicStock = (): UseAtomicStockReturn => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userReservations, setUserReservations] = useState<StockReservation[]>([]);

@@ -19,7 +19,7 @@ interface RealtimeOrder {
 }
 
 export const useRealtimeOrders = () => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const channelRef = useRef<any>(null);
