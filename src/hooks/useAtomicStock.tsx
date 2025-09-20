@@ -1,7 +1,7 @@
 // ===== HOOK PARA CONTROLE DE ESTOQUE ATÔMICO =====
 
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { 
   atomicStockController,
   checkProductsAvailability,

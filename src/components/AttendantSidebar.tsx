@@ -23,60 +23,24 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { useAttendantStats } from "@/hooks/useAttendantStats";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useAttendant } from "@/providers/AttendantProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const menuItems = [
   { 
-    title: "Operações", 
+    title: "Gestão de Pedidos", 
     url: "/attendant", 
     icon: Package,
     badge: "pending"
-  },
-  { 
-    title: "Dashboard", 
-    url: "/attendant/dashboard", 
-    icon: Home,
-    badge: null
-  },
-  { 
-    title: "Pedidos", 
-    url: "/attendant/orders", 
-    icon: Package,
-    badge: null
-  },
-  { 
-    title: "Cozinha", 
-    url: "/attendant/kitchen", 
-    icon: ChefHat,
-    badge: "preparing"
-  },
-  { 
-    title: "Entregas", 
-    url: "/attendant/delivery", 
-    icon: Truck,
-    badge: null
-  },
-  { 
-    title: "Relatórios", 
-    url: "/attendant/reports", 
-    icon: BarChart3,
-    badge: null
-  },
-  { 
-    title: "Clientes", 
-    url: "/attendant/customers", 
-    icon: Users,
-    badge: null
   }
 ];
 
 export function AttendantSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { user, signOut } = useAuth();
-  const { stats } = useAttendantStats();
+  const { user, signOut } = useUnifiedAuth();
+  const { stats } = useAttendant();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
 

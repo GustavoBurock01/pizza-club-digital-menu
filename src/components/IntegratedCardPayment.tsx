@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { checkPaymentRateLimit } from '@/utils/rateLimiting';
 
 declare global {
@@ -37,7 +37,7 @@ interface CardForm {
 }
 
 export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentError }: IntegratedCardPaymentProps) => {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { protectOrderCreation } = useOrderProtection();
   const [cardForm, setCardForm] = useState<CardForm>({
     cardNumber: '',

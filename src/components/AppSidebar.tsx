@@ -22,7 +22,7 @@ import {
   Headphones,
   Settings2,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
@@ -72,7 +72,7 @@ const adminItems = [
 ];
 
 export function AppSidebar() {
-  const { signOut, user } = useAuth();
+  const { signOut, user } = useUnifiedAuth();
   const { getItemCount } = useUnifiedStore();
   const navigate = useNavigate();
   const location = useLocation();

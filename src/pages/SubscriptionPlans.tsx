@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Crown, ArrowLeft } from "lucide-react";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useAuth } from "@/hooks/useAuth";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const SubscriptionPlansPage = () => {
   const { subscription } = useSubscription();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
 
   // Redirecionar se usuário já tem assinatura ativa

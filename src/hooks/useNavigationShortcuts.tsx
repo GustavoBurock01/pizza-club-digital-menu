@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRole } from './useRole';
-import { useAuth } from './useAuth';
+import { useUnifiedAuth } from './useUnifiedAuth';
 import { useToast } from './use-toast';
 
 interface ShortcutAction {

@@ -1,7 +1,7 @@
 // ===== MIDDLEWARE DE VALIDAÇÃO DE ASSINATURA EM TEMPO REAL =====
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './useAuth';
+import { useUnifiedAuth } from './useUnifiedAuth';
 import { useSubscription } from './useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 export type UserRole = 'admin' | 'attendant' | 'customer';
 
@@ -15,7 +15,7 @@ export interface RoleStatus {
 }
 
 export const useRole = (): RoleStatus => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useUnifiedAuth();
   const [roleState, setRoleState] = useState<{
     role: UserRole | null;
     loading: boolean;

@@ -4,7 +4,7 @@ import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useRole } from '@/hooks/useRole';
 
 interface BreadcrumbItem {
@@ -113,7 +113,7 @@ export function SmartBreadcrumb({
   maxItems = 4
 }: SmartBreadcrumbProps) {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const role = useRole();
   
   // ===== GERAR BREADCRUMBS =====

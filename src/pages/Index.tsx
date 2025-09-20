@@ -3,13 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Pizza, Star, Clock, Shield, CreditCard, Check, ArrowRight, Users, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useEffect } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   console.log('Index page rendering successfully', { user });
 

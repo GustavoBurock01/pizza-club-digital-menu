@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedStore } from '@/stores/simpleStore';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
@@ -35,7 +35,7 @@ interface CustomerData {
 
 const ExpressCheckout = () => {
   const { items, getSubtotal, getTotal, clearCart, removeItem } = useUnifiedStore();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { addresses } = useAddresses();
   const { toast } = useToast();
   const navigate = useNavigate();

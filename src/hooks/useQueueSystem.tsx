@@ -1,7 +1,7 @@
 // ===== HOOK PARA SISTEMA DE FILAS =====
 
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { 
   queueManager,
   enqueueOrder,

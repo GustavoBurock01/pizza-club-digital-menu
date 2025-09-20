@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthLayout } from './AuthLayout';
 import { Eye, EyeOff, Loader2, AlertCircle, Shield } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logLoginAttempt, logAccountBlock, logPasswordReset } from '@/utils/securityLogger';
@@ -28,7 +28,7 @@ export const LoginForm = ({ onToggleToRegister }: LoginFormProps) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockTimeLeft, setBlockTimeLeft] = useState(0);
   
-  const { signIn } = useAuth();
+  const { signIn } = useUnifiedAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 

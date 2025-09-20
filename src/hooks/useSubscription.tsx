@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useUnifiedAuth } from './useUnifiedAuth';
 import { useToast } from './use-toast';
 
 interface SubscriptionStatus {
@@ -15,7 +15,7 @@ interface SubscriptionStatus {
 }
 
 export const useSubscription = () => {
-  const { user, session } = useAuth();
+  const { user, session } = useUnifiedAuth();
   const { toast } = useToast();
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     subscribed: false,

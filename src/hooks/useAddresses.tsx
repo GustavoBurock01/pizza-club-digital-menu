@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface Address {
@@ -21,7 +21,7 @@ export const useAddresses = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [deliveryZones, setDeliveryZones] = useState<any[]>([]);
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
 
   useEffect(() => {

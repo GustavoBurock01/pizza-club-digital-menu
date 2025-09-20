@@ -9,7 +9,7 @@ import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-
 import { useSubscription } from "@/hooks/useSubscription";
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
-import { useAuth } from "@/hooks/useAuth";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabase";
@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const Dashboard = () => {
   const { subscription, createCheckout, checkSubscription } = useSubscription();
   const { addItem } = useUnifiedStore();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();

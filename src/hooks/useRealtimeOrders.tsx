@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { QUERY_KEYS } from '@/services/supabase';
 import { CACHE_STRATEGIES } from '@/config/queryClient';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 // ===== HOOK PARA PEDIDOS EM TEMPO REAL OTIMIZADO =====
 

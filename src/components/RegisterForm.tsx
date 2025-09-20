@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { AuthLayout } from './AuthLayout';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { FormattedInput } from './FormattedInput';
 import { PasswordInput } from './PasswordInput';
 import { validateCEPWithAPI, CEPData } from '@/utils/cepValidation';
@@ -40,7 +40,7 @@ export const RegisterForm = ({
   });
   const {
     signUp
-  } = useAuth();
+  } = useUnifiedAuth();
   const navigate = useNavigate();
   const validateCurrentStep = (): boolean => {
     const errors: {[key: string]: string} = {};

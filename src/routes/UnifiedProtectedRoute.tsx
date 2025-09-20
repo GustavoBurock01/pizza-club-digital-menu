@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRole } from '@/hooks/useRole';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -20,7 +20,7 @@ export const UnifiedProtectedRoute = ({
   requireSubscription = false,
   requireRole
 }: UnifiedProtectedRouteProps) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useUnifiedAuth();
   const { subscription } = useSubscription();
   const { role, isAdmin, isAttendant, isCustomer, loading: roleLoading } = useRole();
   const location = useLocation();

@@ -6,13 +6,13 @@ import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from 'react-router-dom';
 import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export const CartDrawer = () => {
   const { items, removeItem, updateQuantity, getSubtotal, getTotal, getItemCount, deliveryFee, clearCart } = useUnifiedStore();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
 
   const formatPrice = (price: number) => {

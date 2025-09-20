@@ -1,7 +1,7 @@
 // ===== DASHBOARD DE MONITORAMENTO DE WEBHOOKS =====
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,7 @@ interface WebhookStats {
 }
 
 export function WebhookLogs() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { toast } = useToast();
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [stats, setStats] = useState<WebhookStats>({
