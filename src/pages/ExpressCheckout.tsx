@@ -34,7 +34,7 @@ interface CustomerData {
 }
 
 const ExpressCheckout = () => {
-  const { items, getSubtotal, getTotal, clearCart, removeItem } = useUnifiedStore();
+  const { items, getSubtotal, getTotal, clearCart, removeItem, setDeliveryFee } = useUnifiedStore();
   const { user } = useUnifiedAuth();
   const { addresses } = useAddresses();
   const { toast } = useToast();
@@ -62,7 +62,10 @@ const ExpressCheckout = () => {
   // ===== MEMOIZED CALCULATIONS =====
   const subtotal = useMemo(() => getSubtotal(), [items]);
   const deliveryFee = useMemo(() => deliveryMethod === 'delivery' ? 5 : 0, [deliveryMethod]);
-  const total = useMemo(() => subtotal + deliveryFee, [subtotal, deliveryFee]);
+  const total = useMemo(() => {
+    setDeliveryFee(deliveryFee);
+    return getTotal();
+  }, [getTotal, deliveryFee, setDeliveryFee]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
