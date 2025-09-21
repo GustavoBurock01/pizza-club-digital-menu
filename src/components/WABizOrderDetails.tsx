@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useThermalPrint } from "@/hooks/useThermalPrint";
+import { useState } from "react";
 
 interface OrderDetailsProps {
   order: any;
@@ -34,6 +36,9 @@ export const WABizOrderDetails = ({
   onCancel,
   isUpdating
 }: OrderDetailsProps) => {
+  const { printOrder, isPrinting } = useThermalPrint();
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  
   if (!order) return null;
 
   const getStatusColor = (status: string) => {
@@ -60,6 +65,15 @@ export const WABizOrderDetails = ({
       cancelled: "Cancelado"
     };
     return labels[status as keyof typeof labels] || status;
+  };
+
+  const handlePrintOrder = async (copies = 1) => {
+    try {
+      await printOrder(order.id, { copies });
+      setShowPrintOptions(false);
+    } catch (error) {
+      console.error('Erro ao imprimir:', error);
+    }
   };
 
   const getActionButtons = () => {
@@ -248,15 +262,58 @@ export const WABizOrderDetails = ({
 
           {/* Ações */}
           <div className="flex flex-col sm:flex-row gap-3 justify-between">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir Comanda
-              </Button>
-              <Button variant="outline" size="sm">
-                <Phone className="h-4 w-4 mr-2" />
-                Ligar Cliente
-              </Button>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowPrintOptions(!showPrintOptions)}
+                  disabled={isPrinting}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  {isPrinting ? 'Imprimindo...' : 'Imprimir Comanda'}
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Ligar Cliente
+                </Button>
+              </div>
+
+              {/* Opções de Impressão */}
+              {showPrintOptions && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-3">Opções de Impressão</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePrintOrder(1)}
+                      disabled={isPrinting}
+                    >
+                      1 Via
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePrintOrder(2)}
+                      disabled={isPrinting}
+                    >
+                      2 Vias
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePrintOrder(3)}
+                      disabled={isPrinting}
+                    >
+                      3 Vias
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Comanda será enviada para impressora térmica Elgin
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2">
