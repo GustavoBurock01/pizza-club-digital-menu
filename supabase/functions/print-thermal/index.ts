@@ -202,7 +202,7 @@ async function sendToElginPrinter(content: string, printerIP?: string): Promise<
     }
 
     // Simular delay de impressão
-    await new Promise(resolve => setTimeout resolve, 1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     console.log('[THERMAL-PRINT] ✅ Impressão enviada com sucesso!');
     return true;
