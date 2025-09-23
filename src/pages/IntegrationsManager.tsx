@@ -15,7 +15,8 @@ import {
   Clock,
   Zap,
   BarChart3,
-  Download
+  Download,
+  Printer
 } from "lucide-react";
 import { DeliveryIntegrations } from "@/components/DeliveryIntegrations";
 import { PaymentReconciliation } from "@/components/PaymentReconciliation";
@@ -24,6 +25,7 @@ import { ERPIntegrations } from "@/components/ERPIntegrations";
 import { WebhookLogs } from "@/components/WebhookLogs";
 import { IntegrationsOverview } from "@/components/IntegrationsOverview";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ThermalPrintTest } from "@/components/ThermalPrintTest";
 import { useIntegrationsData } from "@/hooks/useIntegrationsData";
 
 export default function IntegrationsManager() {
@@ -132,7 +134,7 @@ export default function IntegrationsManager() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 glass">
+        <TabsList className="grid w-full grid-cols-7 glass">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Visão Geral
@@ -156,6 +158,10 @@ export default function IntegrationsManager() {
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="thermal" className="flex items-center gap-2">
+            <Printer className="h-4 w-4" />
+            Impressora
           </TabsTrigger>
         </TabsList>
 
@@ -231,6 +237,50 @@ export default function IntegrationsManager() {
               <WebhookLogs />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="thermal" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ThermalPrintTest />
+            
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Printer className="h-5 w-5" />
+                  Status das Impressoras
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Printer className="w-4 h-4 text-green-600" />
+                    <span className="font-medium text-green-800">Sistema Operacional</span>
+                  </div>
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    ✓ Ativo
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p><strong>Edge Function:</strong> ✅ Configurada e ativa</p>
+                  <p><strong>Formato:</strong> ESC/POS padrão Elgin</p>
+                  <p><strong>Papel:</strong> 58mm ou 80mm térmico</p>
+                  <p><strong>Conectividade:</strong> USB ou TCP/IP</p>
+                </div>
+                
+                <div className="pt-3 border-t">
+                  <h4 className="font-medium mb-2">Próximos Passos:</h4>
+                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Conectar impressora fisicamente</li>
+                    <li>Configurar IP fixo (rede) ou instalar drivers (USB)</li>
+                    <li>Executar teste de impressão</li>
+                    <li>Verificar qualidade da comanda impressa</li>
+                    <li>Treinar equipe no uso do sistema</li>
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

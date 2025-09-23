@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useThermalPrinterConfig } from './useThermalPrinterConfig';
 
 interface PrintOptions {
   copies?: number;
@@ -21,10 +22,19 @@ interface PrintResponse {
 export const useThermalPrint = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [lastPrintResult, setLastPrintResult] = useState<PrintResponse | null>(null);
+  const { config, addTestResult } = useThermalPrinterConfig();
 
   const printOrder = async (orderId: string, options: PrintOptions = {}) => {
     if (isPrinting) {
       toast.warning('Aguarde... impressão em andamento');
+      return;
+    }
+
+    // Verificar se impressora está habilitada
+    if (!config.enabled) {
+      toast.error('Sistema de impressão desabilitado', {
+        description: 'Ative nas configurações da impressora'
+      });
       return;
     }
 
@@ -33,11 +43,15 @@ export const useThermalPrint = () => {
     try {
       console.log('[THERMAL-PRINT] 🖨️ Iniciando impressão do pedido:', orderId);
       
+      // Usar configurações salvas se não especificado
+      const printerIP = options.printerIP || 
+        (config.connectionType === 'network' ? config.printerIP : undefined);
+      
       // Chamar Edge Function de impressão
       const { data, error } = await supabase.functions.invoke('print-thermal', {
         body: {
           orderId,
-          printerIP: options.printerIP,
+          printerIP,
           copies: options.copies || 1
         }
       });
@@ -96,6 +110,10 @@ export const useThermalPrint = () => {
     try {
       console.log('[THERMAL-PRINT] 🧪 Testando impressora...');
       
+      // Usar configuração salva se não especificado
+      const targetIP = printerIP || 
+        (config.connectionType === 'network' ? config.printerIP : undefined);
+      
       const testOrderId = 'test-' + Date.now();
       
       // Criar pedido de teste temporário para impressão
@@ -119,7 +137,7 @@ export const useThermalPrint = () => {
       const { data, error } = await supabase.functions.invoke('print-thermal', {
         body: {
           orderId: testOrderId,
-          printerIP,
+          printerIP: targetIP,
           copies: 1,
           testMode: true,
           testOrder
@@ -135,7 +153,18 @@ export const useThermalPrint = () => {
           description: 'Verifique se a comanda foi impressa',
           duration: 3000
         });
+        
+        // Salvar resultado positivo
+        addTestResult({
+          success: true,
+          message: result.message
+        });
       } else {
+        // Salvar resultado de falha
+        addTestResult({
+          success: false,
+          message: result.message
+        });
         throw new Error(result.message);
       }
 
@@ -143,6 +172,13 @@ export const useThermalPrint = () => {
 
     } catch (error: any) {
       console.error('[THERMAL-PRINT] ❌ Erro no teste:', error);
+      
+      // Salvar resultado de erro
+      addTestResult({
+        success: false,
+        message: error.message || 'Erro desconhecido'
+      });
+      
       toast.error('Erro no teste de impressão', {
         description: error.message
       });
