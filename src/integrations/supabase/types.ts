@@ -1401,6 +1401,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_order_health_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_completion_time_minutes: number
+          expired_orders: number
+          payment_failure_rate: number
+          pending_orders: number
+          total_today: number
+        }[]
+      }
       has_any_role: {
         Args: { required_roles: string[] }
         Returns: boolean
