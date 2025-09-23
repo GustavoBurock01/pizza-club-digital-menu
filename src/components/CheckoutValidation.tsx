@@ -1,3 +1,4 @@
+import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, User } from 'lucide-react';
@@ -6,9 +7,10 @@ import { useProfile } from '@/hooks/useProfile';
 interface CheckoutValidationProps {
   deliveryMethod: 'delivery' | 'pickup';
   onNavigateToProfile: () => void;
+  onBlockCheckout?: (blocked: boolean) => void;
 }
 
-export const CheckoutValidation = ({ deliveryMethod, onNavigateToProfile }: CheckoutValidationProps) => {
+export const CheckoutValidation = ({ deliveryMethod, onNavigateToProfile, onBlockCheckout }: CheckoutValidationProps) => {
   const { profile, isProfileComplete } = useProfile();
 
   // Verificar se dados obrigatórios estão presentes
@@ -21,6 +23,11 @@ export const CheckoutValidation = ({ deliveryMethod, onNavigateToProfile }: Chec
   if (deliveryMethod === 'delivery' && !profile?.phone) {
     missingData.push('Telefone');
   }
+
+  // Notificar componente pai sobre bloqueio
+  React.useEffect(() => {
+    onBlockCheckout?.(missingData.length > 0);
+  }, [missingData.length, onBlockCheckout]);
 
   if (missingData.length === 0) {
     return null; // Tudo ok, não mostrar nada

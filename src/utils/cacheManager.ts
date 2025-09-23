@@ -277,9 +277,20 @@ class IntelligentCacheManager {
       }
     }
 
+    // Automatic memory pressure relief
+    if (this.cache.size > this.config.maxSize * 0.8) {
+      this.evictLRU();
+    }
+
     if (cleaned > 0) {
       console.log(`🧽 Cleaned ${cleaned} expired cache entries`);
     }
+  }
+
+  // Automatic timeout cleanup for orders
+  cleanupOrderCache(): void {
+    const cleaned = this.invalidateByPattern(/^(order|cart|checkout)/);
+    console.log(`🛒 Cleaned ${cleaned} order-related cache entries`);
   }
 
   // ===== PUBLIC API =====
