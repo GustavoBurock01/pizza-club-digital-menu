@@ -1,6 +1,6 @@
 // ===== CHECKOUT EXPRESS - UMA PÁGINA =====
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
@@ -62,10 +62,13 @@ const ExpressCheckout = () => {
   // ===== MEMOIZED CALCULATIONS =====
   const subtotal = useMemo(() => getSubtotal(), [items]);
   const deliveryFee = useMemo(() => deliveryMethod === 'delivery' ? 5 : 0, [deliveryMethod]);
-  const total = useMemo(() => {
+  
+  // Update delivery fee in store when delivery method changes
+  useEffect(() => {
     setDeliveryFee(deliveryFee);
-    return getTotal();
-  }, [getTotal, deliveryFee, setDeliveryFee]);
+  }, [deliveryFee, setDeliveryFee]);
+  
+  const total = useMemo(() => getTotal(), [getTotal]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
