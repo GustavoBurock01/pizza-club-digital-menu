@@ -169,42 +169,20 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkSubscriptionInternal = useCallback(async (forceCheck = false) => {
-    // Prevent calls without valid user
+    // DEPRECATED: This function is being replaced by useSubscriptionCore
+    // Keep minimal functionality for backward compatibility during transition
     if (!user) {
       console.log('[UNIFIED-AUTH] No user for subscription check');
       setSubscription(prev => ({ ...prev, loading: false, subscribed: false }));
       return;
     }
 
+    console.warn('[UNIFIED-AUTH] DEPRECATED: useUnifiedAuth.checkSubscriptionInternal is deprecated. Use useSubscriptionCore instead.');
+    
     const userCacheKey = `subscription_data_${user.id}`;
     const userLastCheckKey = `subscription_last_check_${user.id}`;
     
     try {
-      // PRIORIDADE 1: Verificar primeiro no banco local (mais confiável)
-      const hasHistory = await checkSubscriptionHistory();
-      
-      // Se há histórico e não é um force check, usar cache
-      if (hasHistory && !forceCheck) {
-        const lastCheck = localStorage.getItem(userLastCheckKey);
-        const twoHoursInMs = 2 * 60 * 60 * 1000; // Reduzir cache para 2h
-        const now = Date.now();
-        
-        if (lastCheck && (now - parseInt(lastCheck)) < twoHoursInMs) {
-          const cachedData = localStorage.getItem(userCacheKey);
-          if (cachedData) {
-            try {
-              const parsedData = JSON.parse(cachedData);
-              console.log('[UNIFIED-AUTH] Using cached subscription data:', parsedData);
-              setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
-              return;
-            } catch {
-              localStorage.removeItem(userCacheKey);
-              localStorage.removeItem(userLastCheckKey);
-            }
-          }
-        }
-      }
-
       console.log('[UNIFIED-AUTH] Checking subscription for user:', user.id);
       setSubscription(prev => ({ ...prev, loading: true }));
       
@@ -225,7 +203,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
               plan_price: data.plan_price || 0,
               expires_at: data.expires_at,
               loading: false,
-              hasSubscriptionHistory: hasHistory,
+              hasSubscriptionHistory: false,
             };
 
             setSubscription(subscriptionData);
@@ -285,7 +263,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
           plan_price: 0,
           expires_at: null,
           loading: false,
-          hasSubscriptionHistory: hasHistory,
+          hasSubscriptionHistory: false,
         };
 
         console.log('[UNIFIED-AUTH] No subscription found');

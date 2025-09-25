@@ -7,6 +7,7 @@ import { queryClient } from "@/config/queryClient";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
 import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
+import { ProtectedSubscriptionRoute } from "@/components/ProtectedSubscriptionRoute";
 import { AttendantRoute } from "@/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
@@ -84,28 +85,34 @@ const App = () => {
                   <PaymentSuccess />
                 </UnifiedProtectedRoute>
               } />
-              {/* New Payment Routes */}
+               {/* New Payment Routes with ProtectedSubscriptionRoute */}
               <Route path="/payment/pix" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
-                  </Suspense>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Payment />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               {/* Unified Payment Route */}
               <Route path="/payment" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
-                  </Suspense>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Payment />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               {/* Legacy Payment Route */}
               <Route path="/payment/:orderId" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
-                  </Suspense>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Payment />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               {/* Customer Routes */}
@@ -118,20 +125,26 @@ const App = () => {
               } />
                <Route path="/phase2-premium" element={<Phase2PremiumExperience />} />
                <Route path="/menu" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Menu />
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Menu />
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
                } />
               <Route path="/checkout" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <ExpressCheckout />
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <ExpressCheckout />
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/orders" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Orders />
-                  </Suspense>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Orders />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/account" element={
@@ -142,10 +155,12 @@ const App = () => {
                 </UnifiedProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <OrderStatus />
-                  </Suspense>
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <OrderStatus />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               
