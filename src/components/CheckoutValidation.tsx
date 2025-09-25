@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, User } from 'lucide-react';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile } from '@/hooks/useUnifiedProfile';
 
 interface CheckoutValidationProps {
   deliveryMethod: 'delivery' | 'pickup';

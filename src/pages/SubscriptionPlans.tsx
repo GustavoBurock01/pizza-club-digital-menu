@@ -2,13 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, ArrowLeft } from "lucide-react";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
-import { useSubscription } from "@/hooks/useSubscription";
+// Subscription now comes from useUnifiedAuth
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const SubscriptionPlansPage = () => {
-  const { subscription } = useSubscription();
+  const { subscription } = useUnifiedAuth();
   const { user } = useUnifiedAuth();
   const navigate = useNavigate();
 

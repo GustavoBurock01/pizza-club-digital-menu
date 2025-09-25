@@ -6,7 +6,7 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile } from '@/hooks/useUnifiedProfile';
 import { CheckoutValidation } from '@/components/CheckoutValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutButton } from '@/components/ProtectedButton';

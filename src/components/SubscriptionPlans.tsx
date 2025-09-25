@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Check, Star, Shield, Clock } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 
 interface SubscriptionPlansProps {
   currentPlan?: string;
@@ -10,7 +10,7 @@ interface SubscriptionPlansProps {
 }
 
 export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPlansProps) => {
-  const { createCheckout, subscription } = useSubscription();
+  const { createCheckout, subscription } = useUnifiedAuth();
 
   const handleSelectPlan = () => {
     if (onSelectPlan) {

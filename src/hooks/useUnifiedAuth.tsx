@@ -64,27 +64,36 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
         
         console.log('[UNIFIED-AUTH] Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('[UNIFIED-AUTH] User signed in, checking subscription');
-          await checkSubscriptionInternal();
-        }
-        
+        // Clear subscription immediately on logout to prevent edge function calls
         if (event === 'SIGNED_OUT') {
           console.log('[UNIFIED-AUTH] User signed out, clearing subscription');
-          setSubscription(prev => ({
-            ...prev,
+          setSubscription({
             subscribed: false,
             status: 'inactive',
-            loading: false
-          }));
+            plan_name: 'Nenhum',
+            plan_price: 0,
+            expires_at: null,
+            loading: false,
+            hasSubscriptionHistory: false,
+          });
           clearSubscriptionCache();
+        }
+        
+        // Only check subscription after state is set
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('[UNIFIED-AUTH] User signed in, will check subscription');
+          setTimeout(() => {
+            if (mounted) {
+              checkSubscriptionInternal();
+            }
+          }, 500); // Debounce to prevent immediate calls
         }
         
         if (mounted) {
@@ -148,8 +157,10 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const checkSubscriptionInternal = async (forceCheck = false) => {
-    if (!user || !session) {
+  const checkSubscriptionInternal = useCallback(async (forceCheck = false) => {
+    // Prevent calls without valid session to avoid edge function errors
+    if (!user || !session || !session.access_token) {
+      console.log('[UNIFIED-AUTH] No valid session for subscription check');
       setSubscription(prev => ({ ...prev, loading: false }));
       return;
     }
@@ -157,30 +168,31 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     const userCacheKey = `subscription_data_${user.id}`;
     const userLastCheckKey = `subscription_last_check_${user.id}`;
     
-    const hasHistory = await checkSubscriptionHistory();
-    const shouldUseCache = hasHistory && !forceCheck;
-    
-    if (shouldUseCache) {
-      const lastCheck = localStorage.getItem(userLastCheckKey);
-      const fourHoursInMs = 4 * 60 * 60 * 1000;
-      const now = Date.now();
+    try {
+      const hasHistory = await checkSubscriptionHistory();
+      const shouldUseCache = hasHistory && !forceCheck;
       
-      if (lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
-        const cachedData = localStorage.getItem(userCacheKey);
-        if (cachedData) {
-          try {
-            const parsedData = JSON.parse(cachedData);
-            setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
-            return;
-          } catch {
-            localStorage.removeItem(userCacheKey);
-            localStorage.removeItem(userLastCheckKey);
+      if (shouldUseCache) {
+        const lastCheck = localStorage.getItem(userLastCheckKey);
+        const fourHoursInMs = 4 * 60 * 60 * 1000;
+        const now = Date.now();
+        
+        if (lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
+          const cachedData = localStorage.getItem(userCacheKey);
+          if (cachedData) {
+            try {
+              const parsedData = JSON.parse(cachedData);
+              setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
+              return;
+            } catch {
+              localStorage.removeItem(userCacheKey);
+              localStorage.removeItem(userLastCheckKey);
+            }
           }
         }
       }
-    }
 
-    try {
+      console.log('[UNIFIED-AUTH] Checking subscription for user:', user.id);
       setSubscription(prev => ({ ...prev, loading: true }));
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
@@ -189,7 +201,15 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle edge function errors gracefully
+        if (error.message.includes('non-2xx') || error.message.includes('500')) {
+          console.warn('[UNIFIED-AUTH] Edge function error (likely invalid session):', error.message);
+          setSubscription(prev => ({ ...prev, loading: false }));
+          return;
+        }
+        throw error;
+      }
 
       const subscriptionData = {
         subscribed: data.subscribed || false,
@@ -222,14 +242,19 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error: any) {
       console.error('[UNIFIED-AUTH] Error checking subscription:', error);
-      toast({
-        title: "Erro ao verificar assinatura",
-        description: error.message,
-        variant: "destructive",
-      });
+      
+      // Only show error toast for real errors, not auth issues
+      if (!error.message.includes('session') && !error.message.includes('non-2xx')) {
+        toast({
+          title: "Erro ao verificar assinatura",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      
       setSubscription(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [user, session, toast, checkSubscriptionHistory]);
 
   // ===== AUTH ACTIONS =====
   const signUp = async (email: string, password: string, userData: any) => {
@@ -365,52 +390,63 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[UNIFIED-AUTH] Starting logout process');
       
-      if (!session) {
-        console.log('[UNIFIED-AUTH] No active session found, clearing local state');
-        setSession(null);
-        setUser(null);
-        setSubscription(prev => ({ ...prev, subscribed: false, status: 'inactive' }));
-        clearSubscriptionCache();
-        
-        toast({
-          title: "Logout realizado com sucesso!",
-          description: "Até a próxima!",
-        });
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
+      // Clear all state IMMEDIATELY to prevent edge function calls
+      setSession(null);
+      setUser(null);
+      setSubscription({
+        subscribed: false,
+        status: 'inactive',
+        plan_name: 'Nenhum',
+        plan_price: 0,
+        expires_at: null,
+        loading: false,
+        hasSubscriptionHistory: false,
+      });
       
-      if (error) {
-        if (error.message.includes('session') || error.message.includes('Session')) {
-          console.log('[UNIFIED-AUTH] Session already invalid, clearing local state');
-          setSession(null);
-          setUser(null);
-          setSubscription(prev => ({ ...prev, subscribed: false, status: 'inactive' }));
-          clearSubscriptionCache();
-          
-          toast({
-            title: "Logout realizado com sucesso!",
-            description: "Até a próxima!",
-          });
-          return;
+      // Clear cache atomically
+      clearSubscriptionCache();
+      
+      // Clear all user-related localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('subscription_') || key.startsWith('login_block') || key.startsWith('auth_')) {
+          localStorage.removeItem(key);
         }
-        throw error;
+      });
+      
+      // Only perform logout call after clearing all state
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error && !error.message.includes('session')) {
+          console.warn('[UNIFIED-AUTH] Logout warning:', error.message);
+        }
+      } catch (logoutError: any) {
+        console.warn('[UNIFIED-AUTH] Logout call failed (user already cleared locally):', logoutError.message);
       }
       
       toast({
         title: "Logout realizado com sucesso!",
         description: "Até a próxima!",
       });
-    } catch (error: any) {
-      console.error('[UNIFIED-AUTH] Sign out error:', error);
       
+      console.log('[UNIFIED-AUTH] Logout completed successfully');
+      
+    } catch (error: any) {
+      console.error('[UNIFIED-AUTH] Logout error:', error);
+      
+      // Ensure user is cleared locally regardless of error
       setSession(null);
       setUser(null);
-      setSubscription(prev => ({ ...prev, subscribed: false, status: 'inactive' }));
-      clearSubscriptionCache();
+      setSubscription({
+        subscribed: false,
+        status: 'inactive',
+        plan_name: 'Nenhum',
+        plan_price: 0,
+        expires_at: null,
+        loading: false,
+        hasSubscriptionHistory: false,
+      });
       
       toast({
         title: "Logout realizado",

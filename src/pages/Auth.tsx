@@ -1,16 +1,8 @@
 
-import { useState } from 'react';
-import { LoginForm } from '@/components/LoginForm';
-import { RegisterForm } from '@/components/RegisterForm';
+import { UnifiedAuthForm } from '@/components/UnifiedAuthForm';
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-
-  return isLogin ? (
-    <LoginForm onToggleToRegister={() => setIsLogin(false)} />
-  ) : (
-    <RegisterForm onToggleToLogin={() => setIsLogin(true)} />
-  );
+  return <UnifiedAuthForm />;
 };
 
 export default Auth;

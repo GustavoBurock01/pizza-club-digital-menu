@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+// Subscription now comes from useUnifiedAuth
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { subscription, createCheckout, checkSubscription } = useSubscription();
+  const { subscription, createCheckout, checkSubscription } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
   const { user } = useUnifiedAuth();
   const navigate = useNavigate();

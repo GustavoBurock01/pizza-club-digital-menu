@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile } from '@/hooks/useUnifiedProfile';
 import { useToast } from '@/hooks/use-toast';
 
 interface ValidationRule {
