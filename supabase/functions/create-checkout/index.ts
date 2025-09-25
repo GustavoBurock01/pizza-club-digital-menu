@@ -55,24 +55,25 @@ serve(async (req) => {
       logStep("Creating new customer");
     }
 
-    // Get price_id from request body or default to annual
-    const { price_id } = await req.json().catch(() => ({}));
+    // Get plan_type from request body or default to annual
+    const { plan_type } = await req.json().catch(() => ({}));
     
     // Use price_id from secrets
     const annualPriceId = Deno.env.get("STRIPE_PRICE_ID_ANNUAL");
     const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
     const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
     
-    // Default to annual if no specific price_id requested
-    let selectedPriceId = annualPriceId;
-    let planType = 'annual';
+    // Map plan_type to corresponding price_id
+    let selectedPriceId;
+    let planType = plan_type || 'annual';
     
-    if (price_id === monthlyPriceId) {
+    if (planType === 'monthly') {
       selectedPriceId = monthlyPriceId;
-      planType = 'monthly';
-    } else if (price_id === trialPriceId) {
+    } else if (planType === 'trial') {
       selectedPriceId = trialPriceId;
-      planType = 'trial';
+    } else {
+      selectedPriceId = annualPriceId;
+      planType = 'annual';
     }
     
     if (!selectedPriceId) {
