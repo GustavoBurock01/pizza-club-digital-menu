@@ -544,9 +544,23 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
       window.open(data.url, '_blank');
     } catch (error: any) {
       console.error('[UNIFIED-AUTH] Error creating checkout:', error);
+      
+      // Extract meaningful error message from Supabase function error
+      let errorMessage = 'Erro ao processar pagamento';
+      
+      if (error?.message) {
+        if (error.message.includes('Price ID') && error.message.includes('not found')) {
+          errorMessage = 'Configuração de preço inválida. Entre em contato com o suporte.';
+        } else if (error.message.includes('Edge Function returned a non-2xx')) {
+          errorMessage = 'Erro no servidor de pagamento. Tente novamente.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Erro ao criar checkout",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }

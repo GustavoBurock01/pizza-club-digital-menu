@@ -82,6 +82,16 @@ serve(async (req) => {
     
     logStep("Creating checkout with price", { selectedPriceId, planType });
 
+    // Validate that the price exists in Stripe before creating checkout
+    try {
+      await stripe.prices.retrieve(selectedPriceId);
+      logStep("Price validated successfully", { selectedPriceId });
+    } catch (priceError) {
+      const errorMsg = `Price ID ${selectedPriceId} not found in Stripe. Please check your Stripe dashboard and update the STRIPE_PRICE_ID_${planType.toUpperCase()} secret.`;
+      logStep("Price validation failed", { selectedPriceId, error: errorMsg });
+      throw new Error(errorMsg);
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
