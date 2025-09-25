@@ -77,7 +77,7 @@ async function validateWebhookSignature(
 
     return isValid;
   } catch (error) {
-    logSecurity('Signature validation error', { error: error.message });
+    logSecurity('Signature validation error', { error: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }
@@ -411,9 +411,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep('❌ Webhook processing error', { error: error.message, stack: error.stack });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : String(error);
+    logStep('❌ Webhook processing error', { error: errorMessage, stack: errorStack });
     logSecurity('WEBHOOK_ERROR', { 
-      error: error.message,
+      error: errorMessage,
       timestamp: new Date().toISOString()
     });
     

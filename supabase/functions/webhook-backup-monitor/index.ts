@@ -49,7 +49,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       }),
       { 
         status: 500, 
@@ -77,14 +77,14 @@ async function monitorFailedWebhooks(supabaseClient: any) {
     throw new Error(`Erro ao buscar logs falhados: ${error.message}`);
   }
 
-  const criticalFailures = failedLogs.filter(log => 
+  const criticalFailures = failedLogs.filter((log: any) => 
     log.platform === 'stripe' || 
     log.event_type.includes('payment') ||
     log.event_type.includes('subscription')
   );
 
   // Agrupar por tipo de erro
-  const errorGroups = failedLogs.reduce((groups: any, log) => {
+  const errorGroups = failedLogs.reduce((groups: any, log: any) => {
     const errorKey = log.error_message?.substring(0, 50) || 'unknown';
     if (!groups[errorKey]) {
       groups[errorKey] = [];
@@ -194,7 +194,7 @@ async function retryFailedWebhooks(supabaseClient: any, params: any = {}) {
         .from('webhook_logs')
         .update({ 
           status: 'failed',
-          error_message: `Erro no retry: ${error.message}`
+          error_message: `Erro no retry: ${error instanceof Error ? error.message : String(error)}`
         })
         .eq('id', log.id);
       

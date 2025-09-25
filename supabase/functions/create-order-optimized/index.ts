@@ -81,7 +81,7 @@ async function validateProductAvailability(
     }
 
     for (const item of items) {
-      const product = products?.find(p => p.id === item.product_id);
+      const product = products?.find((p: any) => p.id === item.product_id);
       
       if (!product) {
         errors.push(`Produto não encontrado: ${item.product_id}`);

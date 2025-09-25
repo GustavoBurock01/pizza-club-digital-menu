@@ -79,11 +79,11 @@ serve(async (req) => {
         // Marcar como falhado
         await supabase.rpc('fail_queue_item', {
           p_queue_id: queueItem.queue_id,
-          p_error_message: itemError.message,
-          p_error_details: { stack: itemError.stack }
+          p_error_message: itemError instanceof Error ? itemError.message : String(itemError),
+          p_error_details: { stack: itemError instanceof Error ? itemError.stack : String(itemError) }
         });
         
-        processedItems.push({ queue_id: queueItem.queue_id, status: 'failed', error: itemError.message });
+        processedItems.push({ queue_id: queueItem.queue_id, status: 'failed', error: itemError instanceof Error ? itemError.message : String(itemError) });
       }
     }
 
@@ -100,7 +100,7 @@ serve(async (req) => {
     console.error('[QUEUE-PROCESSOR] Erro geral:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -207,8 +207,8 @@ async function processOrderItem(queueItem: any): Promise<{ success: boolean; ord
     console.error('[QUEUE-PROCESSOR] Erro no processamento:', error);
     return {
       success: false,
-      error: error.message,
-      details: { stack: error.stack }
+      error: error instanceof Error ? error.message : String(error),
+      details: { stack: error instanceof Error ? error.stack : String(error) }
     };
   }
 }
@@ -226,7 +226,7 @@ async function checkProductAvailability(items: any[]): Promise<{ success: boolea
     // Implementar verificação real aqui
     return { success: true, errors: [] };
   } catch (error) {
-    return { success: false, errors: [error.message] };
+    return { success: false, errors: [error instanceof Error ? error.message : String(error)] };
   }
 }
 
@@ -256,7 +256,7 @@ async function reserveStockAtomically(items: any[], userId: string, orderKey?: s
         errors.push(`Falha na reserva de ${item.product_id}: ${result?.message || 'Erro desconhecido'}`);
       }
     } catch (error) {
-      errors.push(`Exceção ao reservar ${item.product_id}: ${error.message}`);
+      errors.push(`Exceção ao reservar ${item.product_id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -281,7 +281,7 @@ async function confirmStockReservations(reservationIds: string[], orderId: strin
         errors.push(`Erro ao confirmar reserva ${reservationId}: ${error.message}`);
       }
     } catch (error) {
-      errors.push(`Exceção ao confirmar reserva ${reservationId}: ${error.message}`);
+      errors.push(`Exceção ao confirmar reserva ${reservationId}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

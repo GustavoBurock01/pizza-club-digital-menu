@@ -125,9 +125,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep('Error in enhanced expire orders process', { error: error.message });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep('Error in enhanced expire orders process', { error: errorMessage });
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: errorMessage,
       success: false 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

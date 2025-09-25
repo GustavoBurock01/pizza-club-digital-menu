@@ -101,10 +101,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('[BACKGROUND-WORKER] Erro geral:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: errorMessage
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -173,8 +174,8 @@ async function processBackgroundJob(job: any, workerId: string): Promise<any> {
         .update({
           status: 'failed',
           failed_at: new Date().toISOString(),
-          error_message: error.message,
-          error_details: { stack: error.stack }
+          error_message: error instanceof Error ? error.message : String(error),
+          error_details: { stack: error instanceof Error ? error.stack : String(error) }
         })
         .eq('id', jobId);
     } else {
@@ -189,8 +190,8 @@ async function processBackgroundJob(job: any, workerId: string): Promise<any> {
           scheduled_at: scheduledAt.toISOString(),
           started_at: null,
           worker_id: null,
-          error_message: error.message,
-          error_details: { stack: error.stack }
+          error_message: error instanceof Error ? error.message : String(error),
+          error_details: { stack: error instanceof Error ? error.stack : String(error) }
         })
         .eq('id', jobId);
     }

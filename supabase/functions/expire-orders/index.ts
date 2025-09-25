@@ -109,8 +109,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep('Error during order expiration', { error: error.message });
-    return new Response(JSON.stringify({ error: error.message }), { 
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep('Error during order expiration', { error: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json'

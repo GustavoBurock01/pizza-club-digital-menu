@@ -68,7 +68,7 @@ const validateSignature = (payload: string, signature: string, platform: string,
         return true; // Allow unknown platforms for testing
     }
   } catch (error) {
-    logStep("Signature validation error", { error: error.message, platform });
+    logStep("Signature validation error", { error: error instanceof Error ? error.message : String(error), platform });
     return false;
   }
 };

@@ -136,7 +136,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       }),
       { 
         status: 500, 
@@ -169,7 +169,7 @@ async function reprocessStripeWebhook(webhookLog: any, supabaseClient: any) {
         return { success: false, error: `Tipo de evento Stripe não suportado: ${event_type}` };
     }
   } catch (error) {
-    return { success: false, error: `Erro no reprocessamento Stripe: ${error.message}` };
+    return { success: false, error: `Erro no reprocessamento Stripe: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 
@@ -185,7 +185,7 @@ async function reprocessMercadoPagoWebhook(webhookLog: any, supabaseClient: any)
         return { success: false, error: `Tipo de evento MercadoPago não suportado: ${event_type}` };
     }
   } catch (error) {
-    return { success: false, error: `Erro no reprocessamento MercadoPago: ${error.message}` };
+    return { success: false, error: `Erro no reprocessamento MercadoPago: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 
@@ -201,7 +201,7 @@ async function reprocessDeliveryWebhook(webhookLog: any, supabaseClient: any) {
         return { success: false, error: `Tipo de evento Delivery não suportado: ${event_type}` };
     }
   } catch (error) {
-    return { success: false, error: `Erro no reprocessamento Delivery: ${error.message}` };
+    return { success: false, error: `Erro no reprocessamento Delivery: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 
@@ -243,7 +243,7 @@ async function handleStripeSubscription(payload: any, supabaseClient: any) {
     .from('subscriptions')
     .upsert(subscriptionData, { onConflict: 'user_id' });
   
-  return { success: true };
+    return { success: true, error: '' };
 }
 
 async function handleStripeInvoice(payload: any, supabaseClient: any) {
@@ -271,7 +271,7 @@ async function handleStripeInvoice(payload: any, supabaseClient: any) {
     })
     .eq('id', subscription.id);
   
-  return { success: true };
+        return { success: true, error: '' };
 }
 
 async function handleStripeCheckout(payload: any, supabaseClient: any) {
@@ -288,7 +288,7 @@ async function handleStripeCheckout(payload: any, supabaseClient: any) {
       .eq('id', session.metadata.order_id);
   }
   
-  return { success: true };
+        return { success: true, error: '' };
 }
 
 async function handleMercadoPagoPayment(payload: any, supabaseClient: any) {
@@ -331,7 +331,7 @@ async function handleMercadoPagoPayment(payload: any, supabaseClient: any) {
       .eq('id', pixTransaction.order_id);
   }
   
-  return { success: true };
+  return { success: true, error: '' };
 }
 
 async function handleDeliveryStatusChange(payload: any, supabaseClient: any) {
@@ -342,5 +342,5 @@ async function handleDeliveryStatusChange(payload: any, supabaseClient: any) {
     .update({ status: new_status })
     .eq('id', order_id);
   
-  return { success: true };
+  return { success: true, error: '' };
 }

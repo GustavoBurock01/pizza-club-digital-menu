@@ -73,7 +73,7 @@ const generateReport = async (supabase: any, reportType: string, referenceDate: 
   logStep(`Found ${orders?.length} orders for report`);
   
   // Calculate totals and taxes
-  const totalSales = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+  const totalSales = orders?.reduce((sum: number, order: any) => sum + Number(order.total_amount), 0) || 0;
   const totalOrders = orders?.length || 0;
   const totalTaxes = totalSales * 0.1; // Simplified tax calculation (10%)
   
@@ -81,7 +81,7 @@ const generateReport = async (supabase: any, reportType: string, referenceDate: 
   const salesByCategory: Record<string, number> = {};
   const salesByPaymentMethod: Record<string, number> = {};
   
-  orders?.forEach(order => {
+  orders?.forEach((order: any) => {
     // Group by payment method
     const paymentMethod = order.payment_method || 'unknown';
     salesByPaymentMethod[paymentMethod] = (salesByPaymentMethod[paymentMethod] || 0) + Number(order.total_amount);
@@ -110,7 +110,7 @@ const generateReport = async (supabase: any, reportType: string, referenceDate: 
       by_category: salesByCategory,
       by_payment_method: salesByPaymentMethod,
     },
-    orders: orders?.map(order => ({
+    orders: orders?.map((order: any) => ({
       id: order.id,
       date: order.created_at,
       customer: order.customer_name,
