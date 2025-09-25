@@ -21,9 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { subscription, createCheckout, checkSubscription } = useUnifiedAuth();
+  const { user, createCheckout } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
-  const { user } = useUnifiedAuth();
   const { isLoading: subscriptionLoading, isActive } = useSubscriptionGlobal();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -121,11 +120,8 @@ const Dashboard = () => {
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
     try {
-      await checkSubscription(true);
-      toast({
-        title: "Status atualizado!",
-        description: "Status da assinatura verificado com sucesso.",
-      });
+      // Force page reload to trigger SubscriptionGlobalProvider refresh
+      window.location.reload();
     } catch (error) {
       console.error('Error refreshing subscription:', error);
     } finally {
@@ -294,7 +290,7 @@ const Dashboard = () => {
                         <CardTitle className="text-lg">Status da Assinatura</CardTitle>
                         <CardDescription>
                           {isActive 
-                            ? `Plano ${subscription.plan_name} ativo`
+                            ? 'Assinatura ativa'
                             : 'Nenhuma assinatura ativa'
                           }
                         </CardDescription>
@@ -314,16 +310,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  {isActive && subscription.expires_at && (
-                    <CardContent className="pt-0">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>
-                          Válido até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    </CardContent>
-                  )}
+                  {/* Subscription details now managed by SubscriptionGlobalProvider */}
                 </Card>
 
                 <Card>
@@ -331,7 +318,7 @@ const Dashboard = () => {
                     <CardTitle className="text-lg">Plano Atual</CardTitle>
                     <CardDescription>
                       {isActive 
-                        ? `${subscription.plan_name} - R$ ${subscription.plan_price.toFixed(2)}/ano`
+                        ? 'Plano ativo'
                         : 'Nenhum plano ativo'
                       }
                     </CardDescription>

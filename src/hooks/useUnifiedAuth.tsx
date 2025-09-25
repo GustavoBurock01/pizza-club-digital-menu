@@ -86,15 +86,8 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
           clearSubscriptionCache();
         }
         
-        // Only check subscription after state is set
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('[UNIFIED-AUTH] User signed in, will check subscription');
-          setTimeout(() => {
-            if (mounted) {
-              checkSubscriptionInternal();
-            }
-          }, 500); // Debounce to prevent immediate calls
-        }
+        // Subscription check is now handled by SubscriptionGlobalProvider
+        // No automatic subscription check needed here
         
         if (mounted) {
           setLoading(false);
@@ -114,9 +107,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (session?.user) {
-        checkSubscriptionInternal();
-      }
+      // Subscription check is now handled by SubscriptionGlobalProvider
     });
 
     return () => {
