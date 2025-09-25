@@ -6,7 +6,7 @@ import { Plus, Info, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnifiedStore } from '@/stores/simpleStore';
-import { PizzaCustomizer } from './PizzaCustomizer';
+import { ProductCustomizer } from './ProductCustomizer';
 import { supabase } from '@/services/supabase';
 
 interface MenuItemProps {
@@ -169,7 +169,7 @@ export const MenuCard = ({
 
       {/* Modal do PizzaCustomizer */}
       {fullProduct && (
-        <PizzaCustomizer
+        <ProductCustomizer
           product={fullProduct}
           isOpen={showCustomizer}
           onClose={() => setShowCustomizer(false)}

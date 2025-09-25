@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { IntegratedCardPayment } from '@/components/IntegratedCardPayment';
 import { useUnifiedStore } from '@/stores/simpleStore';
 
 interface Order {
@@ -32,32 +33,122 @@ interface PixData {
 }
 
 const Payment = () => {
-  const { orderId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { pathname } = useLocation();
+  const location = useLocation();
   const { clearCart } = useUnifiedStore();
   
   const [order, setOrder] = useState<Order | null>(null);
+  const [orderData, setOrderData] = useState<any>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'expired' | 'error'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<'form' | 'pending' | 'checking' | 'success' | 'expired' | 'error'>('form');
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [paymentResult, setPaymentResult] = useState<any>(null);
 
-  // Determinar tipo de pagamento pela URL
-  const isPixPayment = pathname.includes('/payment/pix');
-  const isCardPayment = pathname.includes('/payment/card');
-  const isLegacyPayment = !!orderId; // URL antiga: /payment/:orderId
+  // Determinar tipo de pagamento pela URL ou query params
+  const paymentType = searchParams.get('type') || 'pix'; // default PIX
+  const orderId = searchParams.get('order');
 
   useEffect(() => {
-    if (isLegacyPayment && orderId) {
-      // Fluxo antigo - buscar pedido existente
-      fetchOrder();
-    } else if (isPixPayment || isCardPayment) {
-      // Novo fluxo - criar pedido + pagamento
-      initializePayment();
+    initializePayment();
+  }, [paymentType, orderId]);
+
+  const initializePayment = async () => {
+    setLoading(true);
+    
+    try {
+      // Verificar se há dados do pedido
+      const stateOrderData = location.state?.orderData;
+      const pendingOrderData = localStorage.getItem('pendingOrder');
+      
+      if (stateOrderData) {
+        setOrderData(stateOrderData);
+      } else if (pendingOrderData) {
+        setOrderData(JSON.parse(pendingOrderData));
+      } else if (orderId) {
+        // Buscar pedido existente (fluxo legacy)
+        await fetchExistingOrder(orderId);
+      } else {
+        toast({
+          title: "Erro",
+          description: "Dados do pedido não encontrados",
+          variant: "destructive"
+        });
+        navigate('/menu');
+        return;
+      }
+
+      // Se é cartão, manter na tela de form
+      if (paymentType === 'card') {
+        setPaymentStatus('form');
+      } else if (paymentType === 'pix') {
+        // Se é PIX, criar pedido + PIX automaticamente
+        if (orderData || pendingOrderData) {
+          await createOrderAndPixPayment(orderData || JSON.parse(pendingOrderData!));
+        }
+      }
+    } catch (error: any) {
+      console.error('Error initializing payment:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao inicializar pagamento",
+        variant: "destructive"
+      });
+      navigate('/menu');
+    } finally {
+      setLoading(false);
     }
-  }, [orderId, isPixPayment, isCardPayment]);
+  };
+
+  const fetchExistingOrder = async (orderId: string) => {
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) throw orderError;
+      setOrder(orderData);
+    } catch (error: any) {
+      console.error('Error fetching order:', error);
+      throw error;
+    }
+  };
+
+  const createOrderAndPixPayment = async (orderData: any) => {
+    try {
+      setPaymentStatus('pending');
+      
+      const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
+        body: orderData
+      });
+
+      if (error) throw error;
+
+      setOrder(data.order);
+      setPixData(data.pixData);
+      localStorage.removeItem('pendingOrder');
+      
+      // Limpar carrinho imediatamente
+      clearCart();
+      
+      // Calculate time left until expiration
+      const expiresAt = new Date(data.pixData.expiresAt);
+      const now = new Date();
+      const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      setTimeLeft(secondsLeft);
+      
+      // Iniciar verificação de status
+      startPaymentStatusCheck(data.pixData.transactionId);
+    } catch (error) {
+      console.error('Error creating order and PIX:', error);
+      setPaymentStatus('error');
+      throw error;
+    }
+  };
 
   const startPaymentStatusCheck = (transactionId: string) => {
     const interval = setInterval(() => {
@@ -69,21 +160,6 @@ const Payment = () => {
       clearInterval(interval);
     }, 30 * 60 * 1000);
   };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (pixData && paymentStatus === 'pending') {
-      // Check payment status every 5 seconds for legacy flow
-      interval = setInterval(() => checkPaymentStatus(pixData.transactionId), 5000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [pixData, paymentStatus]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -103,115 +179,6 @@ const Payment = () => {
     };
   }, [timeLeft, pixData, paymentStatus]);
 
-  const initializePayment = async () => {
-    try {
-      // Recuperar dados do pedido pendente
-      const pendingOrderData = localStorage.getItem('pendingOrder');
-      if (!pendingOrderData) {
-        toast({
-          title: "Erro",
-          description: "Dados do pedido não encontrados",
-          variant: "destructive"
-        });
-        navigate('/menu');
-        return;
-      }
-
-      const orderData = JSON.parse(pendingOrderData);
-      
-      if (isPixPayment) {
-        await createOrderAndPixPayment(orderData);
-      } else if (isCardPayment) {
-        await createOrderAndCardPayment(orderData);
-      }
-    } catch (error: any) {
-      console.error('Error initializing payment:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao inicializar pagamento",
-        variant: "destructive"
-      });
-      navigate('/menu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createOrderAndPixPayment = async (orderData: any) => {
-    try {
-      // Criar pedido via edge function que também cria o PIX
-      const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
-        body: orderData
-      });
-
-      if (error) throw error;
-
-      setOrder(data.order);
-      setPixData(data.pixData);
-      localStorage.removeItem('pendingOrder');
-      
-      // Limpar carrinho imediatamente após criar pedido PIX
-      clearCart();
-      
-      // Calculate time left until expiration
-      const expiresAt = new Date(data.pixData.expiresAt);
-      const now = new Date();
-      const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
-      setTimeLeft(secondsLeft);
-      
-      // Iniciar verificação de status
-      startPaymentStatusCheck(data.pixData.transactionId);
-    } catch (error) {
-      console.error('Error creating order and PIX:', error);
-      throw error;
-    }
-  };
-
-  const createOrderAndCardPayment = async (orderData: any) => {
-    try {
-      // Redirecionar para página de pagamento com cartão (rota simplificada)
-      navigate('/payment/card', { state: { orderData } });
-    } catch (error) {
-      console.error('Error redirecting to card payment:', error);
-      throw error;
-    }
-  };
-
-  const fetchOrder = async () => {
-    try {
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-      if (orderError) throw orderError;
-      
-      setOrder(orderData);
-
-      if (orderData.payment_method === 'pix') {
-        // Legacy flow - redirect to unified flow
-        toast({
-          title: "Redirecionando...",
-          description: "Usando fluxo unificado de pagamento PIX",
-        });
-        navigate('/payment/pix');
-        return;
-      }
-    } catch (error: any) {
-      console.error('Error fetching order:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os dados do pedido.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function removed - using unified create-order-with-pix flow only
-
   const checkPaymentStatus = async (transactionId?: string) => {
     const txId = transactionId || pixData?.transactionId;
     if (!txId) return;
@@ -226,15 +193,13 @@ const Payment = () => {
       if (data.status === 'paid') {
         setPaymentStatus('success');
         
-        // NÃO limpar carrinho aqui - já foi limpo quando o pedido foi criado
-        
         toast({
           title: "Pagamento aprovado!",
           description: "Seu pedido foi confirmado com sucesso.",
         });
         
         setTimeout(() => {
-          const orderIdToUse = order?.id || orderId;
+          const orderIdToUse = order?.id;
           if (orderIdToUse) {
             navigate(`/order-status/${orderIdToUse}`);
           } else {
@@ -247,6 +212,30 @@ const Payment = () => {
     } catch (error: any) {
       console.error('Error checking payment status:', error);
     }
+  };
+
+  // Handlers para pagamento com cartão
+  const handleCardPaymentSuccess = (result: any) => {
+    setPaymentResult(result);
+    setPaymentStatus('success');
+    
+    // Limpar dados pendentes e carrinho
+    localStorage.removeItem('pendingOrder');
+    clearCart();
+    
+    // Redirecionar após 3 segundos
+    setTimeout(() => {
+      navigate(`/order-status/${result.order.id}`);
+    }, 3000);
+  };
+
+  const handleCardPaymentError = (error: string) => {
+    setPaymentStatus('error');
+    toast({
+      title: "Erro no pagamento",
+      description: error,
+      variant: "destructive"
+    });
   };
 
   const copyPixCode = () => {
@@ -273,16 +262,57 @@ const Payment = () => {
     );
   }
 
-  if (!order) {
+  // Success state (para ambos PIX e cartão)
+  if (paymentStatus === 'success') {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="border-green-200 bg-green-50">
           <CardContent className="p-8 text-center">
-            <XCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Pedido não encontrado</h2>
-            <p className="text-muted-foreground mb-4">Não foi possível encontrar este pedido.</p>
-            <Button onClick={() => navigate('/menu')}>
-              Voltar ao Menu
+            <CheckCircle className="h-20 w-20 mx-auto text-green-500 mb-6" />
+            <h2 className="text-2xl font-bold text-green-800 mb-4">Pagamento Aprovado!</h2>
+            <p className="text-green-700 mb-6">
+              Seu pedido foi confirmado e processado com sucesso.
+            </p>
+            
+            {paymentResult && (
+              <div className="bg-white rounded-lg p-4 mb-6">
+                <div className="space-y-2 text-left">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Pedido:</span>
+                    <span>#{paymentResult.order.id.slice(0, 8)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Valor:</span>
+                    <span>{formatCurrency(paymentResult.order.total_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Método:</span>
+                    <span>{paymentType === 'pix' ? 'PIX' : 'Cartão de Crédito'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Status:</span>
+                    <span className="text-green-600 font-medium">Aprovado</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <p className="text-sm text-green-600 mb-4">
+              Redirecionando para acompanhamento do pedido...
+            </p>
+            
+            <Button 
+              onClick={() => {
+                const orderIdToUse = paymentResult?.order?.id || order?.id;
+                if (orderIdToUse) {
+                  navigate(`/order-status/${orderIdToUse}`);
+                } else {
+                  navigate('/orders');
+                }
+              }}
+              className="gradient-pizza"
+            >
+              Acompanhar Pedido
             </Button>
           </CardContent>
         </Card>
@@ -290,44 +320,70 @@ const Payment = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/orders')}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        
-        <h1 className="text-2xl font-bold">Pagamento PIX</h1>
-        <p className="text-muted-foreground">Pedido #{order.id.slice(0, 8)}</p>
-      </div>
-
-      {paymentStatus === 'success' && (
-        <Card className="mb-6 border-green-200 bg-green-50">
-          <CardContent className="p-6 text-center">
-            <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-            <h2 className="text-xl font-semibold text-green-800 mb-2">Pagamento Aprovado!</h2>
-            <p className="text-green-700">Seu pedido foi confirmado e está sendo preparado.</p>
+  // Error state
+  if (paymentStatus === 'error') {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-8 text-center">
+            <XCircle className="h-20 w-20 mx-auto text-red-500 mb-6" />
+            <h2 className="text-2xl font-bold text-red-800 mb-4">
+              {paymentType === 'pix' ? 'Erro no PIX' : 'Pagamento Rejeitado'}
+            </h2>
+            <p className="text-red-700 mb-6">
+              Houve um problema ao processar seu pagamento.
+            </p>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={() => {
+                  setPaymentStatus('form');
+                  if (paymentType === 'pix' && orderData) {
+                    createOrderAndPixPayment(orderData);
+                  }
+                }}
+                className="w-full"
+              >
+                Tentar Novamente
+              </Button>
+              
+              {paymentType === 'card' && (
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/payment?type=pix')}
+                  className="w-full"
+                >
+                  Pagar com PIX
+                </Button>
+              )}
+              
+              <Button 
+                variant="ghost"
+                onClick={() => navigate('/menu')}
+                className="w-full"
+              >
+                Voltar ao Menu
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      )}
+      </div>
+    );
+  }
 
-      {paymentStatus === 'expired' && (
-        <Card className="mb-6 border-yellow-200 bg-yellow-50">
+  // Expired PIX state
+  if (paymentStatus === 'expired') {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="p-6 text-center">
             <Clock className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
             <h2 className="text-xl font-semibold text-yellow-800 mb-2">Código PIX Expirado</h2>
             <p className="text-yellow-700 mb-4">O tempo para pagamento expirou. Gere um novo código.</p>
             <Button onClick={() => {
               setPaymentStatus('pending');
-              // Always use unified flow
-              const pendingOrderData = localStorage.getItem('pendingOrder');
-              if (pendingOrderData) {
-                createOrderAndPixPayment(JSON.parse(pendingOrderData));
+              if (orderData) {
+                createOrderAndPixPayment(orderData);
               } else {
                 navigate('/menu');
               }
@@ -336,31 +392,45 @@ const Payment = () => {
             </Button>
           </CardContent>
         </Card>
-      )}
+      </div>
+    );
+  }
 
-      {paymentStatus === 'error' && (
-        <Card className="mb-6 border-red-200 bg-red-50">
-          <CardContent className="p-6 text-center">
-            <XCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold text-red-800 mb-2">Erro no Pagamento</h2>
-            <p className="text-red-700 mb-4">Ocorreu um erro ao gerar o código PIX.</p>
-            <Button onClick={() => {
-              setPaymentStatus('pending');
-              // Always use unified flow
-              const pendingOrderData = localStorage.getItem('pendingOrder');
-              if (pendingOrderData) {
-                createOrderAndPixPayment(JSON.parse(pendingOrderData));
-              } else {
-                navigate('/menu');
-              }
-            }}>
-              Tentar Novamente
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate('/menu')}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+        
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {paymentType === 'pix' ? (
+            <>
+              <QrCode className="h-6 w-6" />
+              Pagamento PIX
+            </>
+          ) : (
+            <>
+              <CreditCard className="h-6 w-6" />
+              Pagamento com Cartão
+            </>
+          )}
+        </h1>
+        <p className="text-muted-foreground">
+          {paymentType === 'pix' 
+            ? `Pedido #${order?.id?.slice(0, 8) || 'Novo'}` 
+            : 'Complete os dados para finalizar seu pedido'
+          }
+        </p>
+      </div>
 
-      {pixData && (paymentStatus === 'pending' || paymentStatus === 'checking') && (
+      {/* Pagamento PIX */}
+      {paymentType === 'pix' && pixData && (paymentStatus === 'pending' || paymentStatus === 'checking') && (
         <div className="space-y-6">
           {/* QR Code Card */}
           <Card>
@@ -399,33 +469,100 @@ const Payment = () => {
               </p>
             </CardContent>
           </Card>
-
-          {/* Order Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo do Pedido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(order.total_amount - order.delivery_fee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Taxa de entrega</span>
-                  <span className={order.delivery_fee > 0 ? '' : 'text-green-600'}>
-                    {order.delivery_fee > 0 ? formatCurrency(order.delivery_fee) : 'Grátis'}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-primary">{formatCurrency(order.total_amount)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
+      )}
+
+      {/* Pagamento com Cartão */}
+      {paymentType === 'card' && paymentStatus === 'form' && orderData && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Formulário de pagamento */}
+          <div className="lg:col-span-2">
+            <IntegratedCardPayment
+              orderData={orderData}
+              onPaymentSuccess={handleCardPaymentSuccess}
+              onPaymentError={handleCardPaymentError}
+            />
+          </div>
+
+          {/* Resumo do pedido - sempre mostrar quando há dados */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo do Pedido</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Itens */}
+                  <div className="space-y-2">
+                    {orderData.items?.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>{item.quantity}x {item.name || `Item ${index + 1}`}</span>
+                        <span>{formatCurrency(item.total_price || (item.unit_price * item.quantity))}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Subtotal */}
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(orderData.total_amount - (orderData.delivery_fee || 0))}</span>
+                  </div>
+                  
+                  {/* Taxa de entrega */}
+                  <div className="flex justify-between">
+                    <span>Taxa de entrega</span>
+                    <span className={orderData.delivery_fee > 0 ? '' : 'text-green-600'}>
+                      {orderData.delivery_fee > 0 ? formatCurrency(orderData.delivery_fee) : 'Grátis'}
+                    </span>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Total */}
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span className="text-primary">{formatCurrency(orderData.total_amount)}</span>
+                  </div>
+                  
+                  {/* Método de entrega */}
+                  <div className="text-xs text-muted-foreground pt-2">
+                    {orderData.delivery_method === 'delivery' ? '📍 Entrega' : '🏪 Retirada no balcão'}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Resumo do pedido para PIX */}
+      {paymentType === 'pix' && order && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo do Pedido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatCurrency(order.total_amount - order.delivery_fee)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Taxa de entrega</span>
+                <span className={order.delivery_fee > 0 ? '' : 'text-green-600'}>
+                  {order.delivery_fee > 0 ? formatCurrency(order.delivery_fee) : 'Grátis'}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span className="text-primary">{formatCurrency(order.total_amount)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

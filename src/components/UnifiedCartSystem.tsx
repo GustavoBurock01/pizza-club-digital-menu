@@ -388,6 +388,5 @@ export const UnifiedCartSystem = ({
   return null;
 };
 
-// Backward compatibility exports
-export const CartDrawer = (props: any) => <UnifiedCartSystem variant="drawer" {...props} />;
-export const FixedCartFooter = (props: any) => <UnifiedCartSystem variant="footer" {...props} />;
+// Default exports
+export default UnifiedCartSystem;

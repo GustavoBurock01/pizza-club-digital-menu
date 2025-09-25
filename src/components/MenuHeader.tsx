@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
-import { CartDrawer } from "./CartDrawer";
+import UnifiedCartSystem from "./UnifiedCartSystem";
 import { CurrentView } from "@/types";
 
 interface MenuHeaderProps {
@@ -52,7 +52,7 @@ export const MenuHeader = ({
           {currentView === 'products' && `${productsCount} ${productsCount === 1 ? 'produto encontrado' : 'produtos encontrados'}`}
         </p>
       </div>
-      <CartDrawer />
+      <UnifiedCartSystem variant="drawer" />
     </div>
   );
 };

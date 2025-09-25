@@ -178,8 +178,6 @@ export const useUnifiedStore = create<UnifiedState>()(
   )
 );
 
-// ===== BACKWARD COMPATIBILITY EXPORTS =====
-// Deprecated - use useUnifiedStore instead
+// ===== EXPORTS =====
 export const useCartStore = useUnifiedStore;
 export const useMenuStore = useUnifiedStore;
-export const useRealtimeStore = useUnifiedStore;
