@@ -45,6 +45,7 @@ interface UseSubscriptionCoreOptions {
   enabled?: boolean;
   staleTime?: number;
   refetchInterval?: number;
+  skipCheck?: boolean; // Nova opção para pular verificação
 }
 
 export function useSubscriptionCore(
@@ -55,8 +56,9 @@ export function useSubscriptionCore(
   
   const {
     enabled = !!userId,
-    staleTime = 30_000, // 30 segundos
+    staleTime = 5 * 60 * 1000, // 5 minutos - mais tempo de cache
     refetchInterval = false,
+    skipCheck = false,
   } = options;
 
   // ===== FETCH FUNCTION =====
@@ -157,7 +159,7 @@ export function useSubscriptionCore(
   const query = useQuery({
     queryKey: SUBSCRIPTION_QUERY_KEYS.subscription(userId || ''),
     queryFn: fetchSubscription,
-    enabled,
+    enabled: enabled && !skipCheck,
     staleTime,
     refetchInterval,
     retry: 2,

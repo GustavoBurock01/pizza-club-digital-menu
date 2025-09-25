@@ -10,7 +10,7 @@ import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import { useSubscriptionCore } from '@/hooks/useSubscriptionCore';
+import { useSubscriptionGlobal } from '@/components/SubscriptionGlobalProvider';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -24,7 +24,7 @@ const Dashboard = () => {
   const { subscription, createCheckout, checkSubscription } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
   const { user } = useUnifiedAuth();
-  const { isLoading: subscriptionLoading, isActive, validation, refresh } = useSubscriptionCore(user?.id, { enabled: !!user });
+  const { isLoading: subscriptionLoading, isActive } = useSubscriptionGlobal();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -121,7 +121,7 @@ const Dashboard = () => {
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
     try {
-      await refresh();
+      await checkSubscription(true);
       toast({
         title: "Status atualizado!",
         description: "Status da assinatura verificado com sucesso.",
@@ -294,7 +294,7 @@ const Dashboard = () => {
                         <CardTitle className="text-lg">Status da Assinatura</CardTitle>
                         <CardDescription>
                           {isActive 
-                            ? `Plano ${validation.planName} ativo`
+                            ? `Plano ${subscription.plan_name} ativo`
                             : 'Nenhuma assinatura ativa'
                           }
                         </CardDescription>
@@ -314,12 +314,12 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  {isActive && validation.expiresAt && (
+                  {isActive && subscription.expires_at && (
                     <CardContent className="pt-0">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>
-                          Válido até {new Date(validation.expiresAt).toLocaleDateString('pt-BR')}
+                          Válido até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
                     </CardContent>
@@ -331,7 +331,7 @@ const Dashboard = () => {
                     <CardTitle className="text-lg">Plano Atual</CardTitle>
                     <CardDescription>
                       {isActive 
-                        ? `${validation.planName} - R$ ${validation.planPrice.toFixed(2)}/ano`
+                        ? `${subscription.plan_name} - R$ ${subscription.plan_price.toFixed(2)}/ano`
                         : 'Nenhum plano ativo'
                       }
                     </CardDescription>
