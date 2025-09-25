@@ -112,7 +112,7 @@ const Index = () => {
               </Button>
             )}
             <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
-              {user ? (hasValidSubscription() ? 'Ver Cardápio' : 'Assinar Agora') : 'Entrar / Cadastrar'}
+              {user ? (hasValidSubscription() ? 'Ir para Dashboard' : 'Assinar Agora') : 'Entrar / Cadastrar'}
             </Button>
           </div>
         </div>
