@@ -23,7 +23,7 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7), keyType: stripeKey.startsWith('sk_test') ? 'test' : 'live' });
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -40,8 +40,6 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
-
-    logStep("Creating checkout for annual plan");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -63,6 +61,13 @@ serve(async (req) => {
     const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
     const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
     
+    logStep("Price IDs from environment", { 
+      annual: annualPriceId ? `${annualPriceId.substring(0, 10)}...` : 'NOT SET',
+      monthly: monthlyPriceId ? `${monthlyPriceId.substring(0, 10)}...` : 'NOT SET',
+      trial: trialPriceId ? `${trialPriceId.substring(0, 10)}...` : 'NOT SET',
+      requestedPlan: plan_type || 'none (defaulting to annual)'
+    });
+    
     // Map plan_type to corresponding price_id
     let selectedPriceId;
     let planType = plan_type || 'annual';
@@ -77,18 +82,42 @@ serve(async (req) => {
     }
     
     if (!selectedPriceId) {
-      throw new Error(`Price ID not configured for plan type: ${planType}`);
+      const errorMsg = `Price ID not configured for plan type: ${planType}. Please set STRIPE_PRICE_ID_${planType.toUpperCase()} in Supabase secrets.`;
+      logStep("Price ID missing", { planType, secretName: `STRIPE_PRICE_ID_${planType.toUpperCase()}` });
+      throw new Error(errorMsg);
     }
     
-    logStep("Creating checkout with price", { selectedPriceId, planType });
+    logStep("Creating checkout with price", { selectedPriceId: `${selectedPriceId.substring(0, 10)}...`, planType });
 
     // Validate that the price exists in Stripe before creating checkout
     try {
-      await stripe.prices.retrieve(selectedPriceId);
-      logStep("Price validated successfully", { selectedPriceId });
-    } catch (priceError) {
-      const errorMsg = `Price ID ${selectedPriceId} not found in Stripe. Please check your Stripe dashboard and update the STRIPE_PRICE_ID_${planType.toUpperCase()} secret.`;
-      logStep("Price validation failed", { selectedPriceId, error: errorMsg });
+      const priceInfo = await stripe.prices.retrieve(selectedPriceId);
+      logStep("Price validated successfully", { 
+        priceId: `${selectedPriceId.substring(0, 10)}...`,
+        active: priceInfo.active,
+        currency: priceInfo.currency,
+        amount: priceInfo.unit_amount,
+        livemode: priceInfo.livemode
+      });
+      
+      // Check if price mode matches stripe key mode
+      const isTestKey = stripeKey.startsWith('sk_test');
+      if (priceInfo.livemode === isTestKey) {
+        logStep("WARNING: Price mode mismatch", { 
+          stripeKeyMode: isTestKey ? 'test' : 'live',
+          priceMode: priceInfo.livemode ? 'live' : 'test'
+        });
+        throw new Error(`Price mode mismatch: Using ${isTestKey ? 'test' : 'live'} Stripe key with ${priceInfo.livemode ? 'live' : 'test'} price ID. Please use matching test/live keys and price IDs.`);
+      }
+      
+    } catch (priceError: any) {
+      const errorMsg = `Price ID validation failed: ${priceError.message}. Please check your Stripe dashboard and ensure the STRIPE_PRICE_ID_${planType.toUpperCase()} secret matches your Stripe key mode.`;
+      logStep("Price validation failed", { 
+        priceId: `${selectedPriceId.substring(0, 10)}...`, 
+        error: priceError.message,
+        stripeErrorType: priceError.type,
+        stripeKeyMode: stripeKey.startsWith('sk_test') ? 'test' : 'live'
+      });
       throw new Error(errorMsg);
     }
 
