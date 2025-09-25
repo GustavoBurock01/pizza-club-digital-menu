@@ -16,12 +16,8 @@ const Index = () => {
 
   const handleAuthNavigation = () => {
     if (user) {
-      // Se logado, mostrar opções baseadas na assinatura
-      if (hasValidSubscription()) {
-        navigate('/menu');
-      } else {
-        navigate('/plans');
-      }
+      // Se logado, vai para dashboard
+      navigate('/dashboard');
     } else {
       navigate('/auth');
     }

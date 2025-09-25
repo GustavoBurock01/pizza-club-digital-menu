@@ -109,7 +109,13 @@ const App = () => {
                 </UnifiedProtectedRoute>
               } />
               {/* Customer Routes */}
-              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Dashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
                <Route path="/phase2-premium" element={<Phase2PremiumExperience />} />
                <Route path="/menu" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>

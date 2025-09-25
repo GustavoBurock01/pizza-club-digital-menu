@@ -411,14 +411,14 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
                 window.location.href = '/attendant';
                 break;
               default:
-                window.location.href = '/';
+                window.location.href = '/dashboard';
                 break;
             }
           }, 100);
         } catch (roleError) {
           console.error('[UNIFIED-AUTH] Error checking user role:', roleError);
           setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = '/dashboard';
           }, 100);
         }
       }
