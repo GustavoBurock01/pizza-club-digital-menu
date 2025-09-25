@@ -39,9 +39,36 @@ serve(async (req) => {
     logStep("Authenticating user with token");
     
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    // Handle session/token errors gracefully
+    if (userError) {
+      logStep("Authentication failed", { error: userError.message });
+      if (userError.message.includes('session') || userError.message.includes('JWT') || userError.message.includes('token')) {
+        return new Response(JSON.stringify({ 
+          error: `Authentication error: ${userError.message}`,
+          subscribed: false,
+          status: 'unauthenticated' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, // Changed from 500 to 401 for auth errors
+        });
+      }
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("No user or email found");
+      return new Response(JSON.stringify({ 
+        error: "User not authenticated or email not available",
+        subscribed: false,
+        status: 'unauthenticated' 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // FASE 1: VERIFICAR PRIMEIRO NO BANCO SUPABASE

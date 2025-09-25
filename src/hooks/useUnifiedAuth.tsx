@@ -158,10 +158,10 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkSubscriptionInternal = useCallback(async (forceCheck = false) => {
-    // Prevent calls without valid session to avoid edge function errors
-    if (!user || !session || !session.access_token) {
-      console.log('[UNIFIED-AUTH] No valid session for subscription check');
-      setSubscription(prev => ({ ...prev, loading: false }));
+    // Prevent calls without valid user
+    if (!user) {
+      console.log('[UNIFIED-AUTH] No user for subscription check');
+      setSubscription(prev => ({ ...prev, loading: false, subscribed: false }));
       return;
     }
 
@@ -169,19 +169,21 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     const userLastCheckKey = `subscription_last_check_${user.id}`;
     
     try {
+      // PRIORIDADE 1: Verificar primeiro no banco local (mais confiável)
       const hasHistory = await checkSubscriptionHistory();
-      const shouldUseCache = hasHistory && !forceCheck;
       
-      if (shouldUseCache) {
+      // Se há histórico e não é um force check, usar cache
+      if (hasHistory && !forceCheck) {
         const lastCheck = localStorage.getItem(userLastCheckKey);
-        const fourHoursInMs = 4 * 60 * 60 * 1000;
+        const twoHoursInMs = 2 * 60 * 60 * 1000; // Reduzir cache para 2h
         const now = Date.now();
         
-        if (lastCheck && (now - parseInt(lastCheck)) < fourHoursInMs) {
+        if (lastCheck && (now - parseInt(lastCheck)) < twoHoursInMs) {
           const cachedData = localStorage.getItem(userCacheKey);
           if (cachedData) {
             try {
               const parsedData = JSON.parse(cachedData);
+              console.log('[UNIFIED-AUTH] Using cached subscription data:', parsedData);
               setSubscription(prev => ({ ...prev, ...parsedData, loading: false }));
               return;
             } catch {
@@ -195,39 +197,90 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('[UNIFIED-AUTH] Checking subscription for user:', user.id);
       setSubscription(prev => ({ ...prev, loading: true }));
       
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      // PRIORIDADE 2: Se session é válida, usar edge function
+      if (session?.access_token) {
+        try {
+          const { data, error } = await supabase.functions.invoke('check-subscription', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
 
-      if (error) {
-        // Handle edge function errors gracefully
-        if (error.message.includes('non-2xx') || error.message.includes('500')) {
-          console.warn('[UNIFIED-AUTH] Edge function error (likely invalid session):', error.message);
-          setSubscription(prev => ({ ...prev, loading: false }));
-          return;
+          if (!error && data) {
+            const subscriptionData = {
+              subscribed: data.subscribed || false,
+              status: data.status || 'inactive',
+              plan_name: data.plan_name || 'Nenhum',
+              plan_price: data.plan_price || 0,
+              expires_at: data.expires_at,
+              loading: false,
+              hasSubscriptionHistory: hasHistory,
+            };
+
+            setSubscription(subscriptionData);
+            
+            // Cache apenas se subscribed = true
+            if (subscriptionData.subscribed) {
+              const now = Date.now();
+              localStorage.setItem(userLastCheckKey, now.toString());
+              localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
+            }
+            return;
+          }
+        } catch (edgeError: any) {
+          console.warn('[UNIFIED-AUTH] Edge function failed, trying direct DB check:', edgeError.message);
         }
-        throw error;
       }
 
-      const subscriptionData = {
-        subscribed: data.subscribed || false,
-        status: data.status || 'inactive',
-        plan_name: data.plan_name || 'Nenhum',
-        plan_price: data.plan_price || 0,
-        expires_at: data.expires_at,
-        loading: false,
-        hasSubscriptionHistory: hasHistory,
-      };
+      // PRIORIDADE 3: Fallback - verificação direta no banco
+      console.log('[UNIFIED-AUTH] Falling back to direct database check');
+      const { data: directSubData, error: directError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
 
-      setSubscription(subscriptionData);
-      
-      if (hasHistory && subscriptionData.subscribed) {
-        const now = Date.now();
-        localStorage.setItem(userLastCheckKey, now.toString());
-        localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
+      if (!directError && directSubData) {
+        // Verificar se não expirou
+        const now = new Date();
+        const expiresAt = directSubData.expires_at ? new Date(directSubData.expires_at) : null;
+        const isExpired = expiresAt && expiresAt < now;
+
+        const subscriptionData = {
+          subscribed: !isExpired,
+          status: isExpired ? 'expired' : directSubData.status,
+          plan_name: directSubData.plan_name || 'Nenhum',
+          plan_price: directSubData.plan_price || 0,
+          expires_at: directSubData.expires_at,
+          loading: false,
+          hasSubscriptionHistory: true,
+        };
+
+        console.log('[UNIFIED-AUTH] Direct DB subscription found:', subscriptionData);
+        setSubscription(subscriptionData);
+        
+        if (!isExpired) {
+          const now = Date.now();
+          localStorage.setItem(userLastCheckKey, now.toString());
+          localStorage.setItem(userCacheKey, JSON.stringify(subscriptionData));
+        }
       } else {
+        // Nenhuma assinatura encontrada
+        const subscriptionData = {
+          subscribed: false,
+          status: 'inactive',
+          plan_name: 'Nenhum',
+          plan_price: 0,
+          expires_at: null,
+          loading: false,
+          hasSubscriptionHistory: hasHistory,
+        };
+
+        console.log('[UNIFIED-AUTH] No subscription found');
+        setSubscription(subscriptionData);
+        
+        // Limpar cache se não há assinatura
         localStorage.removeItem(userCacheKey);
         localStorage.removeItem(userLastCheckKey);
       }
@@ -243,16 +296,15 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error('[UNIFIED-AUTH] Error checking subscription:', error);
       
-      // Only show error toast for real errors, not auth issues
-      if (!error.message.includes('session') && !error.message.includes('non-2xx')) {
-        toast({
-          title: "Erro ao verificar assinatura",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-      
-      setSubscription(prev => ({ ...prev, loading: false }));
+      // Set default state on error
+      setSubscription(prev => ({ 
+        ...prev, 
+        loading: false,
+        subscribed: false,
+        status: 'inactive',
+        plan_name: 'Nenhum',
+        plan_price: 0
+      }));
     }
   }, [user, session, toast, checkSubscriptionHistory]);
 

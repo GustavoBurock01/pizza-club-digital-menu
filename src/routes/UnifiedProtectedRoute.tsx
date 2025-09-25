@@ -99,6 +99,12 @@ export const UnifiedProtectedRoute = ({
 
   // Subscription check - only redirect to plans for routes that explicitly require subscription
   if (requireSubscription && user && !subscription.loading && !subscription.subscribed) {
+    console.log('[ROUTE-GUARD] Redirecting to plans - no subscription:', { 
+      user: !!user, 
+      loading: subscription.loading, 
+      subscribed: subscription.subscribed,
+      status: subscription.status 
+    });
     return <Navigate to="/plans" replace />;
   }
 
