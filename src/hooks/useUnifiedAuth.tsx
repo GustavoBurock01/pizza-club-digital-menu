@@ -127,10 +127,21 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ===== SUBSCRIPTION MANAGEMENT =====
   const clearSubscriptionCache = useCallback(() => {
+    // Limpar cache do usuário atual se existir
     if (user) {
       localStorage.removeItem(`subscription_data_${user.id}`);
       localStorage.removeItem(`subscription_last_check_${user.id}`);
     }
+    
+    // CRÍTICO: Limpar TODOS os caches de subscription no logout
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('subscription_data_') || 
+          key.startsWith('subscription_last_check_') ||
+          key.startsWith('auth_') ||
+          key.startsWith('login_block')) {
+        localStorage.removeItem(key);
+      }
+    });
   }, [user]);
 
   const checkSubscriptionHistory = async () => {

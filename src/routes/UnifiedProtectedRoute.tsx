@@ -97,9 +97,9 @@ export const UnifiedProtectedRoute = ({
     }
   }
 
-  // Subscription check - only redirect to plans for /menu route when no subscription
-  if (requireSubscription && user && !subscription.loading && !subscription.subscribed && location.pathname === '/menu') {
-    console.log('[ROUTE-GUARD] Redirecting to plans - accessing menu without subscription:', { 
+  // Subscription check - redirect to plans for ANY protected route when no subscription
+  if (requireSubscription && user && !subscription.loading && !subscription.subscribed) {
+    console.log('[ROUTE-GUARD] Redirecting to plans - accessing protected route without subscription:', { 
       user: !!user, 
       loading: subscription.loading, 
       subscribed: subscription.subscribed,
