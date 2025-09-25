@@ -1068,6 +1068,7 @@ export type Database = {
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          stripe_customer_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1079,6 +1080,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1090,6 +1092,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1310,15 +1313,69 @@ export type Database = {
           },
         ]
       }
+      subscription_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_expires_at: string | null
+          new_plan_name: string | null
+          new_status: string | null
+          old_expires_at: string | null
+          old_plan_name: string | null
+          old_status: string | null
+          stripe_event_id: string | null
+          sync_source: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_expires_at?: string | null
+          new_plan_name?: string | null
+          new_status?: string | null
+          old_expires_at?: string | null
+          old_plan_name?: string | null
+          old_status?: string | null
+          stripe_event_id?: string | null
+          sync_source: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_expires_at?: string | null
+          new_plan_name?: string | null
+          new_status?: string | null
+          old_expires_at?: string | null
+          old_plan_name?: string | null
+          old_status?: string | null
+          stripe_event_id?: string | null
+          sync_source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
+          cancel_at_period_end: boolean | null
+          canceled_at: string | null
           created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
           expires_at: string | null
           id: string
+          last_synced_at: string | null
           last_webhook_event: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           plan_name: string
           plan_price: number
+          raw_metadata: Json | null
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
           stripe_price_id: string | null
@@ -1329,13 +1386,19 @@ export type Database = {
           webhook_event_id: string | null
         }
         Insert: {
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
           created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
           expires_at?: string | null
           id?: string
+          last_synced_at?: string | null
           last_webhook_event?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           plan_name?: string
           plan_price?: number
+          raw_metadata?: Json | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_price_id?: string | null
@@ -1346,13 +1409,19 @@ export type Database = {
           webhook_event_id?: string | null
         }
         Update: {
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
           created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
           expires_at?: string | null
           id?: string
+          last_synced_at?: string | null
           last_webhook_event?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           plan_name?: string
           plan_price?: number
+          raw_metadata?: Json | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_price_id?: string | null
@@ -1411,6 +1480,36 @@ export type Database = {
           taste_profile?: string[] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string
+          stripe_signature: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string
+          stripe_signature?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string
+          stripe_signature?: string | null
         }
         Relationships: []
       }
@@ -1559,6 +1658,17 @@ export type Database = {
       auto_reconcile_payments: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      check_subscription_cache: {
+        Args: { p_ttl_minutes?: number; p_user_id: string }
+        Returns: {
+          expires_at: string
+          is_active: boolean
+          needs_refresh: boolean
+          plan_name: string
+          plan_price: number
+          status: string
+        }[]
       }
       cleanup_expired_stock_reservations: {
         Args: Record<PropertyKey, never>
