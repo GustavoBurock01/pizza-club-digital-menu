@@ -100,12 +100,12 @@ class RealUserMonitoring {
         this.recordMetric({
           ...baseMetric,
           metric_name: 'page_load_time',
-          value: navEntry.loadEventEnd - navEntry.navigationStart,
+          value: navEntry.loadEventEnd - navEntry.fetchStart,
           unit: 'ms',
           metadata: {
-            dom_complete: navEntry.domComplete - navEntry.navigationStart,
-            dom_interactive: navEntry.domInteractive - navEntry.navigationStart,
-            first_byte: navEntry.responseStart - navEntry.navigationStart
+            dom_complete: navEntry.domComplete - navEntry.fetchStart,
+            dom_interactive: navEntry.domInteractive - navEntry.fetchStart,
+            first_byte: navEntry.responseStart - navEntry.fetchStart
           }
         });
         break;

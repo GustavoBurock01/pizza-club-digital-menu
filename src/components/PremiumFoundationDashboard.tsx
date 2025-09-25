@@ -7,10 +7,58 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, CheckCircle, XCircle, Activity, Shield, Zap, TestTube } from 'lucide-react';
-import { realUserMonitoring, RUMMetric, ErrorReport } from '@/utils/realUserMonitoring';
-import { automatedTesting, TestResult } from '@/utils/automatedTesting';
-import { securityHeaders } from '@/utils/securityHeaders';
-import { performanceOptimizer } from '@/utils/performanceOptimizer';
+
+// Use dynamic imports to avoid initialization issues
+const getRealUserMonitoring = async () => {
+  const { realUserMonitoring } = await import('@/utils/realUserMonitoring');
+  return realUserMonitoring;
+};
+
+const getAutomatedTesting = async () => {
+  const { automatedTesting } = await import('@/utils/automatedTesting');
+  return automatedTesting;
+};
+
+const getSecurityHeaders = async () => {
+  const { securityHeaders } = await import('@/utils/securityHeaders');
+  return securityHeaders;
+};
+
+// Type definitions
+interface RUMMetric {
+  id: string;
+  session_id: string;
+  user_id?: string;
+  metric_type: 'performance' | 'error' | 'interaction' | 'business';
+  metric_name: string;
+  value: number;
+  unit: string;
+  metadata: Record<string, any>;
+  timestamp: string;
+  page_url: string;
+  user_agent: string;
+  device_type: 'mobile' | 'tablet' | 'desktop';
+}
+
+interface ErrorReport {
+  id: string;
+  session_id: string;
+  user_id?: string;
+  error_type: 'javascript' | 'network' | 'performance' | 'security';
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+  metadata: Record<string, any>;
+}
+
+interface TestResult {
+  testId: string;
+  passed: boolean;
+  duration: number;
+  error?: string;
+  timestamp: string;
+  metadata: Record<string, any>;
+}
 
 export function PremiumFoundationDashboard() {
   const [metrics, setMetrics] = useState<RUMMetric[]>([]);
@@ -19,25 +67,36 @@ export function PremiumFoundationDashboard() {
   const [isRunningTests, setIsRunningTests] = useState(false);
 
   useEffect(() => {
-    // Load initial data
-    setMetrics(realUserMonitoring.getMetrics());
-    setErrors(realUserMonitoring.getErrors());
-    setTestResults(automatedTesting.getTestResults());
+    const loadData = async () => {
+      try {
+        const rum = await getRealUserMonitoring();
+        const testing = await getAutomatedTesting();
+        
+        setMetrics(rum.getMetrics());
+        setErrors(rum.getErrors());
+        setTestResults(testing.getTestResults());
 
-    // Set up real-time updates
-    const interval = setInterval(() => {
-      setMetrics(realUserMonitoring.getMetrics());
-      setErrors(realUserMonitoring.getErrors());
-    }, 5000);
+        // Set up real-time updates
+        const interval = setInterval(async () => {
+          setMetrics(rum.getMetrics());
+          setErrors(rum.getErrors());
+        }, 5000);
 
-    return () => clearInterval(interval);
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('Failed to load premium foundation data:', error);
+      }
+    };
+
+    loadData();
   }, []);
 
   const runTests = async () => {
     setIsRunningTests(true);
     try {
-      await automatedTesting.runAllTests();
-      setTestResults(automatedTesting.getTestResults());
+      const testing = await getAutomatedTesting();
+      await testing.runAllTests();
+      setTestResults(testing.getTestResults());
     } catch (error) {
       console.error('Failed to run tests:', error);
     } finally {
@@ -76,25 +135,45 @@ export function PremiumFoundationDashboard() {
     return { total, passed, failed, successRate };
   };
 
-  const getSecurityStatus = () => {
-    const config = securityHeaders.getConfig();
-    const cspEnabled = !config.contentSecurityPolicy.reportOnly;
-    const permissionsPolicyEnabled = Object.keys(config.permissionsPolicy).length > 0;
-    
-    const securityErrors = errors.filter(e => e.error_type === 'security').length;
-    
-    return {
-      cspEnabled,
-      permissionsPolicyEnabled,
-      securityViolations: securityErrors,
-      overall: cspEnabled && permissionsPolicyEnabled && securityErrors === 0
-    };
+  const getSecurityStatus = async () => {
+    try {
+      const security = await getSecurityHeaders();
+      const config = security.getConfig();
+      const cspEnabled = !config.contentSecurityPolicy.reportOnly;
+      const permissionsPolicyEnabled = Object.keys(config.permissionsPolicy).length > 0;
+      
+      const securityErrors = errors.filter(e => e.error_type === 'security').length;
+      
+      return {
+        cspEnabled,
+        permissionsPolicyEnabled,
+        securityViolations: securityErrors,
+        overall: cspEnabled && permissionsPolicyEnabled && securityErrors === 0
+      };
+    } catch (error) {
+      return {
+        cspEnabled: false,
+        permissionsPolicyEnabled: false,
+        securityViolations: 0,
+        overall: false
+      };
+    }
   };
+
+  const [securityStatus, setSecurityStatus] = useState({
+    cspEnabled: false,
+    permissionsPolicyEnabled: false,
+    securityViolations: 0,
+    overall: false
+  });
+
+  useEffect(() => {
+    getSecurityStatus().then(setSecurityStatus);
+  }, [errors]);
 
   const performanceMetrics = getPerformanceMetrics();
   const errorStats = getErrorStats();
   const testStats = getTestStats();
-  const securityStatus = getSecurityStatus();
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 space-y-6">

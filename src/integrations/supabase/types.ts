@@ -361,6 +361,60 @@ export type Database = {
         }
         Relationships: []
       }
+      error_reports: {
+        Row: {
+          column_number: number | null
+          created_at: string
+          error_type: string
+          id: string
+          line_number: number | null
+          message: string
+          metadata: Json | null
+          page_url: string
+          session_id: string
+          severity: string
+          source_file: string | null
+          stack_trace: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          column_number?: number | null
+          created_at?: string
+          error_type: string
+          id?: string
+          line_number?: number | null
+          message: string
+          metadata?: Json | null
+          page_url: string
+          session_id: string
+          severity: string
+          source_file?: string | null
+          stack_trace?: string | null
+          timestamp: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          column_number?: number | null
+          created_at?: string
+          error_type?: string
+          id?: string
+          line_number?: number | null
+          message?: string
+          metadata?: Json | null
+          page_url?: string
+          session_id?: string
+          severity?: string
+          source_file?: string | null
+          stack_trace?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       external_orders: {
         Row: {
           created_at: string | null
@@ -922,6 +976,57 @@ export type Database = {
         }
         Relationships: []
       }
+      rum_metrics: {
+        Row: {
+          connection_type: string | null
+          created_at: string
+          device_type: string | null
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          page_url: string
+          session_id: string
+          timestamp: string
+          unit: string
+          user_agent: string | null
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          connection_type?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          page_url: string
+          session_id: string
+          timestamp: string
+          unit: string
+          user_agent?: string | null
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          connection_type?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          page_url?: string
+          session_id?: string
+          timestamp?: string
+          unit?: string
+          user_agent?: string | null
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           action: string
@@ -1296,6 +1401,10 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_stock_reservations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      cleanup_monitoring_data: {
         Args: Record<PropertyKey, never>
         Returns: number
       }

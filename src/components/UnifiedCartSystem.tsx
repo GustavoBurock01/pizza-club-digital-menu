@@ -48,16 +48,18 @@ export const UnifiedCartSystem = ({
   const total = getTotal();
 
   // Performance optimization with debounced updates
+  const debouncedQuantityUpdate = useCallback((itemId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeItem(itemId);
+      showMessage(messageSystem.orders.itemRemoved(), toast);
+    } else {
+      updateQuantity(itemId, newQuantity);
+    }
+  }, [removeItem, updateQuantity, toast]);
+
   const handleQuantityUpdate = useCallback(
-    performanceOptimizer.debounce((itemId: string, newQuantity: number) => {
-      if (newQuantity <= 0) {
-        removeItem(itemId);
-        showMessage(messageSystem.orders.itemRemoved(), toast);
-      } else {
-        updateQuantity(itemId, newQuantity);
-      }
-    }, 300),
-    [removeItem, updateQuantity, toast]
+    performanceOptimizer.debounce(debouncedQuantityUpdate, 300),
+    [debouncedQuantityUpdate]
   );
 
   const handleRemoveItem = useCallback((itemId: string, itemName: string) => {

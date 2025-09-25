@@ -277,9 +277,9 @@ class AutomatedTestingSystem {
       }
 
       const metrics = {
-        domComplete: navigation.domComplete - navigation.navigationStart,
-        loadComplete: navigation.loadEventEnd - navigation.navigationStart,
-        firstByte: navigation.responseStart - navigation.navigationStart
+        domComplete: navigation.domComplete - navigation.fetchStart,
+        loadComplete: navigation.loadEventEnd - navigation.fetchStart,
+        firstByte: navigation.responseStart - navigation.fetchStart
       };
 
       // Check performance budgets
@@ -518,9 +518,11 @@ class AutomatedTestingSystem {
     const elements: HTMLElement[] = [];
     focusableSelectors.forEach(selector => {
       const found = document.querySelectorAll(selector);
-      found.forEach(el => {
+      elements.forEach(el => {
         const element = el as HTMLElement;
-        if (this.isElementVisible(element) && !element.disabled) {
+        const isDisabled = element.hasAttribute('disabled') || 
+                          (element as any).disabled === true;
+        if (this.isElementVisible(element) && !isDisabled) {
           elements.push(element);
         }
       });
