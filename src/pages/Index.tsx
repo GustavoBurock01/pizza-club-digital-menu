@@ -5,25 +5,44 @@ import { Pizza, Star, Clock, Shield, CreditCard, Check, ArrowRight, Users, Heart
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useEffect } from 'react';
+import { Lock } from 'lucide-react';
+import SubscriptionStatus from '@/components/SubscriptionStatus';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useUnifiedAuth();
+  const { user, subscription, hasValidSubscription } = useUnifiedAuth();
   
-  console.log('Index page rendering successfully', { user });
+  console.log('Index page rendering successfully', { user, subscription });
 
   const handleAuthNavigation = () => {
     if (user) {
-      navigate('/dashboard');
+      // Se logado, mostrar opções baseadas na assinatura
+      if (hasValidSubscription()) {
+        navigate('/menu');
+      } else {
+        navigate('/plans');
+      }
     } else {
       navigate('/auth');
     }
   };
 
+  const handleMenuAccess = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    if (hasValidSubscription()) {
+      navigate('/menu');
+    } else {
+      navigate('/plans');
+    }
+  };
+
   const handleSubscriptionAction = () => {
     if (user) {
-      // Redirecionar para checkout simples por enquanto
-      navigate('/auth');
+      navigate('/plans');
     } else {
       navigate('/auth');
     }
@@ -73,12 +92,33 @@ const Index = () => {
             </div>
             <div>
               <h1 className="font-bold text-xl text-gray-900">Pizza Premium</h1>
-              <p className="text-sm text-gray-600">Cardápio Exclusivo</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600">Cardápio Exclusivo</p>
+                <SubscriptionStatus />
+              </div>
             </div>
           </div>
-          <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
-            {user ? 'Acessar Dashboard' : 'Entrar / Cadastrar'}
-          </Button>
+          <div className="flex gap-2">
+            {user && (
+              <Button 
+                onClick={handleMenuAccess} 
+                className={`${hasValidSubscription() ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-500 hover:bg-gray-600'} text-white`}
+                disabled={!hasValidSubscription()}
+              >
+                {hasValidSubscription() ? (
+                  'Acessar Cardápio'
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Cardápio Bloqueado
+                  </>
+                )}
+              </Button>
+            )}
+            <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
+              {user ? (hasValidSubscription() ? 'Ver Cardápio' : 'Assinar Agora') : 'Entrar / Cadastrar'}
+            </Button>
+          </div>
         </div>
       </header>
 

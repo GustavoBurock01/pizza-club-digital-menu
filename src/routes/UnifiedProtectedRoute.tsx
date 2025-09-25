@@ -97,13 +97,14 @@ export const UnifiedProtectedRoute = ({
     }
   }
 
-  // Subscription check - only redirect to plans for routes that explicitly require subscription
-  if (requireSubscription && user && !subscription.loading && !subscription.subscribed) {
-    console.log('[ROUTE-GUARD] Redirecting to plans - no subscription:', { 
+  // Subscription check - only redirect to plans for /menu route when no subscription
+  if (requireSubscription && user && !subscription.loading && !subscription.subscribed && location.pathname === '/menu') {
+    console.log('[ROUTE-GUARD] Redirecting to plans - accessing menu without subscription:', { 
       user: !!user, 
       loading: subscription.loading, 
       subscribed: subscription.subscribed,
-      status: subscription.status 
+      status: subscription.status,
+      path: location.pathname
     });
     return <Navigate to="/plans" replace />;
   }
