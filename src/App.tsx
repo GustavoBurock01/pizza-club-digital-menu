@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/config/queryClient";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
 import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
 import { AttendantRoute } from "@/routes/AttendantRoute";
@@ -63,7 +63,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -212,7 +211,6 @@ const App = () => {
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
             <PWAInstallPrompt />
             <AnalyticsDebugger />
-          </BrowserRouter>
         </TooltipProvider>
       </UnifiedAuthProvider>
     </QueryClientProvider>
