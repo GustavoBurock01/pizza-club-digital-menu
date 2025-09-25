@@ -10,6 +10,8 @@ import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useSubscriptionCore } from '@/hooks/useSubscriptionCore';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabase";
@@ -22,6 +24,7 @@ const Dashboard = () => {
   const { subscription, createCheckout, checkSubscription } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
   const { user } = useUnifiedAuth();
+  const { isLoading: subscriptionLoading, isActive, validation, refresh } = useSubscriptionCore(user?.id, { enabled: !!user });
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -118,7 +121,7 @@ const Dashboard = () => {
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
     try {
-      await checkSubscription(true);
+      await refresh();
       toast({
         title: "Status atualizado!",
         description: "Status da assinatura verificado com sucesso.",
@@ -131,6 +134,17 @@ const Dashboard = () => {
   };
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário';
+
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <LoadingSpinner />
+          <p className="text-muted-foreground">Aguarde, estamos verificando seu acesso...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -149,7 +163,7 @@ const Dashboard = () => {
                 Bem-vindo, {userName}! 👋
               </h1>
               <p className="text-muted-foreground">
-                {subscription?.status === 'active' 
+                {isActive 
                   ? 'Sua assinatura está ativa! Aproveite o cardápio exclusivo.'
                   : 'Assine para ter acesso ao cardápio exclusivo!'
                 }
@@ -157,7 +171,7 @@ const Dashboard = () => {
             </div>
 
           {/* Banner de assinatura - só mostra se não tiver assinatura ativa */}
-          {subscription?.status !== 'active' && (
+          {!isActive && (
             <Alert className="border-orange-200 bg-orange-50">
               <Sparkles className="h-4 w-4 text-orange-600" />
               <AlertDescription className="flex items-center justify-between">
@@ -180,12 +194,12 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card 
                 className={`transition-shadow ${
-                  subscription?.status === 'active' 
+                  isActive 
                     ? 'hover:shadow-lg cursor-pointer' 
                     : 'opacity-60 cursor-not-allowed'
                 }`} 
                 onClick={() => {
-                  if (subscription?.status === 'active') {
+                  if (isActive) {
                     navigate('/menu');
                   } else {
                     navigate('/plans');
@@ -198,7 +212,7 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Novo Pedido</CardTitle>
                   <CardDescription className="text-sm">
-                    {subscription?.status === 'active' 
+                    {isActive 
                       ? 'Explore nosso cardápio'
                       : '🔒 Assine para acessar'
                     }
@@ -208,14 +222,14 @@ const Dashboard = () => {
 
               <Card 
                 className={`transition-shadow ${
-                  subscription?.status === 'active' && recentOrders.length > 0
+                  isActive && recentOrders.length > 0
                     ? 'hover:shadow-lg cursor-pointer' 
                     : 'opacity-60 cursor-not-allowed'
                 }`}
                 onClick={() => {
-                  if (subscription?.status === 'active' && recentOrders.length > 0) {
+                  if (isActive && recentOrders.length > 0) {
                     repeatLastOrder();
-                  } else if (subscription?.status !== 'active') {
+                  } else if (!isActive) {
                     navigate('/plans');
                   }
                 }}
@@ -226,7 +240,7 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Repetir Último</CardTitle>
                   <CardDescription className="text-sm">
-                    {subscription?.status !== 'active' 
+                    {!isActive 
                       ? '🔒 Assine para acessar'
                       : recentOrders.length > 0 
                         ? 'Peça novamente' 
@@ -238,12 +252,12 @@ const Dashboard = () => {
 
               <Card 
                 className={`transition-shadow ${
-                  subscription?.status === 'active' 
+                  isActive 
                     ? 'hover:shadow-lg cursor-pointer' 
                     : 'opacity-60 cursor-not-allowed'
                 }`} 
                 onClick={() => {
-                  if (subscription?.status === 'active') {
+                  if (isActive) {
                     navigate('/menu');
                   } else {
                     navigate('/plans');
@@ -256,7 +270,7 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Cardápio</CardTitle>
                   <CardDescription className="text-sm">
-                    {subscription?.status === 'active' 
+                    {isActive 
                       ? 'Veja todas as opções'
                       : '🔒 Assine para acessar'
                     }
@@ -279,8 +293,8 @@ const Dashboard = () => {
                       <div className="flex-1">
                         <CardTitle className="text-lg">Status da Assinatura</CardTitle>
                         <CardDescription>
-                          {subscription?.status === 'active' 
-                            ? `Plano ${subscription.plan_name} ativo`
+                          {isActive 
+                            ? `Plano ${validation.planName} ativo`
                             : 'Nenhuma assinatura ativa'
                           }
                         </CardDescription>
@@ -294,18 +308,18 @@ const Dashboard = () => {
                         >
                           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                         </Button>
-                        <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
-                          {subscription?.status === 'active' ? 'Ativo' : 'Inativo'}
+                        <Badge variant={isActive ? 'default' : 'secondary'}>
+                          {isActive ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>
                     </div>
                   </CardHeader>
-                  {subscription?.status === 'active' && subscription.expires_at && (
+                  {isActive && validation.expiresAt && (
                     <CardContent className="pt-0">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>
-                          Válido até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
+                          Válido até {new Date(validation.expiresAt).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
                     </CardContent>
@@ -316,13 +330,13 @@ const Dashboard = () => {
                   <CardHeader>
                     <CardTitle className="text-lg">Plano Atual</CardTitle>
                     <CardDescription>
-                      {subscription?.status === 'active' 
-                        ? `${subscription.plan_name} - R$ ${subscription.plan_price.toFixed(2)}/ano`
+                      {isActive 
+                        ? `${validation.planName} - R$ ${validation.planPrice.toFixed(2)}/ano`
                         : 'Nenhum plano ativo'
                       }
                     </CardDescription>
                   </CardHeader>
-                  {subscription?.status !== 'active' && (
+                  {!isActive && (
                     <CardContent className="pt-0">
                       <Button 
                         className="w-full gradient-pizza text-white"
@@ -367,7 +381,7 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground mb-4">Nenhum pedido encontrado</p>
-                      {subscription?.status !== 'active' && (
+                      {!isActive && (
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white"
                           onClick={() => navigate('/plans')}

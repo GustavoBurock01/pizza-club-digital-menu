@@ -77,23 +77,40 @@ export function useSubscriptionCore(
         throw new Error('User not authenticated - no valid session');
       }
 
-      // Chamar a edge function de verificação
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          'Authorization': `Bearer ${sessionData.session.access_token}`,
-        },
-      });
+      // Chamar a edge function de verificação (com tentativa de refresh de sessão em falha 401)
+      const callEdge = async (token: string) => {
+        return await supabase.functions.invoke('check-subscription', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      };
+
+      let token = sessionData.session.access_token;
+      let edgeResp = await callEdge(token);
+
+      if (edgeResp.error && (edgeResp.error.message?.includes('Authentication') || edgeResp.error.message?.includes('unauthenticated'))) {
+        console.warn('[SUBSCRIPTION-CORE] Auth error on check-subscription, attempting refresh...');
+        try {
+          const refreshRes = await supabase.auth.refreshSession();
+          const newToken = refreshRes.data.session?.access_token;
+          if (newToken) {
+            token = newToken;
+            edgeResp = await callEdge(token);
+          }
+        } catch (e) {
+          console.error('[SUBSCRIPTION-CORE] Session refresh failed:', e);
+        }
+      }
+
+      const { data, error } = edgeResp;
 
       if (error) {
         console.error('[SUBSCRIPTION-CORE] Error calling check-subscription:', error);
-        
-        // Se for erro de autenticação, propagar como erro de auth
         if (error.message?.includes('Authentication') || error.message?.includes('unauthenticated')) {
           throw new Error('Authentication required - please login again');
         }
-        
         throw error;
       }
+
 
       // Se retornou dados de assinatura válida, buscar registro completo no DB
       if (data?.subscribed) {
