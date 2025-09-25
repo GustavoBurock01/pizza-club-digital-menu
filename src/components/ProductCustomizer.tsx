@@ -20,36 +20,60 @@ interface ProductCustomizerProps {
 
 // Configurações dinâmicas baseadas no tipo de produto
 const getProductConfig = (product: any) => {
-  const category = product?.category?.toLowerCase() || '';
-  const productName = product?.name?.toLowerCase() || '';
+  const categoryName = product?.subcategory?.category?.name || '';
+  const subcategoryName = product?.subcategory?.name || '';
   
-  // Configuração para pizzas
-  if (category.includes('pizza') || productName.includes('pizza')) {
+  // Configuração específica para Pizzas Grandes e Pizzas Broto
+  const isPizzaCategory = categoryName === 'Pizzas Grandes' || categoryName === 'Pizzas Broto';
+  
+  if (isPizzaCategory) {
+    // Opções de bordas recheadas específicas para pizzas
+    const crustOptions = [
+      { id: 'tradicional', name: 'Tradicional', price: 0 },
+      { id: 'catupiry', name: 'Borda Recheada - Catupiry', price: 8 },
+      { id: 'cheddar', name: 'Borda Recheada - Cheddar', price: 8 },
+      { id: 'chocolate', name: 'Borda Recheada - Chocolate', price: 10 },
+      { id: 'goiabada', name: 'Borda Recheada - Goiabada', price: 10 },
+      { id: 'presunto_queijo', name: 'Borda Recheada - Presunto e Queijo', price: 12 },
+    ];
+
+    // Adicionais específicos para pizzas  
+    const extraOptions = [
+      'Queijo Extra',
+      'Mussarela Extra', 
+      'Calabresa',
+      'Presunto',
+      'Champignon',
+      'Azeitona Preta',
+      'Azeitona Verde',
+      'Cebola',
+      'Tomate',
+      'Pimentão',
+      'Milho',
+      'Palmito',
+      'Bacon',
+      'Catupiry Extra'
+    ];
+
+    // Preço diferente baseado no tamanho da pizza
+    const extraPrice = categoryName === 'Pizzas Grandes' ? 4 : 3;
+
     return {
       showCrust: true,
       showExtras: true,
-      crustOptions: [
-        { id: 'tradicional', name: 'Tradicional', price: 0 },
-        { id: 'catupiry', name: 'Catupiry', price: 5 },
-        { id: 'cheddar', name: 'Cheddar', price: 5 },
-        { id: 'chocolate', name: 'Chocolate', price: 7 },
-      ],
-      extraOptions: [
-        'Queijo Extra',
-        'Calabresa',
-        'Champignon',
-        'Azeitona',
-        'Cebola',
-        'Tomate',
-        'Pimentão',
-        'Milho',
-      ],
-      extraPrice: 3
+      crustOptions,
+      extraOptions,
+      extraPrice,
+      isPizza: true
     };
   }
   
-  // Configuração para bebidas
-  if (category.includes('bebida') || category.includes('drink')) {
+  // Configuração para bebidas - SEM bordas recheadas nem adicionais
+  const isBeverageCategory = categoryName.toLowerCase().includes('bebida') || 
+                            categoryName.toLowerCase().includes('drink') ||
+                            subcategoryName.toLowerCase().includes('bebida');
+
+  if (isBeverageCategory) {
     return {
       showCrust: false,
       showExtras: false,
@@ -57,12 +81,17 @@ const getProductConfig = (product: any) => {
       temperatureOptions: [
         { id: 'gelada', name: 'Gelada', price: 0 },
         { id: 'natural', name: 'Natural', price: 0 },
-      ]
+      ],
+      isBeverage: true
     };
   }
   
-  // Configuração para lanches/hambúrgueres
-  if (category.includes('lanche') || category.includes('hamburguer') || category.includes('burger')) {
+  // Configuração para outras categorias (lanches, etc.) - sem bordas recheadas
+  const productName = product?.name?.toLowerCase() || '';
+  if (categoryName.toLowerCase().includes('lanche') || 
+      categoryName.toLowerCase().includes('hamburguer') || 
+      productName.includes('lanche') || 
+      productName.includes('hamburguer')) {
     return {
       showCrust: false,
       showExtras: true,
@@ -80,7 +109,7 @@ const getProductConfig = (product: any) => {
     };
   }
   
-  // Configuração padrão - apenas observações e quantidade
+  // Configuração padrão - apenas observações e quantidade (sem bordas nem adicionais)
   return {
     showCrust: false,
     showExtras: false,
@@ -206,36 +235,62 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
             <Badge variant="outline">{formatPrice(product.price)}</Badge>
           </div>
 
-          {/* Opções de Borda (Pizzas) */}
-          {config.showCrust && config.crustOptions && (
-            <div className="space-y-2">
-              <Label>Tipo de Borda</Label>
+          {/* Opções de Borda Recheada (Apenas para Pizzas Grandes e Pizzas Broto) */}
+          {config.showCrust && config.crustOptions && config.isPizza && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-base font-semibold">Bordas Recheadas</Label>
+                <Badge variant="secondary" className="text-xs">
+                  Apenas para pizzas
+                </Badge>
+              </div>
               <Popover open={crustPopoverOpen} onOpenChange={setCrustPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-between"
+                    className="w-full justify-between p-4 h-auto"
                   >
-                    {config.crustOptions.find(c => c.id === selectedCrust)?.name || 'Selecionar'}
+                    <div className="text-left">
+                      <div className="font-medium">
+                        {config.crustOptions.find(c => c.id === selectedCrust)?.name || 'Selecionar borda'}
+                      </div>
+                      {selectedCrust !== 'tradicional' && (
+                        <div className="text-sm text-muted-foreground">
+                          +{formatPrice(config.crustOptions.find(c => c.id === selectedCrust)?.price || 0)}
+                        </div>
+                      )}
+                    </div>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
-                  <RadioGroup value={selectedCrust} onValueChange={setSelectedCrust}>
-                    {config.crustOptions.map((crust) => (
-                      <div key={crust.id} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
-                        <RadioGroupItem value={crust.id} id={crust.id} />
-                        <Label htmlFor={crust.id} className="flex-1 cursor-pointer">
-                          <div className="flex justify-between">
-                            <span>{crust.name}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {crust.price > 0 ? `+${formatPrice(crust.price)}` : 'Grátis'}
-                            </span>
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-center mb-3 text-muted-foreground">
+                      Escolha sua borda recheada
+                    </div>
+                    <RadioGroup value={selectedCrust} onValueChange={setSelectedCrust}>
+                      {config.crustOptions.map((crust) => (
+                        <div key={crust.id} className="flex items-center space-x-3 p-3 hover:bg-accent rounded-lg border transition-colors">
+                          <RadioGroupItem value={crust.id} id={crust.id} />
+                          <Label htmlFor={crust.id} className="flex-1 cursor-pointer">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">{crust.name}</div>
+                                {crust.id === 'tradicional' && (
+                                  <div className="text-xs text-muted-foreground">Massa tradicional</div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className={`font-semibold ${crust.price > 0 ? 'text-pizza-orange' : 'text-green-600'}`}>
+                                  {crust.price > 0 ? `+${formatPrice(crust.price)}` : 'Grátis'}
+                                </div>
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -258,53 +313,82 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
             </div>
           )}
 
-          {/* Extras */}
+          {/* Adicionais (Apenas para Pizzas e alguns outros produtos) */}
           {config.showExtras && config.extraOptions && (
-            <div className="space-y-2">
-              <Label>Adicionais ({formatPrice(config.extraPrice || 0)} cada)</Label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-base font-semibold">Adicionais</Label>
+                <Badge variant="outline" className="text-xs">
+                  {formatPrice(config.extraPrice || 0)} cada
+                </Badge>
+                {config.isPizza && (
+                  <Badge variant="secondary" className="text-xs">
+                    Para pizzas
+                  </Badge>
+                )}
+              </div>
               <Popover open={extrasPopoverOpen} onOpenChange={setExtrasPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-between"
+                    className="w-full justify-between p-4 h-auto"
                   >
-                    {selectedExtras.length === 0 
-                      ? 'Selecionar extras' 
-                      : `${selectedExtras.length} extras selecionados`
-                    }
+                    <div className="text-left">
+                      <div className="font-medium">
+                        {selectedExtras.length === 0 
+                          ? 'Selecionar adicionais' 
+                          : `${selectedExtras.length} ${selectedExtras.length === 1 ? 'adicional selecionado' : 'adicionais selecionados'}`
+                        }
+                      </div>
+                      {selectedExtras.length > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          +{formatPrice((config.extraPrice || 0) * selectedExtras.length)}
+                        </div>
+                      )}
+                    </div>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-2">
-                    {config.extraOptions.map((extra) => (
-                      <div key={extra} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
-                        <Checkbox
-                          id={extra}
-                          checked={selectedExtras.includes(extra)}
-                          onCheckedChange={(checked) => handleExtraChange(extra, checked as boolean)}
-                        />
-                        <Label htmlFor={extra} className="flex-1 cursor-pointer">
-                          <div className="flex justify-between">
-                            <span>{extra}</span>
-                            <span className="text-sm text-muted-foreground">
-                              +{formatPrice(config.extraPrice || 0)}
-                            </span>
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
+                <PopoverContent className="w-80 max-h-96 overflow-y-auto">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-center mb-3 text-muted-foreground">
+                      Escolha seus adicionais
+                    </div>
+                    <div className="grid gap-2">
+                      {config.extraOptions.map((extra) => (
+                        <div key={extra} className="flex items-center space-x-3 p-2 hover:bg-accent rounded-lg border transition-colors">
+                          <Checkbox
+                            id={extra}
+                            checked={selectedExtras.includes(extra)}
+                            onCheckedChange={(checked) => handleExtraChange(extra, checked as boolean)}
+                          />
+                          <Label htmlFor={extra} className="flex-1 cursor-pointer">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{extra}</span>
+                              <span className="text-sm font-semibold text-pizza-orange">
+                                +{formatPrice(config.extraPrice || 0)}
+                              </span>
+                            </div>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
               
               {selectedExtras.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {selectedExtras.map((extra) => (
-                    <Badge key={extra} variant="secondary" className="text-xs">
-                      {extra}
-                    </Badge>
-                  ))}
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Adicionais selecionados:
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedExtras.map((extra) => (
+                      <Badge key={extra} variant="secondary" className="text-xs">
+                        {extra} <span className="ml-1 text-pizza-orange">+{formatPrice(config.extraPrice || 0)}</span>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

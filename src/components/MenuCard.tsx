@@ -78,9 +78,9 @@ export const MenuCard = ({
   };
 
   const isPizzaCategory = () => {
-    const pizzaKeywords = ['pizza', 'brot'];
+    const pizzaKeywords = ['Pizzas Grandes', 'Pizzas Broto'];
     return pizzaKeywords.some(keyword => 
-      category.toLowerCase().includes(keyword.toLowerCase())
+      category.includes(keyword)
     );
   };
 
