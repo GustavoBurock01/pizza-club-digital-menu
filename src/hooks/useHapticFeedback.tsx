@@ -136,7 +136,7 @@ export const useHapticFeedback = () => {
         haptics.navigation();
       }
       // Checkbox/radio changes
-      else if (target.type === 'checkbox' || target.type === 'radio') {
+      else if ((target as HTMLInputElement).type === 'checkbox' || (target as HTMLInputElement).type === 'radio') {
         haptics.selection();
       }
     };

@@ -102,8 +102,8 @@ const Index = () => {
               Assinar por R$ 99,90/ano
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4" onClick={() => navigate('/menu')}>
-              Ver Cardápio Demo
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4" onClick={() => navigate('/phase2-premium')}>
+              🚀 Ver Fase 2 Premium
             </Button>
           </div>
         </div>

@@ -535,6 +535,124 @@ export type Database = {
         }
         Relationships: []
       }
+      group_order_items: {
+        Row: {
+          created_at: string
+          customizations: Json | null
+          group_order_id: string
+          id: string
+          name: string
+          price: number
+          product_id: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customizations?: Json | null
+          group_order_id: string
+          id?: string
+          name: string
+          price: number
+          product_id: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customizations?: Json | null
+          group_order_id?: string
+          id?: string
+          name?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_order_items_group_order_id_fkey"
+            columns: ["group_order_id"]
+            isOneToOne: false
+            referencedRelation: "group_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_order_participants: {
+        Row: {
+          group_order_id: string
+          id: string
+          joined_at: string
+          name: string
+          status: string
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          group_order_id: string
+          id?: string
+          joined_at?: string
+          name: string
+          status?: string
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          group_order_id?: string
+          id?: string
+          joined_at?: string
+          name?: string
+          status?: string
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_order_participants_group_order_id_fkey"
+            columns: ["group_order_id"]
+            isOneToOne: false
+            referencedRelation: "group_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_orders: {
+        Row: {
+          created_at: string
+          delivery_address: Json | null
+          expires_at: string
+          host_id: string
+          id: string
+          name: string
+          status: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_address?: Json | null
+          expires_at?: string
+          host_id: string
+          id?: string
+          name: string
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_address?: Json | null
+          expires_at?: string
+          host_id?: string
+          id?: string
+          name?: string
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -1253,6 +1371,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          dietary_restrictions: string[] | null
+          id: string
+          mood_preferences: Json | null
+          ordering_patterns: Json | null
+          preferred_flavors: string[] | null
+          price_sensitivity: string | null
+          spice_level: number | null
+          taste_profile: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dietary_restrictions?: string[] | null
+          id?: string
+          mood_preferences?: Json | null
+          ordering_patterns?: Json | null
+          preferred_flavors?: string[] | null
+          price_sensitivity?: string | null
+          spice_level?: number | null
+          taste_profile?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dietary_restrictions?: string[] | null
+          id?: string
+          mood_preferences?: Json | null
+          ordering_patterns?: Json | null
+          preferred_flavors?: string[] | null
+          price_sensitivity?: string | null
+          spice_level?: number | null
+          taste_profile?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       webhook_logs: {
         Row: {

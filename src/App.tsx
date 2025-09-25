@@ -47,6 +47,7 @@ const AdminStock = lazy(() => import("./pages/AdminStock"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Phase2PremiumExperience = lazy(() => import("./components/Phase2PremiumExperience"));
 
 // Configuração do QueryClient movida para @/config/queryClient
 
@@ -114,11 +115,12 @@ const App = () => {
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
-              <Route path="/menu" element={
+               <Route path="/phase2-premium" element={<Phase2PremiumExperience />} />
+               <Route path="/menu" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Menu />
                 </UnifiedProtectedRoute>
-              } />
+               } />
               <Route path="/checkout" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <ExpressCheckout />
