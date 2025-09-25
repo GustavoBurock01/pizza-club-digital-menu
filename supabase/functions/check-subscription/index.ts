@@ -38,22 +38,44 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     logStep("Authenticating user with token");
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    // Primeiro, tentar com token direto
+    let userData, userError;
+    
+    try {
+      const result = await supabaseClient.auth.getUser(token);
+      userData = result.data;
+      userError = result.error;
+    } catch (tokenError) {
+      logStep("Token verification failed, trying session verification", { tokenError });
+      
+      // Se falhar, tentar verificar sessão via Auth
+      try {
+        const sessionResult = await supabaseClient.auth.getSession();
+        if (sessionResult.data.session) {
+          userData = { user: sessionResult.data.session.user };
+          userError = null;
+        } else {
+          userError = new Error("No valid session found");
+        }
+      } catch (sessionError) {
+        logStep("Session verification also failed", { sessionError });
+        userError = sessionError;
+      }
+    }
     
     // Handle session/token errors gracefully
-    if (userError) {
-      logStep("Authentication failed", { error: userError.message });
-      if (userError.message.includes('session') || userError.message.includes('JWT') || userError.message.includes('token')) {
-        return new Response(JSON.stringify({ 
-          error: `Authentication error: ${userError.message}`,
-          subscribed: false,
-          status: 'unauthenticated' 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401, // Changed from 500 to 401 for auth errors
-        });
-      }
-      throw new Error(`Authentication error: ${userError.message}`);
+    if (userError || !userData?.user) {
+      const errorMsg = userError instanceof Error ? userError.message : "No user data";
+      logStep("Authentication failed", { error: errorMsg });
+      return new Response(JSON.stringify({ 
+        error: "Authentication failed - please login again",
+        subscribed: false,
+        status: 'unauthenticated',
+        requiresLogin: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
     
     const user = userData.user;

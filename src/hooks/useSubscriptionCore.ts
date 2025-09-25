@@ -69,15 +69,29 @@ export function useSubscriptionCore(
     console.log('[SUBSCRIPTION-CORE] Fetching subscription for user:', userId);
 
     try {
+      // Pegar sessão atual de forma mais robusta
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session?.access_token) {
+        console.error('[SUBSCRIPTION-CORE] No valid session:', sessionError);
+        throw new Error('User not authenticated - no valid session');
+      }
+
       // Chamar a edge function de verificação
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
       });
 
       if (error) {
         console.error('[SUBSCRIPTION-CORE] Error calling check-subscription:', error);
+        
+        // Se for erro de autenticação, propagar como erro de auth
+        if (error.message?.includes('Authentication') || error.message?.includes('unauthenticated')) {
+          throw new Error('Authentication required - please login again');
+        }
+        
         throw error;
       }
 

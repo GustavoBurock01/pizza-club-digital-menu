@@ -23,6 +23,7 @@ export const ProtectedSubscriptionRoute = ({
   const {
     isLoading: subscriptionLoading,
     isError: subscriptionError,
+    error: subscriptionErrorObj,
     isActive,
     validation,
     refresh
@@ -65,6 +66,18 @@ export const ProtectedSubscriptionRoute = ({
   // ===== ERROR HANDLING =====
 
   if (subscriptionError && showError) {
+    const errorMessage = subscriptionErrorObj?.message || 'Erro desconhecido';
+    
+    // Se for erro de autenticação, redirecionar para login
+    if (errorMessage.includes('Authentication') || 
+        errorMessage.includes('login')) {
+      return <Navigate to="/auth" state={{ 
+        from: location,
+        reason: 'authentication_required',
+        message: 'Sua sessão expirou. Faça login novamente.'
+      }} replace />;
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -75,6 +88,9 @@ export const ProtectedSubscriptionRoute = ({
                 <h3 className="text-lg font-semibold">Erro na Verificação</h3>
                 <p className="text-sm text-muted-foreground mt-2">
                   Não foi possível verificar sua assinatura. Tente novamente.
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {errorMessage}
                 </p>
               </div>
               <div className="space-y-2">
