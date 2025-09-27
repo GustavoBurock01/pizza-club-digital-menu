@@ -8,7 +8,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
 import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
 import { ProtectedSubscriptionRoute } from "@/components/ProtectedSubscriptionRoute";
-import { SubscriptionGlobalProvider } from "@/components/SubscriptionGlobalProvider";
+
 import { AttendantRoute } from "@/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
@@ -39,7 +39,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+
 const Payment = lazy(() => import("./pages/Payment"));
 
 const AdminOrders = lazy(() => import("./pages/AdminOrders"));
@@ -63,7 +63,6 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UnifiedAuthProvider>
-          <SubscriptionGlobalProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -80,11 +79,6 @@ const App = () => {
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <SubscriptionPlansPage />
                   </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/payment-success" element={
-                <UnifiedProtectedRoute requireAuth={true}>
-                  <PaymentSuccess />
                 </UnifiedProtectedRoute>
               } />
                {/* New Payment Routes with ProtectedSubscriptionRoute */}
@@ -136,9 +130,11 @@ const App = () => {
               } />
                <Route path="/orders" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Orders />
-                  </Suspense>
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <Orders />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               <Route path="/account" element={
@@ -150,9 +146,11 @@ const App = () => {
               } />
               <Route path="/order-status/:orderId" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <OrderStatus />
-                  </Suspense>
+                  <ProtectedSubscriptionRoute>
+                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                      <OrderStatus />
+                    </Suspense>
+                  </ProtectedSubscriptionRoute>
                 </UnifiedProtectedRoute>
               } />
               
@@ -222,7 +220,6 @@ const App = () => {
             <PWAInstallPrompt />
             <AnalyticsDebugger />
         </TooltipProvider>
-          </SubscriptionGlobalProvider>
       </UnifiedAuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>

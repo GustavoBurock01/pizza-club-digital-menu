@@ -70,6 +70,9 @@ serve(async (req) => {
 
     // Handle the event
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event, supabaseClient, stripe);
+        break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
@@ -78,9 +81,6 @@ serve(async (req) => {
       case 'invoice.payment_succeeded':
       case 'invoice.payment_failed':
         await handleInvoiceEvent(event, supabaseClient, stripe);
-        break;
-      case 'checkout.session.completed':
-        await handleCheckoutEvent(event, supabaseClient, stripe);
         break;
       default:
         logStep("Unhandled event type", { eventType: event.type });
@@ -285,16 +285,22 @@ async function handleInvoiceEvent(event: Stripe.Event, supabaseClient: any, stri
   }
 }
 
-async function handleCheckoutEvent(event: Stripe.Event, supabaseClient: any, stripe: Stripe) {
+async function handleCheckoutCompleted(event: Stripe.Event, supabaseClient: any, stripe: Stripe) {
   const session = event.data.object as Stripe.Checkout.Session;
   logStep("Processing checkout session completed", { 
-    eventType: event.type, 
     sessionId: session.id,
+    mode: session.mode,
     customerId: session.customer,
     paymentStatus: session.payment_status
   });
 
   try {
+    // If this is a subscription checkout, the subscription events will handle it
+    if (session.mode === 'subscription') {
+      logStep("Subscription checkout completed, subscription events will handle the update");
+      return;
+    }
+
     // For order payments (not subscriptions)
     if (session.mode === 'payment' && session.metadata?.order_id) {
       const orderId = session.metadata.order_id;
@@ -335,7 +341,7 @@ async function handleCheckoutEvent(event: Stripe.Event, supabaseClient: any, str
     }
     
   } catch (error) {
-    logStep("Error in handleCheckoutEvent", { error });
+    logStep("Error in handleCheckoutCompleted", { error });
     throw error;
   }
 }
