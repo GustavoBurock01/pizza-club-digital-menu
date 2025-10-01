@@ -295,6 +295,26 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
         hasSubscriptionHistory: false,
       });
       
+      // CRITICAL: Clear ALL localStorage caches related to subscription and auth
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.startsWith('subscription_') ||
+            key.startsWith('login_block') ||
+            key.startsWith('auth_') ||
+            key.startsWith('user_cache_')
+          )) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        console.log('[UNIFIED-AUTH] Cleared localStorage caches:', keysToRemove);
+      } catch (storageError) {
+        console.warn('[UNIFIED-AUTH] Failed to clear localStorage:', storageError);
+      }
+      
       // Perform logout
       try {
         const { error } = await supabase.auth.signOut();
