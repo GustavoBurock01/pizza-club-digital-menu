@@ -5,16 +5,19 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Crown, Check, Star, Shield, Clock, TrendingUp, Zap, Gift, Sparkles, AlertTriangle } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useState } from "react";
-
 interface SubscriptionPlansProps {
   currentPlan?: string;
   onSelectPlan?: (planId: 'annual') => void;
 }
-
-export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPlansProps) => {
-  const { createCheckout, subscription } = useUnifiedAuth();
+export const SubscriptionPlans = ({
+  currentPlan,
+  onSelectPlan
+}: SubscriptionPlansProps) => {
+  const {
+    createCheckout,
+    subscription
+  } = useUnifiedAuth();
   const [pizzasPerMonth, setPizzasPerMonth] = useState(4);
-
   const handleSelectPlan = () => {
     if (onSelectPlan) {
       onSelectPlan('annual');
@@ -22,7 +25,6 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
       createCheckout('annual');
     }
   };
-
   const isCurrentPlan = subscription?.status === 'active';
 
   // Cálculos de economia
@@ -30,14 +32,11 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
   const clubPrice = 59.90;
   const discountPerPizza = 20.00;
   const annualFee = 99.00;
-  
   const monthlyEconomy = pizzasPerMonth * discountPerPizza;
   const annualEconomy = monthlyEconomy * 12;
   const netSavings = annualEconomy - annualFee;
-  const roi = ((netSavings / annualFee) * 100).toFixed(0);
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-6 px-3">
+  const roi = (netSavings / annualFee * 100).toFixed(0);
+  return <div className="max-w-3xl mx-auto space-y-6 px-3">
       {/* Oferta Especial Badge */}
       <div className="text-center">
         <div className="inline-flex items-center gap-1 md:gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 md:px-6 py-2 md:py-3 rounded-full font-bold text-xs md:text-lg shadow-lg animate-pulse">
@@ -109,14 +108,7 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
                 <label className="text-gray-700 font-medium block mb-2 text-sm md:text-base">
                   Quantas pizzas você pede por mês?
                 </label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  max="50"
-                  value={pizzasPerMonth}
-                  onChange={(e) => setPizzasPerMonth(Number(e.target.value))}
-                  className="text-3xl md:text-4xl font-black text-center w-24 md:w-32 border-2 border-orange-300 rounded-lg p-2"
-                />
+                <input type="number" min="1" max="50" value={pizzasPerMonth} onChange={e => setPizzasPerMonth(Number(e.target.value))} className="text-3xl md:text-4xl font-black text-center w-24 md:w-32 border-2 border-orange-300 rounded-lg p-2" />
               </div>
 
               <div className="space-y-2 text-sm md:text-lg">
@@ -138,7 +130,7 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
                     <span className="text-green-600 whitespace-nowrap">R$ {annualEconomy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between gap-2 text-lg md:text-2xl font-black mt-2">
-                    <span className="text-sm md:text-base">Lucro líquido (ano):</span>
+                    <span className="text-sm md:text-base">Economia Total (ano):</span>
                     <span className="text-green-600 whitespace-nowrap">R$ {netSavings.toFixed(2)}</span>
                   </div>
                 </div>
@@ -157,22 +149,31 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
               🏆 Por que entrar no Clube da Pizza hoje?
             </h3>
             
-            {[
-              { icon: <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />, text: "R$20 de desconto em CADA pizza (sem limite de quantidade)" },
-              { icon: <Zap className="h-5 w-5 md:h-6 md:w-6 text-yellow-500" />, text: "Prioridade no delivery → sua pizza chega em até 30 minutos" },
-              { icon: <Crown className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />, text: "Sabores secretos e combos exclusivos só para membros" },
-              { icon: <Gift className="h-5 w-5 md:h-6 md:w-6 text-red-500" />, text: "Brindes semanais → borda recheada grátis em dias especiais" },
-              { icon: <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-500" />, text: "Todo o cardápio mais barato que para clientes normais" },
-              { icon: <Star className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />, text: "Futuro acesso a plataforma de investimentos (bônus premium)" }
-            ].map((benefit, index) => (
-              <div key={index} className="flex items-start gap-2 md:gap-4 p-3 md:p-4 bg-white/70 rounded-lg border border-orange-200 hover:bg-white hover:shadow-md transition-all">
+            {[{
+            icon: <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />,
+            text: "R$20 de desconto em CADA pizza (sem limite de quantidade)"
+          }, {
+            icon: <Zap className="h-5 w-5 md:h-6 md:w-6 text-yellow-500" />,
+            text: "Prioridade no delivery → sua pizza chega em até 30 minutos"
+          }, {
+            icon: <Crown className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />,
+            text: "Sabores secretos e combos exclusivos só para membros"
+          }, {
+            icon: <Gift className="h-5 w-5 md:h-6 md:w-6 text-red-500" />,
+            text: "Brindes semanais → borda recheada grátis em dias especiais"
+          }, {
+            icon: <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-500" />,
+            text: "Todo o cardápio mais barato que para clientes normais"
+          }, {
+            icon: <Star className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />,
+            text: "Futuro acesso a plataforma de investimentos (bônus premium)"
+          }].map((benefit, index) => <div key={index} className="flex items-start gap-2 md:gap-4 p-3 md:p-4 bg-white/70 rounded-lg border border-orange-200 hover:bg-white hover:shadow-md transition-all">
                 <div className="flex-shrink-0">{benefit.icon}</div>
                 <div className="flex items-center gap-2 md:gap-3 flex-1">
                   <Check className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
                   <span className="text-gray-800 font-medium text-xs md:text-base">{benefit.text}</span>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
 
           {/* Alerta de Urgência */}
@@ -192,31 +193,18 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
 
           {/* CTA Principal */}
           <div className="space-y-4 md:space-y-6">
-            <Button
-              className="w-full h-16 md:h-20 text-xs md:text-2xl font-black bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-200 animate-pulse px-3 leading-tight"
-              onClick={handleSelectPlan}
-              disabled={isCurrentPlan}
-            >
-              {isCurrentPlan ? (
-                <div className="flex items-center justify-center gap-2">
+            <Button className="w-full h-16 md:h-20 text-xs md:text-2xl font-black bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-200 animate-pulse px-3 leading-tight" onClick={handleSelectPlan} disabled={isCurrentPlan}>
+              {isCurrentPlan ? <div className="flex items-center justify-center gap-2">
                   <Check className="h-4 w-4 md:h-8 md:w-8 flex-shrink-0" />
                   <span className="text-xs md:text-2xl">ASSINATURA ATIVA</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
+                </div> : <div className="flex items-center justify-center gap-2">
                   <Crown className="h-4 w-4 md:h-8 md:w-8 flex-shrink-0" />
                   <span className="text-[10px] md:text-2xl leading-tight">GARANTIR MEU DESCONTO VITALÍCIO AGORA!</span>
-                </div>
-              )}
+                </div>}
             </Button>
             
-            {!isCurrentPlan && (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto min-h-[3rem] md:h-16 text-[11px] md:text-xl font-bold border-2 border-orange-500 text-orange-600 hover:bg-orange-50 py-3 px-3 leading-tight"
-                  onClick={handleSelectPlan}
-                >
+            {!isCurrentPlan && <>
+                <Button variant="outline" className="w-full h-auto min-h-[3rem] md:h-16 text-[11px] md:text-xl font-bold border-2 border-orange-500 text-orange-600 hover:bg-orange-50 py-3 px-3 leading-tight" onClick={handleSelectPlan}>
                   QUERO ASSINAR E PAGAR MENOS EM TODA PIZZA
                 </Button>
 
@@ -229,8 +217,7 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
                     Você não perde nada testando. <strong>Na primeira pizza já compensa!</strong>
                   </p>
                 </div>
-              </>
-            )}
+              </>}
           </div>
         </CardContent>
       </Card>
@@ -299,6 +286,5 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
           </p>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
