@@ -1,8 +1,9 @@
 // ===== PROTEÇÃO DE ROTA SIMPLIFICADA PARA ASSINATURAS =====
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useSubscriptionGlobal } from '@/components/SubscriptionGlobalProvider';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface ProtectedSubscriptionRouteProps {
@@ -14,15 +15,9 @@ export const ProtectedSubscriptionRoute = ({
   children, 
   fallbackPath = '/plans'
 }: ProtectedSubscriptionRouteProps) => {
-  const { user, subscription, loading: authLoading, refreshSubscription } = useUnifiedAuth();
+  const { user, loading: authLoading } = useUnifiedAuth();
+  const { isActive, isLoading, hasBeenChecked } = useSubscriptionGlobal();
   const location = useLocation();
-
-  // Proactively refresh subscription when user exists and subscription is loading
-  useEffect(() => {
-    if (user && subscription.loading) {
-      refreshSubscription();
-    }
-  }, [user?.id, subscription.loading, refreshSubscription]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -41,8 +36,8 @@ export const ProtectedSubscriptionRoute = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Show loading while checking subscription
-  if (subscription.loading) {
+  // Show loading while checking subscription (only once)
+  if (!hasBeenChecked && isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -54,7 +49,7 @@ export const ProtectedSubscriptionRoute = ({
   }
 
   // Redirect to plans if no active subscription
-  if (!subscription.subscribed || subscription.status !== 'active') {
+  if (hasBeenChecked && !isActive) {
     console.log('[PROTECTED-SUBSCRIPTION-ROUTE] No active subscription, redirecting to plans');
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }

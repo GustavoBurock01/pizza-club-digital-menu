@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/config/queryClient";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
+import { SubscriptionGlobalProvider } from "@/components/SubscriptionGlobalProvider";
 import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
 import { ProtectedSubscriptionRoute } from "@/components/ProtectedSubscriptionRoute";
 
@@ -63,10 +64,11 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UnifiedAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
+          <SubscriptionGlobalProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={
@@ -219,7 +221,8 @@ const App = () => {
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
             <PWAInstallPrompt />
             <AnalyticsDebugger />
-        </TooltipProvider>
+          </TooltipProvider>
+        </SubscriptionGlobalProvider>
       </UnifiedAuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
