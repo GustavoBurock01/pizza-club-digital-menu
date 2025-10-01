@@ -2,30 +2,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  Pizza, Clock, Shield, Star, Users, Truck, 
-  Gift, ChevronDown, ChevronUp, Sparkles, 
-  Zap, Target, Trophy, ArrowRight
-} from 'lucide-react';
+import { Pizza, Clock, Shield, Star, Users, Truck, Gift, ChevronDown, ChevronUp, Sparkles, Zap, Target, Trophy, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useEffect, useState } from 'react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useUnifiedAuth();
+  const {
+    user
+  } = useUnifiedAuth();
   const [pizzasPerYear, setPizzasPerYear] = useState(10);
-
   useEffect(() => {
     document.title = '🍕 Clube da Pizza - Rei da Pizza Paraty | Desconto Vitalício';
   }, []);
-
   const handleSubscribe = () => {
     if (user) {
       navigate('/plans');
@@ -33,41 +23,42 @@ const Index = () => {
       navigate('/auth');
     }
   };
-
   const normalCost = pizzasPerYear * 100;
   const memberCost = pizzasPerYear * 80 + 99;
   const savings = normalCost - memberCost;
-
-  const benefits = [
-    { icon: Target, text: "R$20 de desconto em toda pizza (sem limite)" },
-    { icon: Truck, text: "Prioridade no delivery → entrega em até 30 minutos" },
-    { icon: Sparkles, text: "Sabores secretos e combos exclusivos" },
-    { icon: Gift, text: "Brindes semanais → borda recheada grátis" },
-    { icon: Pizza, text: "Todo o cardápio mais barato" },
-    { icon: Shield, text: "Exclusivo para moradores de Paraty-RJ" }
-  ];
-
-  const faqs = [
-    {
-      question: "O desconto é mesmo vitalício?",
-      answer: "Sim! Quem assinar agora trava o benefício e terá R$20 OFF em cada pizza para sempre."
-    },
-    {
-      question: "E se eu não quiser renovar depois?",
-      answer: "Sem problema. A assinatura é anual e você pode cancelar a renovação a qualquer momento."
-    },
-    {
-      question: "Funciona em todo o cardápio?",
-      answer: "Sim! Todas as pizzas grandes do cardápio participam."
-    },
-    {
-      question: "Sou turista, posso participar?",
-      answer: "Não. O Clube é exclusivo para moradores de Paraty."
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const benefits = [{
+    icon: Target,
+    text: "R$20 de desconto em toda pizza (sem limite)"
+  }, {
+    icon: Truck,
+    text: "Prioridade no delivery → entrega em até 30 minutos"
+  }, {
+    icon: Sparkles,
+    text: "Sabores secretos e combos exclusivos"
+  }, {
+    icon: Gift,
+    text: "Brindes semanais → borda recheada grátis"
+  }, {
+    icon: Pizza,
+    text: "Todo o cardápio mais barato"
+  }, {
+    icon: Shield,
+    text: "Exclusivo para moradores de Paraty-RJ"
+  }];
+  const faqs = [{
+    question: "O desconto é mesmo vitalício?",
+    answer: "Sim! Quem assinar agora trava o benefício e terá R$20 OFF em cada pizza para sempre."
+  }, {
+    question: "E se eu não quiser renovar depois?",
+    answer: "Sem problema. A assinatura é anual e você pode cancelar a renovação a qualquer momento."
+  }, {
+    question: "Funciona em todo o cardápio?",
+    answer: "Sim! Todas as pizzas grandes do cardápio participam."
+  }, {
+    question: "Sou turista, posso participar?",
+    answer: "Não. O Clube é exclusivo para moradores de Paraty."
+  }];
+  return <div className="min-h-screen bg-background">
       {/* Header Minimalista */}
       <header className="glass sticky top-0 z-50 border-b border-border/40">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -80,10 +71,7 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Rei da Pizza • Paraty</p>
             </div>
           </div>
-          <Button 
-            onClick={handleSubscribe} 
-            className="bg-[hsl(var(--pizza-red))] hover:bg-[hsl(var(--pizza-red))]/90 text-primary-foreground shadow-soft hover-lift"
-          >
+          <Button onClick={handleSubscribe} className="bg-[hsl(var(--pizza-red))] hover:bg-[hsl(var(--pizza-red))]/90 text-primary-foreground shadow-soft hover-lift">
             {user ? 'Assinar Agora' : 'Entrar'}
           </Button>
         </div>
@@ -126,11 +114,7 @@ const Index = () => {
             </p>
           </div>
 
-          <Button 
-            size="lg" 
-            onClick={handleSubscribe}
-            className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-xl px-12 py-7 shadow-hard hover-glow font-bold"
-          >
+          <Button size="lg" onClick={handleSubscribe} className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-xl px-12 py-7 shadow-hard hover-glow font-bold">
             ASSINE AGORA
             <ArrowRight className="ml-2 h-6 w-6" />
           </Button>
@@ -148,73 +132,20 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="border-border shadow-soft hover-lift bg-card">
+            {benefits.map((benefit, index) => <Card key={index} className="border-border shadow-soft hover-lift bg-card">
                 <CardContent className="p-6 flex items-start gap-4">
                   <div className="bg-[hsl(var(--pizza-red))]/10 p-3 rounded-lg flex-shrink-0">
                     <benefit.icon className="h-6 w-6 text-[hsl(var(--pizza-red))]" />
                   </div>
                   <p className="text-sm font-medium text-foreground">{benefit.text}</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
 
       {/* Calculadora de Economia */}
-      <section className="py-16 md:py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <Zap className="h-12 w-12 text-[hsl(var(--pizza-orange))] mx-auto mb-4" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                💰 Quanto você pode economizar?
-              </h2>
-            </div>
-
-            <Card className="border-2 border-[hsl(var(--pizza-red))] shadow-medium">
-              <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
-                <CardTitle className="text-center text-2xl">Calculadora de Economia</CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="mb-8">
-                  <label className="block text-sm font-medium mb-3 text-foreground">
-                    Quantas pizzas você pede por ano?
-                  </label>
-                  <Input 
-                    type="number"
-                    value={pizzasPerYear}
-                    onChange={(e) => setPizzasPerYear(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="text-center text-xl font-bold border-border"
-                    min="1"
-                  />
-                </div>
-
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between items-center p-4 bg-accent/50 rounded-lg">
-                    <span className="font-medium text-foreground">Cliente normal:</span>
-                    <span className="text-xl font-bold text-foreground">R$ {normalCost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-[hsl(var(--pizza-red))]/10 rounded-lg border-2 border-[hsl(var(--pizza-red))]">
-                    <span className="font-medium text-foreground">Membro do Clube:</span>
-                    <span className="text-xl font-bold text-[hsl(var(--pizza-red))]">R$ {memberCost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-[hsl(var(--pizza-gold))]/20 rounded-lg border-2 border-[hsl(var(--pizza-gold))]">
-                    <span className="font-bold text-lg text-foreground">💵 Economia Total:</span>
-                    <span className="text-2xl font-black text-[hsl(var(--pizza-gold))]">R$ {savings.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="text-center text-sm text-muted-foreground space-y-1">
-                  <p>➡️ Se pedir 20 pizzas no ano, sua economia sobe para <strong className="text-foreground">R$ 401</strong></p>
-                  <p className="font-bold text-[hsl(var(--pizza-red))]">✨ E o melhor: o desconto é vitalício!</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Prova Social */}
       <section className="py-12 bg-accent/30">
@@ -265,20 +196,14 @@ const Index = () => {
             </h2>
             
             <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`}
-                  className="border border-border rounded-lg px-6 shadow-soft bg-card"
-                >
+              {faqs.map((faq, index) => <AccordionItem key={index} value={`item-${index}`} className="border border-border rounded-lg px-6 shadow-soft bg-card">
                   <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline">
                     👉 {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     {faq.answer}
                   </AccordionContent>
-                </AccordionItem>
-              ))}
+                </AccordionItem>)}
             </Accordion>
           </div>
         </div>
@@ -310,11 +235,7 @@ const Index = () => {
           <p className="text-2xl md:text-3xl font-bold mb-8 text-[hsl(var(--pizza-gold))]">
             "ASSINE AGORA E GARANTA SEU DESCONTO VITALÍCIO"
           </p>
-          <Button 
-            size="lg"
-            onClick={handleSubscribe}
-            className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-2xl px-16 py-8 shadow-hard hover-glow font-black"
-          >
+          <Button size="lg" onClick={handleSubscribe} className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-2xl px-16 py-8 shadow-hard hover-glow font-black">
             ASSINE AGORA
             <Sparkles className="ml-3 h-7 w-7" />
           </Button>
@@ -359,8 +280,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
