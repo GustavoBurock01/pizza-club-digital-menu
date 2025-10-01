@@ -48,7 +48,7 @@ const SubscriptionPlansPage = () => {
           </p>
           
           {/* Badge de Urgência */}
-          <div className="inline-flex items-center gap-2 glass bg-red-500/30 text-white px-6 py-3 rounded-full font-bold text-base md:text-lg shadow-2xl mb-8 animate-pulse border border-red-300/50">
+          <div className="inline-flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full font-bold text-base md:text-lg shadow-2xl mb-8 animate-pulse border border-red-700">
             ⚠️ CONDIÇÃO DE LANÇAMENTO - NUNCA MAIS SE REPETIRÁ
           </div>
           
