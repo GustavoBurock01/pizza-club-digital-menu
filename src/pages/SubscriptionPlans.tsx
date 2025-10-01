@@ -22,39 +22,45 @@ const SubscriptionPlansPage = () => {
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário';
 
   return (
-    <div className="min-h-screen gradient-pizza p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-orange-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center text-white mb-8">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="bg-gradient-to-br from-orange-400 to-red-500 p-4 rounded-full shadow-2xl animate-pulse">
-              <Crown className="h-12 w-12 text-white" />
+            <div className="glass p-6 rounded-full shadow-2xl animate-pulse border border-white/20">
+              <Crown className="h-12 w-12 text-orange-400" />
             </div>
           </div>
-          <h1 className="text-5xl font-black mb-6 bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent leading-tight">
-            A MAIOR OPORTUNIDADE DA HISTÓRIA DA REI DA PIZZA CHEGOU
+          <h1 className="text-4xl md:text-5xl font-black mb-6 text-white drop-shadow-lg leading-tight">
+            A MAIOR OPORTUNIDADE DA HISTÓRIA DA <span className="text-orange-400">REI DA PIZZA</span> CHEGOU
           </h1>
-          <p className="text-3xl text-white/95 mb-4 font-bold">
+          <p className="text-2xl md:text-3xl text-white mb-4 font-bold drop-shadow-md">
             Desconto Vitalício em Toda Pizza
           </p>
-          <p className="text-xl text-white/85 mb-8 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow">
             Exclusivo para moradores de Paraty-RJ
           </p>
           
           {/* Badge de Urgência */}
-          <div className="inline-flex items-center gap-2 bg-red-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-full font-bold text-lg shadow-2xl mb-8 animate-pulse border-2 border-white/20">
+          <div className="inline-flex items-center gap-2 glass bg-red-500/30 text-white px-6 py-3 rounded-full font-bold text-base md:text-lg shadow-2xl mb-8 animate-pulse border border-red-300/50">
             ⚠️ CONDIÇÃO DE LANÇAMENTO - NUNCA MAIS SE REPETIRÁ
           </div>
           
           {subscription?.hasSubscriptionHistory ? (
-            <div className="bg-red-500/20 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto border border-red-300/30 mb-8">
-              <p className="text-white text-lg font-medium">
+            <div className="glass bg-red-500/20 rounded-2xl p-6 max-w-2xl mx-auto border border-red-300/50 mb-8 shadow-xl">
+              <p className="text-white text-base md:text-lg font-medium">
                 🔥 <strong>Oferta especial de retorno!</strong> Você já foi membro, pode voltar e travar o desconto vitalício agora.
               </p>
             </div>
           ) : (
-            <div className="bg-orange-500/20 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto border border-orange-300/30 mb-8">
-              <p className="text-white text-lg font-medium">
+            <div className="glass bg-orange-500/20 rounded-2xl p-6 max-w-2xl mx-auto border border-orange-300/50 mb-8 shadow-xl">
+              <p className="text-white text-base md:text-lg font-medium">
                 🎉 <strong>Oferta de lançamento!</strong> Assine agora e garanta seu desconto vitalício de R$20 em cada pizza.
               </p>
             </div>
@@ -63,38 +69,30 @@ const SubscriptionPlansPage = () => {
 
         {/* Prova Social */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-black text-orange-600 mb-2">+200</div>
-              <p className="text-gray-700 font-medium">Clientes na lista de espera</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-black text-orange-600 mb-2">4.9⭐</div>
-              <p className="text-gray-700 font-medium">Avaliação no app próprio</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-black text-orange-600 mb-2">30min</div>
-              <p className="text-gray-700 font-medium">Entrega mais rápida de Paraty</p>
-            </CardContent>
-          </Card>
+          <div className="glass bg-white/10 rounded-2xl p-6 text-center border border-white/20 shadow-xl hover:scale-105 transition-transform">
+            <div className="text-4xl font-black text-orange-400 mb-2">+200</div>
+            <p className="text-white font-medium">Clientes na lista de espera</p>
+          </div>
+          <div className="glass bg-white/10 rounded-2xl p-6 text-center border border-white/20 shadow-xl hover:scale-105 transition-transform">
+            <div className="text-4xl font-black text-orange-400 mb-2">4.9⭐</div>
+            <p className="text-white font-medium">Avaliação no app próprio</p>
+          </div>
+          <div className="glass bg-white/10 rounded-2xl p-6 text-center border border-white/20 shadow-xl hover:scale-105 transition-transform">
+            <div className="text-4xl font-black text-orange-400 mb-2">30min</div>
+            <p className="text-white font-medium">Entrega mais rápida de Paraty</p>
+          </div>
         </div>
 
         {/* Planos */}
-        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-          <CardContent className="p-8">
-            <SubscriptionPlans />
-          </CardContent>
-        </Card>
+        <div className="glass bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-6 md:p-8">
+          <SubscriptionPlans />
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-8 space-x-4">
           <Button 
             variant="outline" 
-            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+            className="glass bg-white/10 border-white/30 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-lg"
             onClick={() => navigate('/dashboard')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -102,7 +100,7 @@ const SubscriptionPlansPage = () => {
           </Button>
           <Button 
             variant="outline" 
-            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+            className="glass bg-white/10 border-white/30 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-lg"
             onClick={() => navigate('/')}
           >
             Página Inicial
