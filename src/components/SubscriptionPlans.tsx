@@ -79,7 +79,7 @@ export const SubscriptionPlans = ({
             {/* Comparação de Preços */}
             <div className="bg-white rounded-lg p-3 md:p-4 mb-3 md:mb-4">
               <div className="flex justify-between items-center text-sm md:text-lg">
-                <span className="text-gray-600">Pizza normal:</span>
+                <span className="text-gray-600">Clientes normais pagam:</span>
                 <span className="text-gray-500 line-through font-semibold">R$ {normalPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center text-sm md:text-lg mt-2">
