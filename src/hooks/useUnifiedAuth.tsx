@@ -410,6 +410,16 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     return subscription.subscribed && subscription.status === 'active';
   }, [subscription.subscribed, subscription.status]);
 
+  // Auto-refresh subscription when auth state is resolved
+  useEffect(() => {
+    if (!user || !session) {
+      setSubscription(prev => ({ ...prev, subscribed: false, status: 'inactive', loading: false }));
+      return;
+    }
+    // User logged in: refresh subscription immediately
+    refreshSubscription();
+  }, [user?.id, session?.access_token, refreshSubscription]);
+
   // Auto-refresh subscription on success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

@@ -1,6 +1,6 @@
 // ===== PROTEÇÃO DE ROTA SIMPLIFICADA PARA ASSINATURAS =====
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -14,11 +14,18 @@ export const ProtectedSubscriptionRoute = ({
   children, 
   fallbackPath = '/plans'
 }: ProtectedSubscriptionRouteProps) => {
-  const { user, subscription, loading: authLoading } = useUnifiedAuth();
+  const { user, subscription, loading: authLoading, refreshSubscription } = useUnifiedAuth();
   const location = useLocation();
 
-  // Show loading while checking authentication and subscription
-  if (authLoading || subscription.loading) {
+  // Proactively refresh subscription when user exists and subscription is loading
+  useEffect(() => {
+    if (user && subscription.loading) {
+      refreshSubscription();
+    }
+  }, [user?.id, subscription.loading, refreshSubscription]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -32,6 +39,18 @@ export const ProtectedSubscriptionRoute = ({
   // Redirect to auth if not authenticated
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Show loading while checking subscription
+  if (subscription.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="mt-4 text-muted-foreground">Verificando assinatura...</p>
+        </div>
+      </div>
+    );
   }
 
   // Redirect to plans if no active subscription
