@@ -1,196 +1,160 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Pizza, Star, Clock, Shield, CreditCard, Check, ArrowRight, Users, Heart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { 
+  Pizza, Clock, Shield, Star, Users, Truck, 
+  Gift, ChevronDown, ChevronUp, Sparkles, 
+  Zap, Target, Trophy, ArrowRight
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { useEffect } from 'react';
-import { Lock } from 'lucide-react';
-import SubscriptionStatus from '@/components/SubscriptionStatus';
+import { useEffect, useState } from 'react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, subscription, hasValidSubscription } = useUnifiedAuth();
-  
-  console.log('Index page rendering successfully', { user, subscription });
-
-  const handleAuthNavigation = () => {
-    if (user) {
-      // Se logado, vai para dashboard
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
-  };
-
-  const handleMenuAccess = () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    
-    if (hasValidSubscription()) {
-      navigate('/menu');
-    } else {
-      navigate('/plans');
-    }
-  };
-
-  const handleSubscriptionAction = () => {
-    if (user) {
-      navigate('/plans');
-    } else {
-      navigate('/auth');
-    }
-  };
+  const { user } = useUnifiedAuth();
+  const [pizzasPerYear, setPizzasPerYear] = useState(10);
 
   useEffect(() => {
-    document.title = 'Pizza Premium - Cardápio Exclusivo de Pizzas Artesanais';
+    document.title = '🍕 Clube da Pizza - Rei da Pizza Paraty | Desconto Vitalício';
   }, []);
 
-  const features = [{
-    icon: Pizza,
-    title: "Cardápio Exclusivo",
-    description: "Acesso a mais de 50 sabores únicos disponíveis apenas para assinantes"
-  }, {
-    icon: Clock,
-    title: "Entrega em 45min",
-    description: "Garantia de entrega rápida ou sua próxima pizza é grátis"
-  }, {
-    icon: Shield,
-    title: "Qualidade Premium",
-    description: "Ingredientes selecionados e receitas artesanais desenvolvidas por chefs"
-  }, {
-    icon: Heart,
-    title: "Atendimento VIP",
-    description: "Suporte prioritário e personalização completa dos seus pedidos"
-  }];
+  const handleSubscribe = () => {
+    if (user) {
+      navigate('/plans');
+    } else {
+      navigate('/auth');
+    }
+  };
 
-  const planBenefits = [
-    "Acesso ao cardápio completo com +50 sabores", 
-    "Entrega grátis ilimitada", 
-    "Pizzas meio a meio sem taxa adicional", 
-    "Bordas recheadas incluídas", 
-    "Atendimento prioritário via WhatsApp", 
-    "Promoções e descontos exclusivos", 
-    "Histórico completo de pedidos", 
-    "Cancelamento a qualquer momento"
+  const normalCost = pizzasPerYear * 100;
+  const memberCost = pizzasPerYear * 80 + 99;
+  const savings = normalCost - memberCost;
+
+  const benefits = [
+    { icon: Target, text: "R$20 de desconto em toda pizza (sem limite)" },
+    { icon: Truck, text: "Prioridade no delivery → entrega em até 30 minutos" },
+    { icon: Sparkles, text: "Sabores secretos e combos exclusivos" },
+    { icon: Gift, text: "Brindes semanais → borda recheada grátis" },
+    { icon: Pizza, text: "Todo o cardápio mais barato" },
+    { icon: Shield, text: "Exclusivo para moradores de Paraty-RJ" }
+  ];
+
+  const faqs = [
+    {
+      question: "O desconto é mesmo vitalício?",
+      answer: "Sim! Quem assinar agora trava o benefício e terá R$20 OFF em cada pizza para sempre."
+    },
+    {
+      question: "E se eu não quiser renovar depois?",
+      answer: "Sem problema. A assinatura é anual e você pode cancelar a renovação a qualquer momento."
+    },
+    {
+      question: "Funciona em todo o cardápio?",
+      answer: "Sim! Todas as pizzas grandes do cardápio participam."
+    },
+    {
+      question: "Sou turista, posso participar?",
+      answer: "Não. O Clube é exclusivo para moradores de Paraty."
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-background">
+      {/* Header Minimalista */}
+      <header className="glass sticky top-0 z-50 border-b border-border/40">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-red-600 p-2 rounded-lg">
-              <Pizza className="h-6 w-6 text-white" />
+            <div className="bg-[hsl(var(--pizza-red))] p-2.5 rounded-xl shadow-soft">
+              <Pizza className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-xl text-gray-900">Pizza Premium</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600">Cardápio Exclusivo</p>
-                <SubscriptionStatus />
-              </div>
+              <h1 className="font-bold text-lg text-foreground">🍕 Clube da Pizza</h1>
+              <p className="text-xs text-muted-foreground">Rei da Pizza • Paraty</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            {user && (
-              <Button 
-                onClick={handleMenuAccess} 
-                className={`${hasValidSubscription() ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-500 hover:bg-gray-600'} text-white`}
-                disabled={!hasValidSubscription()}
-              >
-                {hasValidSubscription() ? (
-                  'Acessar Cardápio'
-                ) : (
-                  <>
-                    <Lock className="h-4 w-4 mr-2" />
-                    Cardápio Bloqueado
-                  </>
-                )}
-              </Button>
-            )}
-            <Button onClick={handleAuthNavigation} className="bg-red-600 hover:bg-red-700 text-white">
-              {user ? (hasValidSubscription() ? 'Ir para Dashboard' : 'Assinar Agora') : 'Entrar / Cadastrar'}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSubscribe} 
+            className="bg-[hsl(var(--pizza-red))] hover:bg-[hsl(var(--pizza-red))]/90 text-primary-foreground shadow-soft hover-lift"
+          >
+            {user ? 'Assinar Agora' : 'Entrar'}
+          </Button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <Badge className="bg-white text-red-600 mb-6 text-sm px-4 py-2">
-            🎉 Plano Anual por R$ 99,90
+      {/* Hero Section - Headline Matadora */}
+      <section className="gradient-primary text-primary-foreground py-16 md:py-24 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse-glow"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-white rounded-full blur-3xl animate-pulse-glow"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <Badge className="bg-[hsl(var(--pizza-gold))] text-pizza-dark mb-6 text-sm px-4 py-2 shadow-medium hover-bounce">
+            🔥 LANÇAMENTO EXCLUSIVO - VAGAS LIMITADAS
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            As Melhores Pizzas da Cidade
+          
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+            A MAIOR OPORTUNIDADE DA<br />
+            HISTÓRIA DA REI DA PIZZA CHEGOU:
             <br />
-            <span className="text-yellow-300">Só Para Assinantes</span>
+            <span className="text-[hsl(var(--pizza-gold))] drop-shadow-lg">
+              DESCONTO VITALÍCIO EM TODA PIZZA
+            </span>
           </h1>
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Acesse nosso cardápio exclusivo com mais de 50 sabores únicos, 
-            entrega grátis ilimitada e atendimento VIP por apenas R$ 99,90/ano
+          
+          <p className="text-xl md:text-2xl mb-4 text-primary-foreground/90 font-medium">
+            Só para moradores de Paraty.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 text-lg px-8 py-4" onClick={handleSubscriptionAction}>
-              Assinar por R$ 99,90/ano
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4" onClick={() => navigate('/phase2-premium')}>
-              🚀 Ver Fase 2 Premium
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-12 bg-orange-50">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-red-600 mb-2">2,500+</div>
-              <p className="text-gray-600">Assinantes Ativos</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-red-600 mb-2">50+</div>
-              <p className="text-gray-600">Sabores Exclusivos</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-red-600 mb-2">45min</div>
-              <p className="text-gray-600">Tempo Médio de Entrega</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-red-600 mb-2">4.9/5</div>
-              <p className="text-gray-600">Avaliação dos Clientes</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Por Que Escolher Nossa Assinatura?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Oferecemos muito mais que pizzas deliciosas. Nossa assinatura é uma experiência completa.
+          
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 max-w-2xl mx-auto mb-8">
+            <p className="text-2xl md:text-3xl font-bold mb-2">
+              Pague apenas <span className="text-[hsl(var(--pizza-gold))]">R$ 99/ano</span>
+            </p>
+            <p className="text-lg md:text-xl">
+              e tenha <span className="font-bold text-[hsl(var(--pizza-gold))]">R$20 de desconto</span> em cada pizza, para sempre.
+            </p>
+            <p className="text-sm mt-3 text-primary-foreground/80">
+              ⚠️ Essa oferta única só existe no lançamento. Depois, nunca mais.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="mx-auto bg-red-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-4">
-                    <feature.icon className="h-8 w-8 text-red-600" />
+
+          <Button 
+            size="lg" 
+            onClick={handleSubscribe}
+            className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-xl px-12 py-7 shadow-hard hover-glow font-bold"
+          >
+            ASSINE AGORA
+            <ArrowRight className="ml-2 h-6 w-6" />
+          </Button>
+        </div>
+      </section>
+
+      {/* Benefícios Principais */}
+      <section className="py-16 md:py-20 bg-accent/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <Trophy className="h-12 w-12 text-[hsl(var(--pizza-red))] mx-auto mb-4" />
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Por que entrar no Clube da Pizza hoje?
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {benefits.map((benefit, index) => (
+              <Card key={index} className="border-border shadow-soft hover-lift bg-card">
+                <CardContent className="p-6 flex items-start gap-4">
+                  <div className="bg-[hsl(var(--pizza-red))]/10 p-3 rounded-lg flex-shrink-0">
+                    <benefit.icon className="h-6 w-6 text-[hsl(var(--pizza-red))]" />
                   </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <p className="text-sm font-medium text-foreground">{benefit.text}</p>
                 </CardContent>
               </Card>
             ))}
@@ -198,118 +162,200 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-20 bg-gray-50">
+      {/* Calculadora de Economia */}
+      <section className="py-16 md:py-20 bg-background">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Plano Simples e Transparente
-            </h2>
-            <p className="text-xl text-gray-600">
-              Sem pegadinhas, sem fidelidade. Cancele quando quiser.
-            </p>
-          </div>
-          
-          <div className="max-w-lg mx-auto">
-            <Card className="border-2 border-red-600 shadow-xl">
-              <CardHeader className="text-center bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-t-lg">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <CreditCard className="h-6 w-6" />
-                  <CardTitle className="text-2xl">Plano Premium</CardTitle>
-                </div>
-                <div className="text-4xl font-bold mb-2">
-                  R$ 99,90
-                  <span className="text-lg font-normal">/ano</span>
-                </div>
-                <CardDescription className="text-white/80">
-                  Economia garantida no plano anual
-                </CardDescription>
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <Zap className="h-12 w-12 text-[hsl(var(--pizza-orange))] mx-auto mb-4" />
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                💰 Quanto você pode economizar?
+              </h2>
+            </div>
+
+            <Card className="border-2 border-[hsl(var(--pizza-red))] shadow-medium">
+              <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
+                <CardTitle className="text-center text-2xl">Calculadora de Economia</CardTitle>
               </CardHeader>
               <CardContent className="p-8">
-                <div className="space-y-4 mb-8">
-                  {planBenefits.map((benefit, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span className="text-sm">{benefit}</span>
-                    </div>
-                  ))}
+                <div className="mb-8">
+                  <label className="block text-sm font-medium mb-3 text-foreground">
+                    Quantas pizzas você pede por ano?
+                  </label>
+                  <Input 
+                    type="number"
+                    value={pizzasPerYear}
+                    onChange={(e) => setPizzasPerYear(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="text-center text-xl font-bold border-border"
+                    min="1"
+                  />
                 </div>
-                <Button className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white text-lg py-6" onClick={handleSubscriptionAction}>
-                  Assinar por R$ 99,90/ano
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <p className="text-xs text-center text-gray-500 mt-4">
-                  Cancele a qualquer momento. Sem fidelidade.
-                </p>
+
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between items-center p-4 bg-accent/50 rounded-lg">
+                    <span className="font-medium text-foreground">Cliente normal:</span>
+                    <span className="text-xl font-bold text-foreground">R$ {normalCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-[hsl(var(--pizza-red))]/10 rounded-lg border-2 border-[hsl(var(--pizza-red))]">
+                    <span className="font-medium text-foreground">Membro do Clube:</span>
+                    <span className="text-xl font-bold text-[hsl(var(--pizza-red))]">R$ {memberCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-[hsl(var(--pizza-gold))]/20 rounded-lg border-2 border-[hsl(var(--pizza-gold))]">
+                    <span className="font-bold text-lg text-foreground">💵 Economia Total:</span>
+                    <span className="text-2xl font-black text-[hsl(var(--pizza-gold))]">R$ {savings.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="text-center text-sm text-muted-foreground space-y-1">
+                  <p>➡️ Se pedir 20 pizzas no ano, sua economia sobe para <strong className="text-foreground">R$ 401</strong></p>
+                  <p className="font-bold text-[hsl(var(--pizza-red))]">✨ E o melhor: o desconto é vitalício!</p>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="py-20 bg-gradient-to-r from-red-600 to-orange-500 text-white">
+      {/* Prova Social */}
+      <section className="py-12 bg-accent/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+            <div className="hover-lift">
+              <div className="text-4xl font-black text-[hsl(var(--pizza-red))] mb-2">+200</div>
+              <p className="text-sm text-muted-foreground">Clientes na lista de espera</p>
+            </div>
+            <div className="hover-lift">
+              <div className="text-4xl font-black text-[hsl(var(--pizza-red))] mb-2 flex items-center justify-center gap-1">
+                4.9 <Star className="h-6 w-6 fill-[hsl(var(--pizza-gold))] text-[hsl(var(--pizza-gold))]" />
+              </div>
+              <p className="text-sm text-muted-foreground">Nota no app próprio</p>
+            </div>
+            <div className="hover-lift">
+              <div className="text-4xl font-black text-[hsl(var(--pizza-red))] mb-2">SUPER</div>
+              <p className="text-sm text-muted-foreground">Reconhecida no iFood</p>
+            </div>
+            <div className="hover-lift">
+              <div className="text-4xl font-black text-[hsl(var(--pizza-red))] mb-2 flex items-center justify-center gap-2">
+                <Clock className="h-8 w-8" /> 30min
+              </div>
+              <p className="text-sm text-muted-foreground">A mais rápida de Paraty</p>
+            </div>
+          </div>
+
+          <div className="max-w-3xl mx-auto mt-12 glass p-6 rounded-xl border border-border/40">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">💬</div>
+              <div>
+                <p className="text-foreground italic mb-2">
+                  "A melhor pizza da cidade, e agora com desconto vitalício pros clientes fiéis. Inacreditável!"
+                </p>
+                <p className="text-sm text-muted-foreground">— Cliente da Rei da Pizza</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 md:py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-12">
+              ❓ Perguntas Frequentes
+            </h2>
+            
+            <Accordion type="single" collapsible className="space-y-4">
+              {faqs.map((faq, index) => (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="border border-border rounded-lg px-6 shadow-soft bg-card"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline">
+                    👉 {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </section>
+
+      {/* Urgência - Vagas Limitadas */}
+      <section className="py-16 bg-[hsl(var(--pizza-red))]/10 border-y-4 border-[hsl(var(--pizza-red))]">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Pronto Para a Melhor Pizza da Sua Vida?
+          <div className="max-w-2xl mx-auto">
+            <div className="inline-block bg-[hsl(var(--pizza-red))] text-primary-foreground px-6 py-3 rounded-full font-bold text-lg mb-6 shadow-medium animate-bounce-in">
+              🚨 ATENÇÃO: VAGAS LIMITADAS
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Para manter a exclusividade, estamos liberando o Clube apenas para um grupo inicial de moradores.
+            </h2>
+            <p className="text-xl text-[hsl(var(--pizza-red))] font-bold">
+              Depois que fechar, acabou.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Final */}
+      <section className="py-20 gradient-primary text-primary-foreground">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-5xl font-black mb-6">
+            🍕 Não perca essa chance única:
           </h2>
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Junte-se a mais de 2.500 pessoas que já descobriram o prazer de ter acesso 
-            ao melhor cardápio de pizzas da cidade.
+          <p className="text-2xl md:text-3xl font-bold mb-8 text-[hsl(var(--pizza-gold))]">
+            "ASSINE AGORA E GARANTA SEU DESCONTO VITALÍCIO"
           </p>
-          <Button size="lg" onClick={handleSubscriptionAction} className="bg-white text-red-600 hover:bg-gray-100 px-8 py-4">
-            Assinar por R$ 99,90/ano
-            <Users className="ml-2 h-5 w-5" />
+          <Button 
+            size="lg"
+            onClick={handleSubscribe}
+            className="bg-white text-[hsl(var(--pizza-red))] hover:bg-white/90 text-2xl px-16 py-8 shadow-hard hover-glow font-black"
+          >
+            ASSINE AGORA
+            <Sparkles className="ml-3 h-7 w-7" />
           </Button>
-          <p className="text-sm text-white/80 mt-4">
-            Sem compromisso • Cancele quando quiser • Suporte 24/7
+          <p className="text-sm mt-6 text-primary-foreground/80">
+            ✅ Sem compromisso • ✅ Desconto vitalício • ✅ Cancele quando quiser
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-[hsl(var(--pizza-dark))] text-primary-foreground py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 justify-center md:justify-start mb-4">
                 <Pizza className="h-6 w-6" />
-                <span className="font-bold">Pizza Premium</span>
+                <span className="font-bold">Clube da Pizza</span>
               </div>
-              <p className="text-gray-300 text-sm">
-                O melhor sistema de cardápio exclusivo para pizzas artesanais da cidade.
+              <p className="text-sm text-primary-foreground/70">
+                Rei da Pizza - Paraty, RJ
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Links Rápidos</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li><a href="#" className="hover:text-white">Como Funciona</a></li>
-                <li><a href="#" className="hover:text-white">Cardápio Demo</a></li>
-                <li><a href="#" className="hover:text-white">Avaliações</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Suporte</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li><a href="#" className="hover:text-white">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:text-white">WhatsApp</a></li>
-                <li><a href="#" className="hover:text-white">E-mail</a></li>
-                <li><a href="#" className="hover:text-white">Política de Privacidade</a></li>
-              </ul>
-            </div>
-            <div>
               <h3 className="font-semibold mb-4">Contato</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>📍 Rua das Pizzas, 123</li>
-                <li>📞 (11) 99999-9999</li>
-                <li>✉️ contato@pizzapremium.com</li>
-                <li>🕒 Seg-Dom: 18h às 23h</li>
+              <ul className="space-y-2 text-sm text-primary-foreground/70">
+                <li>📍 Paraty - RJ</li>
+                <li>📞 WhatsApp: (24) 99999-9999</li>
+                <li>🕒 Entrega em até 30 minutos</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Sobre</h3>
+              <ul className="space-y-2 text-sm text-primary-foreground/70">
+                <li>Nota 4.9 ⭐</li>
+                <li>Super no iFood 🏆</li>
+                <li>+200 clientes na lista ❤️</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-300">
-            <p>&copy; 2024 Pizza Premium. Todos os direitos reservados.</p>
+          <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm text-primary-foreground/60">
+            <p>&copy; 2024 Clube da Pizza - Rei da Pizza Paraty. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
