@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Crown, Check, Star, Shield, Clock, TrendingUp, Zap, Gift, Sparkles, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Crown, Check, Star, Shield, Clock, TrendingUp, Zap, Gift, Sparkles, AlertTriangle, Settings } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useState } from "react";
 interface SubscriptionPlansProps {
@@ -18,15 +19,18 @@ export const SubscriptionPlans = ({
     subscription
   } = useUnifiedAuth();
   const [pizzasPerMonth, setPizzasPerMonth] = useState(4);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
   const handleSelectPlan = async () => {
     if (onSelectPlan) {
       onSelectPlan('annual');
     } else {
       try {
+        setCheckoutError(null);
         await createCheckout('annual');
-      } catch (error) {
+      } catch (error: any) {
         console.error('[SUBSCRIPTION] Error creating checkout:', error);
-        // Error is already shown by useUnifiedAuth toast
+        setCheckoutError(error.message || 'Erro ao criar checkout');
       }
     }
   };
@@ -42,6 +46,36 @@ export const SubscriptionPlans = ({
   const netSavings = annualEconomy - annualFee;
   const roi = (netSavings / annualFee * 100).toFixed(0);
   return <div className="max-w-3xl mx-auto space-y-6 px-3">
+      {/* Alerta de Configuração (apenas em desenvolvimento) */}
+      {checkoutError && checkoutError.includes('não foi encontrado') && (
+        <Alert variant="destructive" className="border-2">
+          <Settings className="h-5 w-5" />
+          <AlertTitle className="font-bold text-lg">⚙️ Configuração necessária</AlertTitle>
+          <AlertDescription className="space-y-3 mt-2">
+            <p className="font-medium">O Stripe Price ID não está configurado corretamente. Siga estes passos:</p>
+            <ol className="list-decimal list-inside space-y-2 text-sm">
+              <li><strong>Acesse seu Dashboard do Stripe</strong> → Products → Crie um produto "Clube da Pizza Anual"</li>
+              <li><strong>Defina o preço</strong> como R$ 99,00 recorrente anualmente</li>
+              <li><strong>Copie o Price ID</strong> (começa com "price_...")</li>
+              <li><strong>Configure no Supabase</strong>:
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>Vá em: Project Settings → Edge Functions → Secrets</li>
+                  <li>Adicione: <code className="bg-black/20 px-1 rounded">STRIPE_PRICE_ID_ANNUAL</code> = seu price_id</li>
+                </ul>
+              </li>
+              <li><strong>Verifique também</strong>:
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li><code className="bg-black/20 px-1 rounded">STRIPE_SECRET_KEY</code> (chave secreta do Stripe)</li>
+                  <li><code className="bg-black/20 px-1 rounded">STRIPE_WEBHOOK_SECRET</code> (webhook endpoint secret)</li>
+                </ul>
+              </li>
+            </ol>
+            <p className="text-xs mt-2 opacity-80">
+              💡 Certifique-se de que o Price ID e a Secret Key sejam do mesmo ambiente (test ou live mode)
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Oferta Especial Badge */}
       <div className="text-center">
         <div className="inline-flex items-center gap-1 md:gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 md:px-6 py-2 md:py-3 rounded-full font-bold text-xs md:text-lg shadow-lg animate-pulse">
