@@ -271,11 +271,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } catch (error: any) {
       console.error('[UNIFIED-AUTH] Sign in error:', error);
-      toast({
-        title: "Erro ao fazer login",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Don't show toast here - let the form handle error display
       throw error;
     } finally {
       setLoading(false);

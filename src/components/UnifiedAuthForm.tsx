@@ -164,20 +164,26 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
       return;
     }
     
+    // Prevent multiple submissions
+    if (isLoading) return;
+    
     setIsLoading(true);
     setErrorMessage('');
+    setValidationErrors({});
     
     try {
       await signIn(loginData.email, loginData.password);
       
+      // Success - clear security blocks
       localStorage.removeItem('login_block');
       setAttemptCount(0);
+      setErrorMessage('');
       
-      showMessage(messageSystem.auth.loginSuccess(), toast);
-      navigate('/dashboard');
+      // Navigation is handled by signIn
     } catch (error: any) {
+      // Handle failed login attempt
       const friendlyErrorMessage = getErrorMessage(error);
-      handleFailedAttempt(friendlyErrorMessage);
+      await handleFailedAttempt(friendlyErrorMessage);
     } finally {
       setIsLoading(false);
     }
