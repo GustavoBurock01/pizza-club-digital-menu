@@ -193,20 +193,20 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
           {/* CTA Principal */}
           <div className="space-y-4 md:space-y-6">
             <Button
-              className="w-full h-14 md:h-20 text-base md:text-2xl font-black bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-200 animate-pulse px-2"
+              className="w-full h-16 md:h-20 text-xs md:text-2xl font-black bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-2xl transform hover:scale-105 transition-all duration-200 animate-pulse px-3 leading-tight"
               onClick={handleSelectPlan}
               disabled={isCurrentPlan}
             >
               {isCurrentPlan ? (
-                <>
-                  <Check className="h-5 w-5 md:h-8 md:w-8 mr-2 md:mr-3" />
-                  <span className="text-sm md:text-2xl">✅ ASSINATURA ATIVA</span>
-                </>
+                <div className="flex items-center justify-center gap-2">
+                  <Check className="h-4 w-4 md:h-8 md:w-8 flex-shrink-0" />
+                  <span className="text-xs md:text-2xl">ASSINATURA ATIVA</span>
+                </div>
               ) : (
-                <>
-                  <Crown className="h-5 w-5 md:h-8 md:w-8 mr-2 md:mr-3 flex-shrink-0" />
-                  <span className="text-xs md:text-2xl">🍕 GARANTIR MEU DESCONTO VITALÍCIO AGORA!</span>
-                </>
+                <div className="flex items-center justify-center gap-2">
+                  <Crown className="h-4 w-4 md:h-8 md:w-8 flex-shrink-0" />
+                  <span className="text-[10px] md:text-2xl leading-tight">GARANTIR MEU DESCONTO VITALÍCIO AGORA!</span>
+                </div>
               )}
             </Button>
             
@@ -214,7 +214,7 @@ export const SubscriptionPlans = ({ currentPlan, onSelectPlan }: SubscriptionPla
               <>
                 <Button
                   variant="outline"
-                  className="w-full h-12 md:h-16 text-sm md:text-xl font-bold border-2 border-orange-500 text-orange-600 hover:bg-orange-50"
+                  className="w-full h-auto min-h-[3rem] md:h-16 text-[11px] md:text-xl font-bold border-2 border-orange-500 text-orange-600 hover:bg-orange-50 py-3 px-3 leading-tight"
                   onClick={handleSelectPlan}
                 >
                   QUERO ASSINAR E PAGAR MENOS EM TODA PIZZA
