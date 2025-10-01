@@ -18,11 +18,16 @@ export const SubscriptionPlans = ({
     subscription
   } = useUnifiedAuth();
   const [pizzasPerMonth, setPizzasPerMonth] = useState(4);
-  const handleSelectPlan = () => {
+  const handleSelectPlan = async () => {
     if (onSelectPlan) {
       onSelectPlan('annual');
     } else {
-      createCheckout('annual');
+      try {
+        await createCheckout('annual');
+      } catch (error) {
+        console.error('[SUBSCRIPTION] Error creating checkout:', error);
+        // Error is already shown by useUnifiedAuth toast
+      }
     }
   };
   const isCurrentPlan = subscription?.status === 'active';

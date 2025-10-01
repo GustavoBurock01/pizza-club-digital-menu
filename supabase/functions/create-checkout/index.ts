@@ -100,27 +100,46 @@ serve(async (req) => {
         livemode: priceInfo.livemode
       });
       
-      // Check if price mode matches stripe key mode
+      // Warn about mode mismatch but don't block (for flexibility during testing)
       const isTestKey = stripeKey.startsWith('sk_test');
       if (priceInfo.livemode === isTestKey) {
-        logStep("WARNING: Price mode mismatch", { 
+        logStep("WARNING: Price mode mismatch - this may cause issues", { 
           stripeKeyMode: isTestKey ? 'test' : 'live',
           priceMode: priceInfo.livemode ? 'live' : 'test'
         });
-        throw new Error(`Price mode mismatch: Using ${isTestKey ? 'test' : 'live'} Stripe key with ${priceInfo.livemode ? 'live' : 'test'} price ID. Please use matching test/live keys and price IDs.`);
+      }
+      
+      // Check if price is active
+      if (!priceInfo.active) {
+        logStep("WARNING: Price is not active in Stripe", { priceId: selectedPriceId });
+        throw new Error(`O plano selecionado não está ativo. Por favor, contate o suporte.`);
       }
       
     } catch (priceError: any) {
-      const errorMsg = `Price ID validation failed: ${priceError.message}. Please check your Stripe dashboard and ensure the STRIPE_PRICE_ID_${planType.toUpperCase()} secret matches your Stripe key mode.`;
-      logStep("Price validation failed", { 
-        priceId: `${selectedPriceId.substring(0, 10)}...`, 
-        error: priceError.message,
-        stripeErrorType: priceError.type,
-        stripeKeyMode: stripeKey.startsWith('sk_test') ? 'test' : 'live'
-      });
+      // More user-friendly error messages
+      let errorMsg = 'Erro ao processar o pagamento. ';
+      
+      if (priceError.code === 'resource_missing') {
+        errorMsg += 'O plano selecionado não foi encontrado. Por favor, tente novamente ou contate o suporte.';
+        logStep("Price not found in Stripe", { 
+          priceId: selectedPriceId,
+          planType,
+          stripeKeyMode: stripeKey.startsWith('sk_test') ? 'test' : 'live'
+        });
+      } else {
+        errorMsg += priceError.message || 'Por favor, tente novamente.';
+        logStep("Price validation error", { 
+          priceId: `${selectedPriceId.substring(0, 10)}...`, 
+          error: priceError.message,
+          code: priceError.code,
+          type: priceError.type
+        });
+      }
+      
       throw new Error(errorMsg);
     }
 
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -131,11 +150,20 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard?success=true`,
-      cancel_url: `${req.headers.get("origin")}/dashboard?canceled=true`,
+      success_url: `${req.headers.get("origin")}/plans?success=true`,
+      cancel_url: `${req.headers.get("origin")}/plans?canceled=true`,
+      allow_promotion_codes: true,
+      billing_address_collection: 'auto',
       metadata: {
         user_id: user.id,
-        plan_type: planType
+        plan_type: planType,
+        user_email: user.email
+      },
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          plan_type: planType
+        }
       }
     });
 

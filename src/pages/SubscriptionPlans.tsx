@@ -1,16 +1,51 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ArrowLeft } from "lucide-react";
+import { Crown, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 // Subscription now comes from useUnifiedAuth
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { StripeConfigChecker } from "@/components/StripeConfigChecker";
 
 const SubscriptionPlansPage = () => {
-  const { subscription } = useUnifiedAuth();
+  const { subscription, refreshSubscription } = useUnifiedAuth();
   const { user } = useUnifiedAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  // Handle success/cancel from Stripe
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+
+    if (success === 'true') {
+      toast({
+        title: "Pagamento bem-sucedido! 🎉",
+        description: "Sua assinatura está sendo processada. Em instantes você terá acesso aos benefícios.",
+        duration: 5000,
+      });
+      
+      // Refresh subscription status
+      setTimeout(() => {
+        refreshSubscription();
+      }, 2000);
+
+      // Clean URL
+      window.history.replaceState({}, '', '/plans');
+    } else if (canceled === 'true') {
+      toast({
+        title: "Pagamento cancelado",
+        description: "Você pode tentar novamente quando quiser.",
+        variant: "destructive",
+      });
+
+      // Clean URL
+      window.history.replaceState({}, '', '/plans');
+    }
+  }, [searchParams, toast, refreshSubscription]);
 
   // Redirecionar se usuário já tem assinatura ativa
   useEffect(() => {
@@ -87,6 +122,13 @@ const SubscriptionPlansPage = () => {
         <div className="glass bg-white/5 rounded-3xl shadow-2xl border border-red-500/30 p-4 md:p-8 mb-6 md:mb-8">
           <SubscriptionPlans />
         </div>
+
+        {/* Debug Section - Visible only in development */}
+        {window.location.hostname === 'localhost' && (
+          <div className="mb-6 md:mb-8">
+            <StripeConfigChecker />
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center space-y-3 md:space-y-0 md:space-x-4 px-2 pb-6">

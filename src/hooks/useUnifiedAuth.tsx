@@ -400,20 +400,43 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[UNIFIED-AUTH] Edge function error:', error);
+        throw new Error(error.message || 'Erro ao conectar com o servidor de pagamento');
+      }
+
+      // Check if the response contains an error message
+      if (data?.error) {
+        console.error('[UNIFIED-AUTH] Checkout error from edge function:', data.error);
+        throw new Error(data.error);
+      }
 
       if (data?.url) {
+        console.log('[UNIFIED-AUTH] Redirecting to Stripe checkout:', data.url);
         window.location.href = data.url;
       } else {
-        throw new Error('URL de checkout não retornada');
+        throw new Error('URL de checkout não retornada. Verifique a configuração do Stripe.');
       }
     } catch (error: any) {
       console.error('[UNIFIED-AUTH] Create checkout error:', error);
+      
+      // Extract meaningful error message
+      let errorMessage = 'Erro ao processar pagamento. Por favor, tente novamente.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Erro ao criar checkout",
-        description: error.message || 'Erro interno do servidor',
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000, // Show for longer
       });
+      
+      throw error; // Re-throw for component to handle
     }
   };
 
