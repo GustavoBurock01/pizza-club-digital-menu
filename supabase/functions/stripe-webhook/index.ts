@@ -8,8 +8,31 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
+  const timestamp = new Date().toISOString();
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
+  console.log(`[${timestamp}] [STRIPE-WEBHOOK] ${step}${detailsStr}`);
+};
+
+const validateEnvironment = (stripeKey: string) => {
+  const isTestMode = stripeKey.startsWith('sk_test');
+  const mode = isTestMode ? 'TEST' : 'PRODUCTION';
+  logStep(`🔥 RUNNING IN ${mode} MODE`);
+  
+  // Validar que todos os secrets estejam no mesmo modo
+  const priceIds = [
+    { id: Deno.env.get("STRIPE_PRICE_ID_ANNUAL"), name: "ANNUAL" },
+    { id: Deno.env.get("STRIPE_PRICE_ID_MONTHLY"), name: "MONTHLY" },
+    { id: Deno.env.get("STRIPE_PRICE_ID_TRIAL"), name: "TRIAL" }
+  ].filter(p => p.id);
+  
+  for (const price of priceIds) {
+    const priceIsTest = price.id?.startsWith('price_test');
+    if (priceIsTest === !isTestMode) {
+      throw new Error(`Price ID mode mismatch: ${price.name} (${price.id?.substring(0, 15)}...) vs ${mode}`);
+    }
+  }
+  
+  return { isTestMode, mode };
 };
 
 serve(async (req) => {
@@ -24,7 +47,10 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    
+    // Validar ambiente e configuração
+    const env = validateEnvironment(stripeKey);
+    logStep("Stripe key verified", { mode: env.mode });
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -50,22 +76,21 @@ serve(async (req) => {
 
     let event: Stripe.Event;
 
-    // Verify webhook signature if secret is available
-    if (webhookSecret) {
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-        logStep("Webhook signature verified", { eventType: event.type });
-      } catch (err: any) {
-        logStep("Webhook signature verification failed", { error: err.message });
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-    } else {
-      // Parse event without verification (for testing)
-      event = JSON.parse(body) as Stripe.Event;
-      logStep("WARNING: Processing webhook without signature verification", { eventType: event.type });
+    // PRODUÇÃO REQUER VERIFICAÇÃO DE ASSINATURA
+    if (!webhookSecret) {
+      logStep("CRITICAL: STRIPE_WEBHOOK_SECRET not configured");
+      throw new Error("PRODUCTION REQUIRES STRIPE_WEBHOOK_SECRET. Configure it in Supabase Edge Functions secrets.");
+    }
+
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      logStep("Webhook signature verified", { eventType: event.type, eventId: event.id });
+    } catch (err: any) {
+      logStep("Webhook signature verification failed", { error: err.message });
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     // Handle the event
@@ -160,41 +185,32 @@ async function handleSubscriptionEvent(event: Stripe.Event, supabaseClient: any,
       logStep("Updated profile with stripe_customer_id", { userId: profile.id, customerId: customer.id });
     }
 
-    // Determine plan details from price_id
+    // Determine plan details from price_id - BUSCAR VALORES REAIS DO STRIPE
     const priceId = subscription.items.data[0].price.id;
     const price = await stripe.prices.retrieve(priceId);
-    const amount = price.unit_amount || 0;
+    const planPrice = (price.unit_amount || 0) / 100; // Converter centavos para reais
     
-    let planName = 'Desconhecido';
-    let planPrice = 0;
-    
-    // Map by price_id from secrets
+    // Map plan name by price_id from secrets
     const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
     const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
     const annualPriceId = Deno.env.get("STRIPE_PRICE_ID_ANNUAL");
     
-    if (priceId === trialPriceId) {
-      planName = "Trial";
-      planPrice = 1.00;
+    let planName = 'Desconhecido';
+    
+    if (priceId === annualPriceId) {
+      planName = "Anual";
     } else if (priceId === monthlyPriceId) {
       planName = "Mensal";
-      planPrice = 9.90;
-    } else if (priceId === annualPriceId) {
-      planName = "Anual";
-      planPrice = 99.90;
-    } else {
-      // Fallback para compatibilidade
-      if (amount === 100) {
-        planName = "Trial";
-        planPrice = 1.00;
-      } else if (amount === 990) {
-        planName = "Mensal";
-        planPrice = 9.90;
-      } else if (amount === 9990) {
-        planName = "Anual";
-        planPrice = 99.90;
-      }
+    } else if (priceId === trialPriceId) {
+      planName = "Trial";
     }
+
+    logStep("Plan details determined from Stripe", { 
+      priceId: `${priceId.substring(0, 15)}...`,
+      planName, 
+      planPrice,
+      currency: price.currency 
+    });
 
     const isActive = subscription.status === 'active';
     const currentPeriodStart = new Date(subscription.current_period_start * 1000).toISOString();

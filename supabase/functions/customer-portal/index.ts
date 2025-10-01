@@ -9,8 +9,16 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
+  const timestamp = new Date().toISOString();
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CUSTOMER-PORTAL] ${step}${detailsStr}`);
+  console.log(`[${timestamp}] [CUSTOMER-PORTAL] ${step}${detailsStr}`);
+};
+
+const validateEnvironment = (stripeKey: string) => {
+  const isTestMode = stripeKey.startsWith('sk_test');
+  const mode = isTestMode ? 'TEST' : 'PRODUCTION';
+  logStep(`🔥 RUNNING IN ${mode} MODE`);
+  return { isTestMode, mode };
 };
 
 serve(async (req) => {
@@ -23,7 +31,10 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    
+    // Validar ambiente
+    const env = validateEnvironment(stripeKey);
+    logStep("Stripe key verified", { mode: env.mode });
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -68,7 +79,7 @@ serve(async (req) => {
       
       // Verificar se é erro de configuração do portal
       if (stripeError.message.includes('billing portal') || stripeError.message.includes('configuration')) {
-        throw new Error("Portal de cobrança não configurado no Stripe. Configure em: https://dashboard.stripe.com/test/settings/billing/portal");
+        throw new Error("Portal de cobrança não configurado no Stripe. Configure em: https://dashboard.stripe.com/settings/billing/portal");
       }
       
       throw stripeError;

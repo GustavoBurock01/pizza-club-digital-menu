@@ -9,8 +9,31 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
+  const timestamp = new Date().toISOString();
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+  console.log(`[${timestamp}] [CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
+const validateEnvironment = (stripeKey: string) => {
+  const isTestMode = stripeKey.startsWith('sk_test');
+  const mode = isTestMode ? 'TEST' : 'PRODUCTION';
+  logStep(`🔥 RUNNING IN ${mode} MODE`);
+  
+  // Validar que todos os secrets estejam no mesmo modo
+  const priceIds = [
+    { id: Deno.env.get("STRIPE_PRICE_ID_ANNUAL"), name: "ANNUAL" },
+    { id: Deno.env.get("STRIPE_PRICE_ID_MONTHLY"), name: "MONTHLY" },
+    { id: Deno.env.get("STRIPE_PRICE_ID_TRIAL"), name: "TRIAL" }
+  ].filter(p => p.id);
+  
+  for (const price of priceIds) {
+    const priceIsTest = price.id?.startsWith('price_test');
+    if (priceIsTest === !isTestMode) {
+      throw new Error(`Price ID mode mismatch: ${price.name} (${price.id?.substring(0, 15)}...) vs ${mode}`);
+    }
+  }
+  
+  return { isTestMode, mode };
 };
 
 serve(async (req) => {
@@ -23,7 +46,10 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7), keyType: stripeKey.startsWith('sk_test') ? 'test' : 'live' });
+    
+    // Validar ambiente e configuração
+    const env = validateEnvironment(stripeKey);
+    logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7), mode: env.mode });
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -100,13 +126,15 @@ serve(async (req) => {
         livemode: priceInfo.livemode
       });
       
-      // Warn about mode mismatch but don't block (for flexibility during testing)
+      // BLOQUEAR mismatch de ambiente em produção
       const isTestKey = stripeKey.startsWith('sk_test');
       if (priceInfo.livemode === isTestKey) {
-        logStep("WARNING: Price mode mismatch - this may cause issues", { 
+        logStep("CRITICAL: Price mode mismatch detected", { 
           stripeKeyMode: isTestKey ? 'test' : 'live',
-          priceMode: priceInfo.livemode ? 'live' : 'test'
+          priceMode: priceInfo.livemode ? 'live' : 'test',
+          priceId: selectedPriceId
         });
+        throw new Error("Configuração inválida do Stripe. A chave e o Price ID devem estar no mesmo modo (test ou live). Contate o suporte.");
       }
       
       // Check if price is active
