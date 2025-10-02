@@ -8,6 +8,7 @@ import { useAddresses } from '@/hooks/useAddresses';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useUnifiedProfile';
 import { CheckoutValidation } from '@/components/CheckoutValidation';
+import { CheckoutProfileAlert } from '@/components/CheckoutProfileAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
@@ -93,10 +94,8 @@ const ExpressCheckout = () => {
         if (!isGuest && selectedAddressId) return true;
         return customerData.street && customerData.number && customerData.neighborhood;
       case 'payment':
-        // Verificar se dados obrigatórios estão completos
-        if (!profile?.full_name) return false;
-        if (deliveryMethod === 'delivery' && !profile?.phone) return false;
-        
+        // Validar apenas o método de pagamento
+        // Perfil será validado no momento de criar o pedido
         if (paymentMethod === 'cash' && needsChange) {
           return changeAmount && parseFloat(changeAmount) > total;
         }
@@ -104,11 +103,28 @@ const ExpressCheckout = () => {
       default:
         return false;
     }
-  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total, profile]);
+  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total]);
 
-  // ===== HANDLERS =====
   const handleNext = () => {
-    if (!isStepValid) return;
+    if (!isStepValid) {
+      console.warn('[CHECKOUT] Cannot proceed - step validation failed', {
+        step,
+        isStepValid,
+        items: items.length,
+        deliveryMethod,
+        selectedAddressId,
+        customerData
+      });
+      
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha todos os campos obrigatórios para continuar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('[CHECKOUT] Proceeding to next step from:', step);
 
     switch (step) {
       case 'review':
@@ -151,7 +167,26 @@ const ExpressCheckout = () => {
   };
 
   const handleCreateOrder = async () => {
-    if (loading) return; // Proteção básica contra duplo clique
+    if (loading) return;
+    
+    // Validação final de perfil antes de processar
+    if (!profile?.full_name) {
+      toast({
+        title: "Perfil incompleto",
+        description: "Complete seu nome em 'Minha Conta' antes de finalizar o pedido.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (deliveryMethod === 'delivery' && !profile?.phone) {
+      toast({
+        title: "Telefone obrigatório",
+        description: "Para entregas, cadastre seu telefone em 'Minha Conta'.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Verificar rate limiting
     if (!user?.id || !checkCheckoutRateLimit(user.id)) {
@@ -171,15 +206,14 @@ const ExpressCheckout = () => {
       console.log('[CHECKOUT] Is online payment:', isOnlinePayment());
       
       if (isOnlinePayment()) {
-        // Para pagamentos online (PIX, cartões online), salvar dados e aguardar pagamento
         console.log('[CHECKOUT] Redirecting to online payment flow');
         await handleOnlinePayment();
       } else {
-        // Para pagamentos presenciais (dinheiro, cartões presenciais), criar pedido imediatamente
         console.log('[CHECKOUT] Processing in-person payment');
         await handlePresencialPaymentProtected();
       }
     } catch (error: any) {
+      console.error('[CHECKOUT] Error:', error);
       setStep('payment');
       toast({
         title: "Erro ao processar pedido",
@@ -192,15 +226,31 @@ const ExpressCheckout = () => {
   };
 
   const handleOnlinePayment = async () => {
-    // Obter dados do perfil do usuário
-    const { data: profile } = await supabase
+    // Obter dados do perfil do usuário com fallback seguro
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
-      .single();
+      .maybeSingle();
+
+    // Se não houver perfil, criar um básico
+    if (profileError || !profile) {
+      console.warn('[CHECKOUT] Profile not found, creating basic profile');
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user?.id,
+          email: user?.email || '',
+          full_name: user?.email?.split('@')[0] || 'Cliente'
+        })
+        .select()
+        .single();
+      
+      if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
+    }
 
     // Validar dados obrigatórios ANTES de enviar
-    const customerName = profile?.full_name || user?.email || 'Cliente';
+    const customerName = profile?.full_name || user?.email?.split('@')[0] || 'Cliente';
     const customerPhone = profile?.phone || '';
 
     console.log('[CHECKOUT] Customer data:', {
@@ -209,13 +259,13 @@ const ExpressCheckout = () => {
       delivery_method: deliveryMethod
     });
 
-    // Validação crítica: telefone obrigatório e válido para entrega
+    // Validação crítica: telefone obrigatório para entrega
     if (deliveryMethod === 'delivery') {
       if (!customerPhone) {
         throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
       }
       if (!validatePhone(customerPhone)) {
-        throw new Error('Telefone inválido. Use o formato: (11) 99999-9999');
+        throw new Error('Telefone inválido. Use o formato: (DDD) 9XXXX-XXXX. Complete seu perfil em "Minha Conta".');
       }
     }
 
@@ -305,23 +355,39 @@ const ExpressCheckout = () => {
   };
 
   const handlePresencialPayment = async () => {
-    // Obter dados do perfil do usuário
-    const { data: profile } = await supabase
+    // Obter dados do perfil do usuário com fallback seguro
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
-      .single();
+      .maybeSingle();
 
-    const customerName = profile?.full_name || user?.email || 'Cliente';
+    // Se não houver perfil, criar um básico
+    if (profileError || !profile) {
+      console.warn('[CHECKOUT] Profile not found, creating basic profile');
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user?.id,
+          email: user?.email || '',
+          full_name: user?.email?.split('@')[0] || 'Cliente'
+        })
+        .select()
+        .single();
+      
+      if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
+    }
+
+    const customerName = profile?.full_name || user?.email?.split('@')[0] || 'Cliente';
     const customerPhone = profile?.phone || '';
 
-    // Validação crítica: telefone obrigatório e válido para entrega
+    // Validação crítica: telefone obrigatório para entrega
     if (deliveryMethod === 'delivery') {
       if (!customerPhone) {
         throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
       }
       if (!validatePhone(customerPhone)) {
-        throw new Error('Telefone inválido. Use o formato: (11) 99999-9999');
+        throw new Error('Telefone inválido. Use o formato: (DDD) 9XXXX-XXXX. Complete seu perfil em "Minha Conta".');
       }
     }
 
@@ -637,11 +703,8 @@ const ExpressCheckout = () => {
                 {/* STEP: PAYMENT */}
                 {step === 'payment' && (
                   <div className="space-y-6">
-                    {/* Validação de dados obrigatórios */}
-                    <CheckoutValidation 
-                      deliveryMethod={deliveryMethod}
-                      onNavigateToProfile={() => navigate('/account')}
-                    />
+                    {/* Alerta de perfil incompleto */}
+                    <CheckoutProfileAlert deliveryMethod={deliveryMethod} />
                     
                     {/* Payment Category Selection */}
                     <Card>

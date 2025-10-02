@@ -43,8 +43,17 @@ export const validateCPF = (cpf: string): boolean => {
 };
 
 export const validatePhone = (phone: string): boolean => {
+  if (!phone) return false;
   const cleaned = phone.replace(/\D/g, '');
-  return cleaned.length === 11 && /^[1-9]{2}9[0-9]{8}$/.test(cleaned);
+  // Aceitar telefones com 10 ou 11 dígitos (fixo ou celular)
+  // Formato: (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX
+  if (cleaned.length === 10) {
+    return /^[1-9]{2}[2-9][0-9]{7}$/.test(cleaned);
+  }
+  if (cleaned.length === 11) {
+    return /^[1-9]{2}9[0-9]{8}$/.test(cleaned);
+  }
+  return false;
 };
 
 export const validateCEP = (cep: string): boolean => {
