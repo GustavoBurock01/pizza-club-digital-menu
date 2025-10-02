@@ -957,6 +957,47 @@ export type Database = {
           },
         ]
       }
+      product_pauses: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          paused_at: string
+          paused_by: string | null
+          product_id: string
+          reason: string | null
+          resume_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          paused_at?: string
+          paused_by?: string | null
+          product_id: string
+          reason?: string | null
+          resume_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          paused_at?: string
+          paused_by?: string | null
+          product_id?: string
+          reason?: string | null
+          resume_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_pauses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_stock: {
         Row: {
           available_quantity: number
@@ -1274,6 +1315,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_settings: {
+        Row: {
+          auto_accept_orders: boolean
+          closed_message: string | null
+          created_at: string
+          estimated_prep_time: number
+          id: string
+          is_open: boolean
+          max_order_value: number
+          min_order_value: number
+          updated_at: string
+        }
+        Insert: {
+          auto_accept_orders?: boolean
+          closed_message?: string | null
+          created_at?: string
+          estimated_prep_time?: number
+          id?: string
+          is_open?: boolean
+          max_order_value?: number
+          min_order_value?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_accept_orders?: boolean
+          closed_message?: string | null
+          created_at?: string
+          estimated_prep_time?: number
+          id?: string
+          is_open?: boolean
+          max_order_value?: number
+          min_order_value?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       subcategories: {
         Row: {

@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { WABizHeader } from "@/components/WABizHeader";
 import { WABizOrdersTable } from "@/components/WABizOrdersTable";
 import { WABizOrderDetails } from "@/components/WABizOrderDetails";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAttendant } from "@/providers/AttendantProvider";
+import { useThermalPrint } from "@/hooks/useThermalPrint";
 import { toast } from "sonner";
+import { Printer } from "lucide-react";
 
 export default function AttendantUnified() {
   const { 
@@ -22,6 +25,8 @@ export default function AttendantUnified() {
     markDelivered,
     cancelOrder 
   } = useAttendant();
+
+  const { printOrder, isPrinting } = useThermalPrint();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState('novos');
@@ -77,6 +82,10 @@ export default function AttendantUnified() {
           break;
         case 'cancel':
           await cancelOrder(orderId);
+          break;
+        case 'print':
+          await printOrder(orderId);
+          toast.success('Pedido enviado para impressão');
           break;
       }
       handleCloseDetails();
@@ -159,6 +168,21 @@ export default function AttendantUnified() {
       </div>
 
       {/* Modal de Detalhes do Pedido */}
+      {selectedOrder && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOrderAction('print', selectedOrder.id)}
+            disabled={isPrinting}
+            className="shadow-lg"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrinting ? 'Imprimindo...' : 'Reimprimir'}
+          </Button>
+        </div>
+      )}
+      
       <WABizOrderDetails
         order={selectedOrder}
         isOpen={!!selectedOrder}

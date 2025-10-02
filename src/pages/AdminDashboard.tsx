@@ -46,7 +46,7 @@ export default function AdminDashboard() {
 
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/orders')}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/analytics')}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pedidos Hoje</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/orders')}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/analytics')}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Receita Hoje</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -101,16 +101,16 @@ export default function AdminDashboard() {
 
           {/* Quick Actions Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/orders')}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/analytics')}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Gestão de Pedidos
+                  Analytics de Pedidos
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Visualize e gerencie todos os pedidos em tempo real
+                  Visualize métricas e relatórios de pedidos
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">

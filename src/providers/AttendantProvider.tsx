@@ -4,6 +4,7 @@ import { createContext, useContext, ReactNode, useState, useEffect, useCallback 
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useThermalPrint } from '@/hooks/useThermalPrint';
 
 // ===== TIPOS CONSOLIDADOS =====
 interface AttendantStats {
@@ -62,6 +63,7 @@ const AttendantContext = createContext<AttendantContextType | undefined>(undefin
 export const AttendantProvider = ({ children }: { children: ReactNode }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const queryClient = useQueryClient();
+  const { printOrder } = useThermalPrint();
 
   // ===== QUERY ÚNICA PARA DADOS COMBINADOS =====
   const { data: combinedData, isLoading: loading, refetch } = useQuery({
@@ -218,10 +220,18 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     try {
       await updateOrderStatus(orderId, 'confirmed');
       toast.success("Pedido confirmado!");
+      
+      // Tentar imprimir após confirmar (não bloqueia se falhar)
+      printOrder(orderId).catch((error) => {
+        console.error('Erro ao imprimir pedido:', error);
+        toast.error('Pedido confirmado, mas falha na impressão', {
+          description: 'Você pode reimprimir manualmente',
+        });
+      });
     } catch (error) {
       toast.error("Erro ao confirmar pedido");
     }
-  }, [updateOrderStatus]);
+  }, [updateOrderStatus, printOrder]);
 
   const startPreparation = useCallback(async (orderId: string) => {
     try {

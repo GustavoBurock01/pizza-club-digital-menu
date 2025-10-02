@@ -13,41 +13,26 @@ if (!rootElement) throw new Error("Failed to find the root element");
 
 const root = createRoot(rootElement);
 
-// Initialize premium foundation systems after DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('Premium Foundation Systems initializing...');
-  
-  // Dynamic import to avoid initialization issues
-  import('./utils/realUserMonitoring').then(() => {
-    console.log('✅ Real User Monitoring initialized');
-  }).catch(error => {
-    console.warn('Failed to initialize RUM:', error);
-  });
+// Initialize monitoring systems in production
+const ENABLE_MONITORING = import.meta.env.PROD;
 
-  import('./utils/securityHeaders').then(() => {
-    console.log('✅ Security Headers initialized');
-  }).catch(error => {
-    console.warn('Failed to initialize Security Headers:', error);
-  });
-
-  import('./utils/automatedTesting').then(({ automatedTesting }) => {
-    console.log('✅ Automated Testing initialized');
+if (ENABLE_MONITORING) {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Production monitoring initializing...');
     
-    // Run initial tests in development
-    if (import.meta.env.DEV) {
-      setTimeout(async () => {
-        try {
-          const results = await automatedTesting.runAllTests();
-          console.log('Initial test results:', results);
-        } catch (error) {
-          console.error('Initial tests failed:', error);
-        }
-      }, 5000);
-    }
-  }).catch(error => {
-    console.warn('Failed to initialize Automated Testing:', error);
+    import('./utils/realUserMonitoring').then(() => {
+      console.log('✅ Real User Monitoring initialized');
+    }).catch(error => {
+      console.warn('Failed to initialize RUM:', error);
+    });
+
+    import('./utils/securityHeaders').then(() => {
+      console.log('✅ Security Headers initialized');
+    }).catch(error => {
+      console.warn('Failed to initialize Security Headers:', error);
+    });
   });
-});
+}
 
 root.render(
   <StrictMode>

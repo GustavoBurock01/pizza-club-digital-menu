@@ -21,6 +21,7 @@ import {
   Heart,
   Headphones,
   Settings2,
+  Box,
 } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUnifiedStore } from '@/stores/simpleStore';
@@ -64,11 +65,11 @@ const attendantItems = [
 // Menu items for admins
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
-  { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Clientes", url: "/admin/customers", icon: Users },
   { title: "Produtos", url: "/admin/products", icon: Package },
-  { title: "Estoque", url: "/admin/stock", icon: Package },
+  { title: "Estoque", url: "/admin/stock", icon: Box },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
 export function AppSidebar() {

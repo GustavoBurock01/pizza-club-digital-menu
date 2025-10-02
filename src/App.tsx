@@ -43,7 +43,7 @@ const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 
 const Payment = lazy(() => import("./pages/Payment"));
 
-const AdminOrders = lazy(() => import("./pages/AdminOrders"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const AdminStock = lazy(() => import("./pages/AdminStock"));
@@ -171,10 +171,10 @@ const App = () => {
                   </Suspense>
                 </AttendantRoute>
               } />
-              <Route path="/admin/orders" element={
+              <Route path="/admin/settings" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminOrders />
+                    <AdminSettings />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
@@ -219,8 +219,8 @@ const App = () => {
             </Routes>
             
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
-            <PWAInstallPrompt />
-            <AnalyticsDebugger />
+        <PWAInstallPrompt />
+        {import.meta.env.DEV && <AnalyticsDebugger />}
           </TooltipProvider>
         </SubscriptionGlobalProvider>
       </UnifiedAuthProvider>
