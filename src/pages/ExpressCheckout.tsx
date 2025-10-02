@@ -15,6 +15,7 @@ import { useOrderProtection } from '@/hooks/useOrderProtection';
 import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
 import { idempotencyManager } from '@/utils/idempotency';
 import { validatePhone } from '@/utils/validation';
+import { validateOnlinePaymentEligibility } from '@/utils/paymentConfig';
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -226,7 +227,18 @@ const ExpressCheckout = () => {
   };
 
   const handleOnlinePayment = async () => {
-    // Obter dados do perfil do usuário com fallback seguro
+    // VALIDAÇÃO 1: Verificar se o sistema de pagamento está configurado
+    console.log('[CHECKOUT] Validating online payment eligibility');
+    const eligibility = await validateOnlinePaymentEligibility();
+    
+    if (!eligibility.canProceed) {
+      console.error('[CHECKOUT] Online payment not available:', eligibility.errors);
+      throw new Error(eligibility.errors[0] || 'Pagamento online indisponível');
+    }
+    
+    console.log('[CHECKOUT] ✅ Online payment eligibility validated');
+
+    // VALIDAÇÃO 2: Obter dados do perfil do usuário com fallback seguro
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -317,14 +329,27 @@ const ExpressCheckout = () => {
       orderData.notes = notes;
     }
 
+    console.log('[CHECKOUT] ✅ Order data prepared, saving to localStorage');
+    console.log('[CHECKOUT] Order data:', {
+      user_id: orderData.user_id,
+      total_amount: orderData.total_amount,
+      payment_method: orderData.payment_method,
+      delivery_method: orderData.delivery_method,
+      has_address: !!orderData.addressData,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone
+    });
+
     // Salvar no localStorage e navegar para pagamento
     localStorage.setItem('pendingOrder', JSON.stringify(orderData));
     // NÃO limpar o carrinho até o pagamento ser aprovado
     // clearCart(); // Movido para depois da confirmação do pagamento
 
     if (paymentMethod === 'pix') {
+      console.log('[CHECKOUT] Navigating to PIX payment page');
       navigate('/payment/pix');
     } else if (paymentMethod === 'credit_card_online' || paymentMethod === 'debit_card_online') {
+      console.log('[CHECKOUT] Navigating to card payment page');
       navigate('/payment/card');
     }
 
@@ -703,8 +728,10 @@ const ExpressCheckout = () => {
                 {/* STEP: PAYMENT */}
                 {step === 'payment' && (
                   <div className="space-y-6">
-                    {/* Alerta de perfil incompleto */}
-                    <CheckoutProfileAlert deliveryMethod={deliveryMethod} />
+                    {/* Alerta de perfil incompleto - SEMPRE MOSTRAR */}
+                    {(!profile?.full_name || (deliveryMethod === 'delivery' && !profile?.phone)) && (
+                      <CheckoutProfileAlert deliveryMethod={deliveryMethod} />
+                    )}
                     
                     {/* Payment Category Selection */}
                     <Card>
