@@ -67,6 +67,42 @@ export type Database = {
           },
         ]
       }
+      admin_action_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          changes: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       background_jobs: {
         Row: {
           attempts: number
@@ -1352,6 +1388,30 @@ export type Database = {
         }
         Relationships: []
       }
+      store_status_logs: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          is_open: boolean
+          reason: string | null
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          is_open: boolean
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          reason?: string | null
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -1646,6 +1706,23 @@ export type Database = {
       }
     }
     Views: {
+      admin_dashboard_stats: {
+        Row: {
+          active_orders: number | null
+          active_products: number | null
+          average_ticket: number | null
+          orders_this_month: number | null
+          orders_this_week: number | null
+          orders_today: number | null
+          pending_orders: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_customers: number | null
+          total_products: number | null
+        }
+        Relationships: []
+      }
       admin_stats_view: {
         Row: {
           avg_order_value: number | null
@@ -1867,6 +1944,15 @@ export type Database = {
           total_today: number
         }[]
       }
+      get_revenue_chart_data: {
+        Args: { p_limit?: number; p_period?: string }
+        Returns: {
+          avg_ticket: number
+          period_date: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
       has_any_role: {
         Args: { required_roles: string[] }
         Returns: boolean
@@ -1878,6 +1964,15 @@ export type Database = {
       is_admin: {
         Args: { user_id?: string }
         Returns: boolean
+      }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_changes?: Json
+          p_entity_id?: string
+          p_entity_type: string
+        }
+        Returns: string
       }
       log_security_event: {
         Args: {

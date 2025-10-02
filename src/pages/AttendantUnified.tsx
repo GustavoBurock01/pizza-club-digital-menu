@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WABizHeader } from "@/components/WABizHeader";
 import { WABizOrdersTable } from "@/components/WABizOrdersTable";
 import { WABizOrderDetails } from "@/components/WABizOrderDetails";
@@ -10,7 +11,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAttendant } from "@/providers/AttendantProvider";
 import { useThermalPrint } from "@/hooks/useThermalPrint";
 import { toast } from "sonner";
-import { Printer } from "lucide-react";
+import { Printer, Filter, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function AttendantUnified() {
   const { 
@@ -33,6 +35,10 @@ export default function AttendantUnified() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Filtros
+  const [dateFilter, setDateFilter] = useState<string>("today");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
+  
   const audioRef = useRef<HTMLAudioElement>(null);
   const previousPendingCount = useRef(0);
 
@@ -53,13 +59,43 @@ export default function AttendantUnified() {
     setSelectedOrder(null);
   };
 
-  // Filtrar pedidos com base na busca
+  // Filtrar pedidos com base na busca e filtros
   const filteredOrders = orders?.filter(order => {
+    // Filtro de busca
     const matchesSearch = searchQuery === "" || 
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer_phone.includes(searchQuery);
-    return matchesSearch;
+    
+    // Filtro de data
+    let matchesDate = true;
+    if (dateFilter !== "all") {
+      const orderDate = new Date(order.created_at);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      switch (dateFilter) {
+        case "today":
+          matchesDate = orderDate >= today;
+          break;
+        case "week":
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          matchesDate = orderDate >= weekAgo;
+          break;
+        case "month":
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          matchesDate = orderDate >= monthAgo;
+          break;
+      }
+    }
+    
+    // Filtro de método de pagamento
+    const matchesPayment = paymentMethodFilter === "all" || 
+      order.payment_method === paymentMethodFilter;
+    
+    return matchesSearch && matchesDate && matchesPayment;
   }) || [];
 
   // Separar pedidos por categoria seguindo padrão WABiz
@@ -136,6 +172,43 @@ export default function AttendantUnified() {
 
       {/* Conteúdo Principal */}
       <div className="p-6">
+        {/* Filtros */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filtros:</span>
+              </div>
+              
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="week">Últimos 7 dias</SelectItem>
+                  <SelectItem value="month">Último mês</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="cash">Dinheiro</SelectItem>
+                  <SelectItem value="card">Cartão</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+        
         {/* Navegação por Abas - Estilo WABiz */}
         <div className="mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
