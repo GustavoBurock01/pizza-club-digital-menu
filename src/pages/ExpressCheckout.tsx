@@ -13,6 +13,7 @@ import { CheckoutButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
 import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
 import { idempotencyManager } from '@/utils/idempotency';
+import { validatePhone } from '@/utils/validation';
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -208,9 +209,14 @@ const ExpressCheckout = () => {
       delivery_method: deliveryMethod
     });
 
-    // Validação crítica: telefone obrigatório para entrega
-    if (deliveryMethod === 'delivery' && !customerPhone) {
-      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+    // Validação crítica: telefone obrigatório e válido para entrega
+    if (deliveryMethod === 'delivery') {
+      if (!customerPhone) {
+        throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+      }
+      if (!validatePhone(customerPhone)) {
+        throw new Error('Telefone inválido. Use o formato: (11) 99999-9999');
+      }
     }
 
     // Preparar dados do pedido para pagamento online
@@ -309,9 +315,14 @@ const ExpressCheckout = () => {
     const customerName = profile?.full_name || user?.email || 'Cliente';
     const customerPhone = profile?.phone || '';
 
-    // Validação crítica: telefone obrigatório para entrega
-    if (deliveryMethod === 'delivery' && !customerPhone) {
-      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+    // Validação crítica: telefone obrigatório e válido para entrega
+    if (deliveryMethod === 'delivery') {
+      if (!customerPhone) {
+        throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
+      }
+      if (!validatePhone(customerPhone)) {
+        throw new Error('Telefone inválido. Use o formato: (11) 99999-9999');
+      }
     }
 
     let addressId = selectedAddressId;

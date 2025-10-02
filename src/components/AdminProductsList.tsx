@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { AdminProduct, useUnifiedAdminData } from '@/hooks/useUnifiedAdminData';
 import { formatCurrency } from '@/utils/formatting';
 
@@ -8,7 +10,7 @@ interface AdminProductsListProps {
 }
 
 export function AdminProductsList() {
-  const { products } = useUnifiedAdminData();
+  const { products, toggleAvailability } = useUnifiedAdminData();
   return (
     <Card>
       <CardHeader>
@@ -37,11 +39,23 @@ export function AdminProductsList() {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{formatCurrency(product.price)}</p>
-                  <Badge variant={product.is_available ? 'default' : 'secondary'}>
-                    {product.is_available ? 'Disponível' : 'Indisponível'}
-                  </Badge>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-medium">{formatCurrency(product.price)}</p>
+                    <Badge variant={product.is_available ? 'default' : 'secondary'}>
+                      {product.is_available ? 'Disponível' : 'Indisponível'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id={`available-${product.id}`}
+                      checked={product.is_available}
+                      onCheckedChange={(checked) => toggleAvailability(product.id, checked)}
+                    />
+                    <Label htmlFor={`available-${product.id}`} className="text-sm cursor-pointer">
+                      {product.is_available ? 'Ativo' : 'Pausado'}
+                    </Label>
+                  </div>
                 </div>
               </div>
             ))

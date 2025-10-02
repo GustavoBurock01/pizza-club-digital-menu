@@ -1,6 +1,6 @@
 // ===== PAINEL UNIFICADO DE ATENDENTE - PADRÃO WABIZ =====
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { WABizHeader } from "@/components/WABizHeader";
@@ -32,6 +32,9 @@ export default function AttendantUnified() {
   const [activeTab, setActiveTab] = useState('novos');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const previousPendingCount = useRef(0);
 
   const toggleSound = () => {
     setSoundEnabled(!soundEnabled);
@@ -61,6 +64,18 @@ export default function AttendantUnified() {
 
   // Separar pedidos por categoria seguindo padrão WABiz
   const novosOrders = filteredOrders.filter(o => o.status === 'pending');
+  
+  // Tocar som quando novo pedido chega
+  useEffect(() => {
+    const currentPending = novosOrders.length;
+    
+    if (soundEnabled && currentPending > previousPendingCount.current && previousPendingCount.current > 0) {
+      audioRef.current?.play().catch(err => console.log('Audio play failed:', err));
+      toast.info("🔔 Novo pedido recebido!");
+    }
+    
+    previousPendingCount.current = currentPending;
+  }, [novosOrders.length, soundEnabled]);
   const emAndamentoOrders = filteredOrders.filter(o => ['confirmed', 'preparing'].includes(o.status));
   const finalizadosOrders = filteredOrders.filter(o => ['ready', 'delivering', 'delivered'].includes(o.status));
 
@@ -103,9 +118,15 @@ export default function AttendantUnified() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header WABiz */}
-      <WABizHeader
+    <>
+      <audio 
+        ref={audioRef} 
+        src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCp+zPDTgjMGHm7A7+OZQQ4YcLvv56RXFAg8munxy3goBSl6yvDWhzYHIHK/7+CTQhEadr3w55pMEBBOouTvwmkbBDeJ0fHJdygFKHvK79qOPAYdbbvu5aFRDwg5l+LxyXUkBSl5yvHaijYGH3K97+OYPQwZcrjv6Z9PEQ5LpeTwvWskBChzyO/ajDkHIXG87eKTRBEYdbnw6Z9OEAc9mOLxxxwABSJzzO7ekT4IBSBwtO/om0sRDkqn5fC9ayMEJnXI7+KOOwUjb77u5JxJEBdIp+Tvxm8kBSlyyO7dkDwHImyw7+KUQQ0Yabnv6p5MDg1Fo+TvwmkeBSRyyO/ekj0HImyw7uOYQA4YaLfv5ptLDww8nOHwvW0hBSlxyO/ckDsHImyw7+OXPwsYaLfv5ptLDww9nOHwvm0hBShwyO/ckzsHImyw7uOYQA0XaLfv5ptLDww9nOHwvm0hBSlxyO/ckzsHImyw7uOYQA0XaLfv5ZtLDww9nOHwv20hBSlxyO/ckzsHImyw7uOYQA0XaLfv5ZtKDws9nOHwvm0hBSlxyO/dlDsHIGyw7+OYPwwYaLfv5ZpLDgw9nOHwvm0hBSlxyO/dlDsHIGyw7+OYPwwYaLfv5ZpLDgw9nOHwvm0hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZtLDww9nOHwvm0hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwvm0hBShxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDws9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLD" 
+        preload="auto" 
+      />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header WABiz */}
+        <WABizHeader
         soundEnabled={soundEnabled}
         onToggleSound={toggleSound}
         onRefresh={refreshData}
@@ -194,6 +215,7 @@ export default function AttendantUnified() {
         onCancel={() => handleOrderAction('cancel', selectedOrder?.id)}
         isUpdating={isUpdating}
       />
-    </div>
+      </div>
+    </>
   );
 }

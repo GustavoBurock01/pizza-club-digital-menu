@@ -222,7 +222,7 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
       if (!validatePhone(registerData.phone)) errors.phone = 'Telefone inválido';
       if (!validateCPF(registerData.cpf)) errors.cpf = 'CPF inválido';
     } else if (currentStep === 2) {
-      if (!registerData.address.zipCode) errors.zipCode = 'CEP é obrigatório';
+      // CEP não é obrigatório
       if (!registerData.address.street.trim()) errors.street = 'Rua é obrigatória';
       if (!registerData.address.number.trim()) errors.number = 'Número é obrigatório';
       if (!registerData.address.neighborhood.trim()) errors.neighborhood = 'Bairro é obrigatório';
@@ -269,6 +269,30 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
     }
     
     if (currentStep === 1) {
+      // Validar CPF com RPC do Supabase antes de avançar
+      try {
+        const { data: cpfValid, error } = await supabase
+          .rpc('validate_cpf_format', { cpf_input: registerData.cpf });
+        
+        if (error || !cpfValid) {
+          setValidationErrors({ ...validationErrors, cpf: 'CPF inválido' });
+          toast({
+            title: "CPF inválido", 
+            description: "Por favor, verifique o CPF informado.",
+            variant: "destructive" 
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('CPF validation error:', error);
+        toast({
+          title: "Erro ao validar CPF", 
+          description: "Tente novamente.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
       setCurrentStep(2);
     } else if (currentStep === 2) {
       setCurrentStep(3);
