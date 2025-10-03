@@ -69,8 +69,9 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
   const { data: combinedData, isLoading: loading, refetch } = useQuery({
     queryKey: ['attendant-data'],
     queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // ⚠️ CRÍTICO: Filtrar apenas últimas 24 horas
+      const last24Hours = new Date();
+      last24Hours.setHours(last24Hours.getHours() - 24);
 
       // Single optimized query para todos os dados necessários
       const { data: ordersData, error: ordersError } = await supabase
@@ -102,7 +103,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             quantity
           )
         `)
-        .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivering'])
+        .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'])
+        .gte('created_at', last24Hours.toISOString())
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -137,7 +139,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         avgDeliveryTime: 35, // Será calculado com dados reais posteriormente
         todayCustomers: new Set(
           orders
-            .filter(o => new Date(o.created_at) >= today)
+            .filter(o => new Date(o.created_at) >= last24Hours)
             .map(o => o.user_id)
         ).size,
       };

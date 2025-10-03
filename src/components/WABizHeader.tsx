@@ -99,7 +99,19 @@ export const WABizHeader = ({
             </div>
 
             {/* Notificações */}
-            <Button variant="ghost" size="sm" className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative"
+              onClick={() => {
+                // Scroll para os novos pedidos
+                const novosTab = document.querySelector('[value="novos"]') as HTMLElement;
+                if (novosTab) {
+                  novosTab.click();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
               <Bell className="h-4 w-4" />
               {notificationCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs">

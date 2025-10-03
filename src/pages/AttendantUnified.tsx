@@ -36,7 +36,6 @@ export default function AttendantUnified() {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Filtros
-  const [dateFilter, setDateFilter] = useState<string>("today");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -59,7 +58,7 @@ export default function AttendantUnified() {
     setSelectedOrder(null);
   };
 
-  // Filtrar pedidos com base na busca e filtros
+  // Filtrar pedidos com base na busca
   const filteredOrders = orders?.filter(order => {
     // Filtro de busca
     const matchesSearch = searchQuery === "" || 
@@ -67,35 +66,11 @@ export default function AttendantUnified() {
       order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer_phone.includes(searchQuery);
     
-    // Filtro de data
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const orderDate = new Date(order.created_at);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      switch (dateFilter) {
-        case "today":
-          matchesDate = orderDate >= today;
-          break;
-        case "week":
-          const weekAgo = new Date(today);
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          matchesDate = orderDate >= weekAgo;
-          break;
-        case "month":
-          const monthAgo = new Date(today);
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          matchesDate = orderDate >= monthAgo;
-          break;
-      }
-    }
-    
     // Filtro de método de pagamento
     const matchesPayment = paymentMethodFilter === "all" || 
       order.payment_method === paymentMethodFilter;
     
-    return matchesSearch && matchesDate && matchesPayment;
+    return matchesSearch && matchesPayment;
   }) || [];
 
   // Separar pedidos por categoria seguindo padrão WABiz
@@ -184,18 +159,6 @@ export default function AttendantUnified() {
                 <span className="text-sm font-medium">Filtros:</span>
               </div>
               
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Últimos 7 dias</SelectItem>
-                  <SelectItem value="month">Último mês</SelectItem>
-                  <SelectItem value="all">Todos</SelectItem>
-                </SelectContent>
-              </Select>
               
               <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
                 <SelectTrigger className="w-[180px]">

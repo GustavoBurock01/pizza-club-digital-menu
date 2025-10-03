@@ -360,23 +360,33 @@ const ExpressCheckout = () => {
   };
 
   const handlePresencialPaymentProtected = async () => {
-    await protectOrderCreation(
-      {
-        user_id: user?.id,
-        items: items.map(item => ({
-          product_id: item.productId,
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity,
-          customizations: item.customizations
-        })),
-        total_amount: total,
-        delivery_method: deliveryMethod,
-        payment_method: paymentMethod
-      },
-      handlePresencialPayment,
-      { userId: user?.id || '' }
-    );
+    console.log('[CHECKOUT] Processing in-person payment');
+    
+    try {
+      // ⚠️ CRÍTICO: Pagamentos presenciais NÃO usam fila - criar direto
+      await protectOrderCreation(
+        {
+          items,
+          total: total,
+          delivery: deliveryMethod,
+          paymentMethod
+        },
+        handlePresencialPayment,
+        {
+          userId: user?.id || '',
+          enableIdempotency: true,
+          useQueue: false // Não usar fila para pagamentos presenciais!
+        }
+      );
+    } catch (error) {
+      console.error('[CHECKOUT] Error creating order:', error);
+      toast({
+        title: "Erro ao criar pedido",
+        description: error instanceof Error ? error.message : "Tente novamente",
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
   };
 
   const handlePresencialPayment = async () => {
