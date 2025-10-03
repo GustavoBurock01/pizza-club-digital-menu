@@ -381,7 +381,8 @@ serve(async (req) => {
       expires_at: mercadoPagoResult.date_of_expiration
     });
 
-    // ETAPA 4: PIX criado com sucesso - AGORA criar o pedido
+    // ETAPA 4: PIX criado com sucesso - CRIAR PEDIDO COM STATUS AGUARDANDO PAGAMENTO
+    // ⚠️ CRÍTICO: Pedidos PIX ficam "pending_payment" até webhook confirmar
     const { data: order, error: orderError } = await supabaseServiceClient
       .from('orders')
       .insert({
@@ -390,7 +391,7 @@ serve(async (req) => {
         total_amount: orderData.total_amount,
         delivery_fee: orderData.delivery_fee,
         delivery_method: orderData.delivery_method,
-        status: 'pending',
+        status: 'pending_payment', // ⚠️ NÃO VAI PARA O ATENDENTE ATÉ PAGAMENTO CONFIRMADO
         payment_status: 'pending',
         payment_method: orderData.payment_method,
         customer_name: orderData.customer_name,

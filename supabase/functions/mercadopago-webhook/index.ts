@@ -343,10 +343,22 @@ serve(async (req) => {
       }
 
       // Update order in database
+      // ⚠️ CRÍTICO: Se estava "pending_payment", mudar para "pending" quando aprovado (envia para atendente)
+      const newOrderStatus = existingOrder.status === 'pending_payment' && payment.status === 'approved' 
+        ? 'pending' // ✅ LIBERA PARA O ATENDENTE APÓS PAGAMENTO CONFIRMADO
+        : orderStatus;
+      
+      logStep('🔄 Status transition', { 
+        from: existingOrder.status, 
+        to: newOrderStatus,
+        paymentStatus: payment.status,
+        reason: payment.status === 'approved' ? 'Payment approved - releasing to attendant' : 'Payment status updated'
+      });
+      
       const { error: updateError } = await supabaseService
         .from('orders')
         .update({
-          status: orderStatus,
+          status: newOrderStatus,
           payment_status: paymentStatus,
           payment_method: payment.payment_method_id,
           updated_at: new Date().toISOString()

@@ -99,7 +99,10 @@ export default function AttendantUnified() {
   }) || [];
 
   // Separar pedidos por categoria seguindo padrão WABiz
-  const novosOrders = filteredOrders.filter(o => o.status === 'pending');
+  // ⚠️ CRÍTICO: Não mostrar pedidos com status "pending_payment" (aguardando confirmação de pagamento online)
+  const novosOrders = filteredOrders.filter(o => 
+    o.status === 'pending' && o.payment_status !== 'pending_payment'
+  );
   
   // Tocar som quando novo pedido chega
   useEffect(() => {
