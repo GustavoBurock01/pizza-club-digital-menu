@@ -2016,6 +2016,7 @@ export type Database = {
     }
     Enums: {
       order_status:
+        | "pending_payment"
         | "pending"
         | "confirmed"
         | "preparing"
@@ -2162,6 +2163,7 @@ export const Constants = {
   public: {
     Enums: {
       order_status: [
+        "pending_payment",
         "pending",
         "confirmed",
         "preparing",
