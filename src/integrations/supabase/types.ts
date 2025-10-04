@@ -744,6 +744,60 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          media_url: string | null
+          message: string
+          message_type: string
+          order_id: string
+          sender_id: string | null
+          sender_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_url?: string | null
+          message: string
+          message_type?: string
+          order_id: string
+          sender_id?: string | null
+          sender_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_url?: string | null
+          message?: string
+          message_type?: string
+          order_id?: string
+          sender_id?: string | null
+          sender_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_processing_queue: {
         Row: {
           attempts: number

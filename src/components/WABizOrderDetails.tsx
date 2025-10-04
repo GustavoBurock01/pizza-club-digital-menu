@@ -1,17 +1,34 @@
-// ===== MODAL DE DETALHES DO PEDIDO - PADRÃO WABIZ =====
+// ===== MODAL DE DETALHES DO PEDIDO - VERSÃO COMPLETA COM CHAT E ITENS =====
 
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { 
-  User, Phone, MapPin, Clock, CreditCard, 
-  Package, Printer, CheckCircle, X, ChefHat, Truck 
-} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  Phone, 
+  MapPin, 
+  Clock, 
+  DollarSign, 
+  User,
+  CreditCard,
+  Printer,
+  Check,
+  Package,
+  MessageCircle,
+  ShoppingCart,
+  CheckCircle,
+  X,
+  ChefHat,
+  Truck
+} from "lucide-react";
 import { useThermalPrint } from "@/hooks/useThermalPrint";
-import { useState } from "react";
+import { OrderChatPanel } from "./OrderChatPanel";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrderChat } from "@/hooks/useOrderChat";
 
 interface OrderDetailsProps {
   order: any;
@@ -25,6 +42,19 @@ interface OrderDetailsProps {
   isUpdating: boolean;
 }
 
+interface OrderItem {
+  id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  customizations?: any;
+  products?: {
+    name: string;
+    image_url?: string;
+  };
+}
+
 export const WABizOrderDetails = ({
   order,
   isOpen,
@@ -34,29 +64,64 @@ export const WABizOrderDetails = ({
   onMarkReady,
   onMarkDelivered,
   onCancel,
-  isUpdating
+  isUpdating,
 }: OrderDetailsProps) => {
-  const { printOrder, isPrinting } = useThermalPrint();
   const [showPrintOptions, setShowPrintOptions] = useState(false);
-  
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const { printOrder, isPrinting } = useThermalPrint();
+  const { unreadCount } = useOrderChat(order?.id || '');
+
+  // Buscar itens do pedido
+  useEffect(() => {
+    const fetchOrderItems = async () => {
+      if (!isOpen || !order?.id) return;
+      
+      setLoadingItems(true);
+      try {
+        const { data, error } = await supabase
+          .from('order_items')
+          .select(`
+            *,
+            products (
+              name,
+              image_url
+            )
+          `)
+          .eq('order_id', order.id);
+
+        if (error) throw error;
+        setOrderItems(data || []);
+      } catch (error) {
+        console.error('Erro ao buscar itens:', error);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+
+    fetchOrderItems();
+  }, [order?.id, isOpen]);
+
   if (!order) return null;
 
   const getStatusColor = (status: string) => {
     const colors = {
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-      confirmed: "bg-blue-100 text-blue-800 border-blue-300",
-      preparing: "bg-purple-100 text-purple-800 border-purple-300",
-      ready: "bg-green-100 text-green-800 border-green-300",
-      delivering: "bg-orange-100 text-orange-800 border-orange-300",
-      delivered: "bg-gray-100 text-gray-800 border-gray-300",
-      cancelled: "bg-red-100 text-red-800 border-red-300"
+      pending: "default",
+      pending_payment: "secondary",
+      confirmed: "default",
+      preparing: "secondary",
+      ready: "default",
+      delivering: "secondary",
+      delivered: "outline",
+      cancelled: "destructive"
     };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+    return colors[status as keyof typeof colors] || "default";
   };
 
   const getStatusLabel = (status: string) => {
     const labels = {
       pending: "Pendente",
+      pending_payment: "Aguardando Pagamento",
       confirmed: "Confirmado", 
       preparing: "Preparando",
       ready: "Pronto",
@@ -84,10 +149,10 @@ export const WABizOrderDetails = ({
             <Button 
               onClick={onConfirm} 
               disabled={isUpdating}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Confirmar Pedido
+              Confirmar
             </Button>
             <Button 
               variant="destructive" 
@@ -104,7 +169,7 @@ export const WABizOrderDetails = ({
           <Button 
             onClick={onStartPreparation} 
             disabled={isUpdating}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-purple-600 hover:bg-purple-700"
           >
             <ChefHat className="h-4 w-4 mr-2" />
             Iniciar Preparo
@@ -115,7 +180,7 @@ export const WABizOrderDetails = ({
           <Button 
             onClick={onMarkReady} 
             disabled={isUpdating}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700"
           >
             <Package className="h-4 w-4 mr-2" />
             Marcar como Pronto
@@ -126,7 +191,7 @@ export const WABizOrderDetails = ({
           <Button 
             onClick={onMarkDelivered} 
             disabled={isUpdating}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            className="bg-orange-600 hover:bg-orange-700"
           >
             <Truck className="h-4 w-4 mr-2" />
             Saiu para Entrega
@@ -139,188 +204,342 @@ export const WABizOrderDetails = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span className="text-xl font-bold">
-              Pedido #{order.id.slice(-8).toUpperCase()}
-            </span>
-            <Badge className={`${getStatusColor(order.status)} font-medium`}>
+            <span>Pedido #{order.id.slice(0, 8)}</span>
+            <Badge variant={getStatusColor(order.status) as any}>
               {getStatusLabel(order.status)}
             </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Informações do Cliente */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <User className="h-4 w-4 mr-2" />
-              Dados do Cliente
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">Nome:</span>
-                <p className="text-gray-900">{order.customer_name}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Telefone:</span>
-                <p className="text-gray-900 flex items-center">
-                  <Phone className="h-3 w-3 mr-1" />
-                  {order.customer_phone}
-                </p>
-              </div>
-              {order.customer_email && (
-                <div className="md:col-span-2">
-                  <span className="font-medium text-gray-600">Email:</span>
-                  <p className="text-gray-900">{order.customer_email}</p>
-                </div>
+        <Tabs defaultValue="details" className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="items" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Itens ({orderItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Chat
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1 text-xs">
+                  {unreadCount}
+                </Badge>
               )}
-            </div>
-          </div>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Endereço de Entrega */}
-          {(order.street || order.neighborhood) && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                <MapPin className="h-4 w-4 mr-2" />
-                Endereço de Entrega
+          {/* TAB: DETALHES */}
+          <TabsContent value="details" className="flex-1 overflow-y-auto space-y-6 py-4">
+            {/* Customer Info */}
+            <div className="space-y-2">
+              <h3 className="font-semibold flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Informações do Cliente
               </h3>
-              <div className="text-sm">
-                <p className="text-gray-900">
-                  {order.street && `${order.street}${order.number ? `, ${order.number}` : ''}`}
+              <div className="grid grid-cols-2 gap-4 pl-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Nome</p>
+                  <p className="font-medium">{order.customer_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Telefone</p>
+                  <p className="font-medium">{order.customer_phone}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address */}
+            {order.street && (
+              <div className="space-y-2">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Endereço de Entrega
+                </h3>
+                <div className="pl-6 space-y-1">
+                  <p className="text-sm">
+                    {order.street}, {order.number}
+                  </p>
+                  {order.complement && (
+                    <p className="text-sm text-muted-foreground">{order.complement}</p>
+                  )}
+                  <p className="text-sm">
+                    {order.neighborhood} - {order.city}
+                  </p>
+                  {order.reference_point && (
+                    <p className="text-sm text-muted-foreground">
+                      Ref: {order.reference_point}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Order Details */}
+            <div className="space-y-2">
+              <h3 className="font-semibold flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Resumo Financeiro
+              </h3>
+              <div className="grid grid-cols-2 gap-4 pl-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Subtotal</p>
+                  <p className="font-medium">
+                    R$ {(Number(order.total_amount) - Number(order.delivery_fee || 0)).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Taxa de Entrega</p>
+                  <p className="font-medium">
+                    R$ {Number(order.delivery_fee || 0).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
+                  <p className="font-medium flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    {order.payment_method === 'pix' && 'PIX'}
+                    {order.payment_method === 'credit_card' && 'Cartão de Crédito'}
+                    {order.payment_method === 'debit_card' && 'Cartão de Débito'}
+                    {order.payment_method === 'cash' && 'Dinheiro'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status Pagamento</p>
+                  <Badge variant={order.payment_status === 'paid' ? 'default' : 'secondary'}>
+                    {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                  </Badge>
+                </div>
+              </div>
+              <Separator className="my-2" />
+              <div className="pl-6">
+                <p className="text-sm text-muted-foreground">Valor Total</p>
+                <p className="font-bold text-2xl text-primary">
+                  R$ {Number(order.total_amount).toFixed(2)}
                 </p>
-                {order.neighborhood && (
-                  <p className="text-gray-600">{order.neighborhood} - {order.city || 'Cidade'}</p>
+              </div>
+            </div>
+
+            {/* Timestamps */}
+            <div className="space-y-2">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Histórico
+              </h3>
+              <div className="grid grid-cols-2 gap-4 pl-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pedido Criado</p>
+                  <p className="font-medium text-sm">
+                    {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+                {order.updated_at !== order.created_at && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Última Atualização</p>
+                    <p className="font-medium text-sm">
+                      {format(new Date(order.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Informações do Pedido */}
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <Package className="h-4 w-4 mr-2" />
-              Detalhes do Pedido
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">Total de Itens:</span>
-                <p className="text-gray-900 font-semibold">{order.total_items || order.items_count}</p>
+            {/* Notes */}
+            {order.notes && (
+              <div className="space-y-2">
+                <h3 className="font-semibold flex items-center gap-2 text-orange-600">
+                  <Package className="h-4 w-4" />
+                  Observações do Cliente
+                </h3>
+                <div className="pl-6 text-sm bg-orange-50 dark:bg-orange-950/20 p-4 rounded-md border-l-4 border-orange-500">
+                  <p className="font-medium text-orange-900 dark:text-orange-100">
+                    {order.notes}
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="font-medium text-gray-600">Valor Total:</span>
-                <p className="text-gray-900 font-semibold">R$ {order.total_amount.toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Taxa Entrega:</span>
-                <p className="text-gray-900">R$ {order.delivery_fee.toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Pagamento:</span>
-                <p className="text-gray-900 flex items-center">
-                  <CreditCard className="h-3 w-3 mr-1" />
-                  {order.payment_method}
-                </p>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Horários */}
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <Clock className="h-4 w-4 mr-2" />
-              Cronologia do Pedido
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">Recebido em:</span>
-                <p className="text-gray-900">
-                  {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Última atualização:</span>
-                <p className="text-gray-900">
-                  {format(new Date(order.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Observações */}
-          {order.notes && (
-            <div className="bg-red-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Observações Especiais
-              </h3>
-              <p className="text-gray-900 text-sm italic">"{order.notes}"</p>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Ações */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-between">
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 pt-4 border-t">
+              {/* Print Button */}
+              <div className="relative">
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowPrintOptions(!showPrintOptions)}
                   disabled={isPrinting}
                 >
                   <Printer className="h-4 w-4 mr-2" />
-                  {isPrinting ? 'Imprimindo...' : 'Imprimir Comanda'}
+                  {isPrinting ? 'Imprimindo...' : 'Imprimir'}
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Ligar Cliente
-                </Button>
-              </div>
-
-              {/* Opções de Impressão */}
-              {showPrintOptions && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-3">Opções de Impressão</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePrintOrder(1)}
-                      disabled={isPrinting}
+                
+                {showPrintOptions && (
+                  <div className="absolute top-full mt-1 left-0 bg-popover border rounded-md shadow-lg p-2 space-y-1 z-10">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        handlePrintOrder(1);
+                        setShowPrintOptions(false);
+                      }}
                     >
-                      1 Via
+                      1 via
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePrintOrder(2)}
-                      disabled={isPrinting}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        handlePrintOrder(2);
+                        setShowPrintOptions(false);
+                      }}
                     >
-                      2 Vias
+                      2 vias
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePrintOrder(3)}
-                      disabled={isPrinting}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        handlePrintOrder(3);
+                        setShowPrintOptions(false);
+                      }}
                     >
-                      3 Vias
+                      3 vias
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Comanda será enviada para impressora térmica Elgin
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
+                )}
+              </div>
+
+              {/* WhatsApp Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const phone = order.customer_phone?.replace(/\D/g, '');
+                  const message = `Olá ${order.customer_name}! Seu pedido #${order.id.slice(0, 8)} está sendo preparado.`;
+                  window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                WhatsApp
+              </Button>
+
+              {/* Status Action Buttons */}
+              <div className="flex-1" />
               {getActionButtons()}
             </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* TAB: ITENS DO PEDIDO */}
+          <TabsContent value="items" className="flex-1 overflow-y-auto py-4">
+            {loadingItems ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <Package className="h-12 w-12 mx-auto mb-2 text-muted-foreground animate-pulse" />
+                  <p className="text-sm text-muted-foreground">Carregando itens...</p>
+                </div>
+              </div>
+            ) : orderItems.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ShoppingCart className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium">Nenhum item encontrado</p>
+                <p className="text-sm mt-1">Este pedido não possui itens cadastrados.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orderItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex gap-4 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    {/* Imagem do Produto */}
+                    {item.products?.image_url ? (
+                      <img
+                        src={item.products.image_url}
+                        alt={item.products.name}
+                        className="w-20 h-20 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {/* Informações do Item */}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-semibold text-base">
+                          {item.products?.name || 'Produto sem nome'}
+                        </h4>
+                        <Badge variant="secondary" className="ml-2">
+                          {item.quantity}x
+                        </Badge>
+                      </div>
+
+                      {/* Customizações */}
+                      {item.customizations && Object.keys(item.customizations).length > 0 && (
+                        <div className="text-sm text-muted-foreground space-y-0.5">
+                          {Object.entries(item.customizations).map(([key, value]) => (
+                            <p key={key} className="flex items-center gap-1">
+                              <Check className="h-3 w-3" />
+                              <span className="capitalize">{key}:</span> {String(value)}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Preços */}
+                      <div className="flex items-center gap-3 pt-1">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Unit: </span>
+                          <span className="font-medium">
+                            R$ {Number(item.unit_price).toFixed(2)}
+                          </span>
+                        </div>
+                        <Separator orientation="vertical" className="h-4" />
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Total: </span>
+                          <span className="font-bold text-primary">
+                            R$ {Number(item.total_price).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Resumo */}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total de Itens:</span>
+                    <span className="font-medium">
+                      {orderItems.reduce((sum, item) => sum + item.quantity, 0)} unidades
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Subtotal dos Itens:</span>
+                    <span className="font-bold text-lg text-primary">
+                      R$ {orderItems.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* TAB: CHAT */}
+          <TabsContent value="chat" className="flex-1 overflow-hidden">
+            <OrderChatPanel 
+              orderId={order.id} 
+              customerName={order.customer_name}
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
