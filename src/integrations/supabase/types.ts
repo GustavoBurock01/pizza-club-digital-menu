@@ -867,6 +867,7 @@ export type Database = {
           created_at: string | null
           customer_name: string | null
           customer_phone: string | null
+          delivery_address_snapshot: Json | null
           delivery_fee: number | null
           delivery_method: string | null
           estimated_delivery_time: number | null
@@ -884,6 +885,7 @@ export type Database = {
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivery_address_snapshot?: Json | null
           delivery_fee?: number | null
           delivery_method?: string | null
           estimated_delivery_time?: number | null
@@ -901,6 +903,7 @@ export type Database = {
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivery_address_snapshot?: Json | null
           delivery_fee?: number | null
           delivery_method?: string | null
           estimated_delivery_time?: number | null

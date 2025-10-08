@@ -20,7 +20,6 @@ const Orders = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     if (user) {
@@ -77,18 +76,25 @@ const Orders = () => {
     });
   };
 
-  const formatAddress = (address: any) => {
-    if (!address) return '';
-    return `${address.neighborhood}, ${address.city}`;
+  const formatAddress = (order: any) => {
+    const addr = order.addresses || order.delivery_address_snapshot;
+    if (!addr) return 'Retirada no local';
+    return `${addr.neighborhood}, ${addr.city}`;
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.addresses?.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    const addr = order.addresses || order.delivery_address_snapshot;
+    return order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           addr?.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  // Separar em andamento e finalizados
+  const inProgressOrders = filteredOrders.filter(o => 
+    ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
+  );
+  const completedOrders = filteredOrders.filter(o => 
+    ['delivered', 'completed', 'cancelled'].includes(o.status)
+  );
 
   if (loading) {
     return (
@@ -123,30 +129,14 @@ const Orders = () => {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar por número do pedido ou bairro..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrar por status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="preparing">Preparando</SelectItem>
-                  <SelectItem value="out_for_delivery">Em Entrega</SelectItem>
-                  <SelectItem value="delivered">Entregue</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por número do pedido ou bairro..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </CardContent>
         </Card>
@@ -156,14 +146,9 @@ const Orders = () => {
           <Card>
             <CardContent className="text-center py-12">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                {orders.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum pedido encontrado com esses filtros'}
-              </h3>
+              <h3 className="text-lg font-medium mb-2">Nenhum pedido encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                {orders.length === 0 
-                  ? 'Que tal fazer seu primeiro pedido?' 
-                  : 'Tente ajustar os filtros de busca'
-                }
+                {orders.length === 0 ? 'Que tal fazer seu primeiro pedido?' : 'Tente ajustar a busca'}
               </p>
               {orders.length === 0 && (
                 <Button onClick={() => navigate('/menu')} className="gradient-pizza">
@@ -173,76 +158,103 @@ const Orders = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {filteredOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.status);
-              
-              return (
-                <Card key={order.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-medium">
-                            Pedido #{order.id.slice(-8)}
-                          </h3>
-                          <Badge className={`${statusInfo.color} text-white`}>
-                            {statusInfo.label}
-                          </Badge>
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground">
-                          <div>📅 {new Date(order.created_at).toLocaleString('pt-BR')}</div>
-                          <div>📍 {formatAddress(order.addresses)}</div>
-                          <div>🍕 {order.order_items?.length || 0} {order.order_items?.length === 1 ? 'item' : 'itens'}</div>
-                        </div>
-                        
-                        {/* Preview of items */}
-                        <div className="text-sm">
-                          <span className="font-medium">Itens: </span>
-                          {order.order_items?.slice(0, 2).map((item: any, index: number) => (
-                            <span key={item.id}>
-                              {item.products?.name}
-                              {item.quantity > 1 && ` (${item.quantity}x)`}
-                              {index < Math.min(order.order_items.length - 1, 1) && ', '}
-                            </span>
-                          ))}
-                          {order.order_items?.length > 2 && (
-                            <span className="text-muted-foreground">
-                              {' '}e mais {order.order_items.length - 2} {order.order_items.length - 2 === 1 ? 'item' : 'itens'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-pizza-red">
-                            {formatPrice(order.total_amount)}
+          <div className="space-y-6">
+            {/* Em Andamento */}
+            {inProgressOrders.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold mb-3 text-gray-700">Em Andamento</h2>
+                <div className="space-y-4">
+                  {inProgressOrders.map((order) => {
+                    const statusInfo = getStatusInfo(order.status);
+                    return (
+                      <Card key={order.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-medium">Pedido #{order.id.slice(-8)}</h3>
+                                <Badge className={`${statusInfo.color} text-white`}>
+                                  {statusInfo.label}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                <div>📅 {new Date(order.created_at).toLocaleString('pt-BR')}</div>
+                                <div>📍 {formatAddress(order)}</div>
+                                <div>🍕 {order.order_items?.length || 0} itens</div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-pizza-red">
+                                  {formatPrice(order.total_amount)}
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => navigate(`/order-status/${order.id}`)}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Ver Detalhes
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {order.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
-                             order.payment_method === 'debit_card' ? 'Cartão de Débito' : 
-                             order.payment_method === 'pix' ? 'PIX' : 'Dinheiro'}
-                          </div>
-                        </div>
-                        
-                        <Button
-                          onClick={() => navigate(`/order-status/${order.id}`)}
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
             )}
+
+            {/* Finalizados */}
+            {completedOrders.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold mb-3 text-gray-700">Finalizados</h2>
+                <div className="space-y-4">
+                  {completedOrders.map((order) => {
+                    const statusInfo = getStatusInfo(order.status);
+                    return (
+                      <Card key={order.id} className="hover:shadow-md transition-shadow opacity-75">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-medium">Pedido #{order.id.slice(-8)}</h3>
+                                <Badge className={`${statusInfo.color} text-white`}>
+                                  {statusInfo.label}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                <div>📅 {new Date(order.created_at).toLocaleString('pt-BR')}</div>
+                                <div>📍 {formatAddress(order)}</div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-gray-600">
+                                  {formatPrice(order.total_amount)}
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => navigate(`/order-status/${order.id}`)}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Ver Detalhes
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
             </div>
           </div>
         </SidebarInset>

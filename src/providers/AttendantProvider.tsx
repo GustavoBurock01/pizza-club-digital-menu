@@ -21,6 +21,7 @@ interface AttendantOrder {
   customer_phone: string;
   customer_email?: string;
   status: string;
+  delivery_method: string;
   total_amount: number;
   delivery_fee: number;
   payment_method: string;
@@ -52,7 +53,7 @@ interface AttendantContextType {
   // Quick actions
   confirmOrder: (orderId: string) => Promise<void>;
   startPreparation: (orderId: string) => Promise<void>;
-  markReady: (orderId: string) => Promise<void>;
+  markReady: (orderId: string, deliveryMethod: string) => Promise<void>;
   markDelivered: (orderId: string) => Promise<void>;
   cancelOrder: (orderId: string) => Promise<void>;
 }
@@ -81,6 +82,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           user_id,
           customer_name,
           customer_phone,
+          delivery_method,
           status,
           total_amount,
           delivery_fee,
@@ -103,8 +105,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             quantity
           )
         `)
-        .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'])
         .gte('created_at', last24Hours.toISOString())
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -117,6 +119,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         customer_phone: order.customer_phone,
         customer_email: order.profiles?.email,
         status: order.status,
+        delivery_method: order.delivery_method || 'delivery',
         total_amount: order.total_amount,
         delivery_fee: order.delivery_fee,
         payment_method: order.payment_method,
@@ -244,12 +247,14 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [updateOrderStatus]);
 
-  const markReady = useCallback(async (orderId: string) => {
+  const markReady = useCallback(async (orderId: string, deliveryMethod: string) => {
     try {
-      await updateOrderStatus(orderId, 'ready');
-      toast.success("Pedido pronto!");
+      // Se for retirada, marca como ready. Se for delivery, marca como out_for_delivery
+      const newStatus = deliveryMethod === 'pickup' ? 'ready' : 'out_for_delivery';
+      await updateOrderStatus(orderId, newStatus);
+      toast.success(deliveryMethod === 'pickup' ? "Pronto para retirada!" : "Saiu para entrega!");
     } catch (error) {
-      toast.error("Erro ao marcar como pronto");
+      toast.error("Erro ao atualizar status");
     }
   }, [updateOrderStatus]);
 

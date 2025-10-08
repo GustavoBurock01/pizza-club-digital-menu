@@ -366,7 +366,7 @@ const ExpressCheckout = () => {
       // ⚠️ CRÍTICO: Pagamentos presenciais NÃO usam fila - criar direto
       await protectOrderCreation(
         {
-          items,
+          items: items.map(i => ({ product_id: i.productId, quantity: i.quantity })),
           total: total,
           delivery: deliveryMethod,
           paymentMethod
@@ -449,12 +449,48 @@ const ExpressCheckout = () => {
       addressId = addressData.id;
     }
 
+    // Preparar snapshot do endereço
+    let deliveryAddressSnapshot = null;
+    if (deliveryMethod === 'delivery') {
+      if (addressId) {
+        const { data: addr } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('id', addressId)
+          .single();
+        
+        if (addr) {
+          deliveryAddressSnapshot = {
+            street: addr.street,
+            number: addr.number,
+            neighborhood: addr.neighborhood,
+            city: addr.city,
+            state: addr.state,
+            zip_code: addr.zip_code,
+            complement: addr.complement,
+            reference_point: addr.reference_point
+          };
+        }
+      } else {
+        deliveryAddressSnapshot = {
+          street: customerData.street,
+          number: customerData.number,
+          neighborhood: customerData.neighborhood,
+          complement: customerData.complement,
+          city: 'Sua Cidade',
+          state: 'SP',
+          zip_code: '00000-000'
+        };
+      }
+    }
+
     // Create order
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: user?.id,
         address_id: deliveryMethod === 'delivery' ? addressId : null,
+        delivery_address_snapshot: deliveryAddressSnapshot,
         total_amount: total,
         delivery_fee: deliveryFee,
         delivery_method: deliveryMethod,

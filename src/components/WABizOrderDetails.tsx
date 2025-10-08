@@ -124,9 +124,11 @@ export const WABizOrderDetails = ({
       pending_payment: "Aguardando Pagamento",
       confirmed: "Confirmado", 
       preparing: "Preparando",
-      ready: "Pronto",
-      delivering: "Em entrega",
+      ready: "Pronto para Retirada",
+      out_for_delivery: "Em Rota de Entrega",
+      delivering: "Em Rota de Entrega",
       delivered: "Entregue",
+      completed: "Finalizado",
       cancelled: "Cancelado"
     };
     return labels[status as keyof typeof labels] || status;
@@ -142,6 +144,8 @@ export const WABizOrderDetails = ({
   };
 
   const getActionButtons = () => {
+    const isPickup = order.delivery_method === 'pickup';
+    
     switch (order.status) {
       case 'pending':
         return (
@@ -183,18 +187,30 @@ export const WABizOrderDetails = ({
             className="bg-green-600 hover:bg-green-700"
           >
             <Package className="h-4 w-4 mr-2" />
-            Marcar como Pronto
+            {isPickup ? 'Pronto para Retirada' : 'Enviar para Entrega'}
           </Button>
         );
       case 'ready':
+        return isPickup ? (
+          <Button 
+            onClick={onMarkDelivered} 
+            disabled={isUpdating}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Finalizar Pedido
+          </Button>
+        ) : null;
+      case 'out_for_delivery':
+      case 'delivering':
         return (
           <Button 
             onClick={onMarkDelivered} 
             disabled={isUpdating}
-            className="bg-orange-600 hover:bg-orange-700"
+            className="bg-green-600 hover:bg-green-700"
           >
-            <Truck className="h-4 w-4 mr-2" />
-            Saiu para Entrega
+            <Check className="h-4 w-4 mr-2" />
+            Marcar como Entregue
           </Button>
         );
       default:

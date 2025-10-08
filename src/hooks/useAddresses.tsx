@@ -138,25 +138,6 @@ export const useAddresses = () => {
 
   const deleteAddress = async (id: string) => {
     try {
-      // Primeiro verificar se o endereço está sendo usado em pedidos
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('address_id', id)
-        .limit(1);
-
-      if (ordersError) throw ordersError;
-
-      if (orders && orders.length > 0) {
-        toast({
-          title: "Não é possível remover este endereço",
-          description: "Este endereço está sendo usado em pedidos existentes e não pode ser removido. Você pode adicionar um novo endereço e defini-lo como padrão.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Se não há pedidos associados, proceder com a exclusão
       const { error } = await supabase
         .from('addresses')
         .delete()

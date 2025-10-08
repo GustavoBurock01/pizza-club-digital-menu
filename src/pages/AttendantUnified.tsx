@@ -91,7 +91,7 @@ export default function AttendantUnified() {
     previousPendingCount.current = currentPending;
   }, [novosOrders.length, soundEnabled]);
   const emAndamentoOrders = filteredOrders.filter(o => ['confirmed', 'preparing'].includes(o.status));
-  const finalizadosOrders = filteredOrders.filter(o => ['ready', 'delivering', 'delivered'].includes(o.status));
+  const finalizadosOrders = filteredOrders.filter(o => ['ready', 'out_for_delivery', 'delivered', 'completed'].includes(o.status));
 
   // Ações do modal
   const handleOrderAction = async (action: string, orderId: string) => {
@@ -104,7 +104,8 @@ export default function AttendantUnified() {
           await startPreparation(orderId);
           break;
         case 'markReady':
-          await markReady(orderId);
+          const order = filteredOrders.find(o => o.id === orderId);
+          await markReady(orderId, order?.delivery_method || 'delivery');
           break;
         case 'markDelivered':
           await markDelivered(orderId);

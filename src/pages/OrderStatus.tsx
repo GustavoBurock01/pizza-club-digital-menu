@@ -37,9 +37,18 @@ const OrderStatus = () => {
         `)
         .eq('id', orderId)
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (orderError) throw orderError;
+      if (!orderData) {
+        toast({
+          title: "Pedido não encontrado",
+          description: "Este pedido não existe ou você não tem permissão para visualizá-lo.",
+          variant: "destructive"
+        });
+        navigate('/orders');
+        return;
+      }
 
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
@@ -150,9 +159,10 @@ const OrderStatus = () => {
     });
   };
 
-  const formatAddress = (address: any) => {
-    if (!address) return '';
-    return `${address.street}, ${address.number} - ${address.neighborhood}, ${address.city}/${address.state}`;
+  const formatAddress = (order: any) => {
+    const addr = order?.addresses || order?.delivery_address_snapshot;
+    if (!addr) return 'Retirada no local';
+    return `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}/${addr.state}`;
   };
 
   const getStatusSteps = () => {
@@ -291,12 +301,16 @@ const OrderStatus = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-medium">{formatAddress(order.addresses)}</p>
-                {order.addresses?.complement && (
-                  <p className="text-muted-foreground">{order.addresses.complement}</p>
+                <p className="font-medium">{formatAddress(order)}</p>
+                {(order.addresses?.complement || order.delivery_address_snapshot?.complement) && (
+                  <p className="text-muted-foreground">
+                    {order.addresses?.complement || order.delivery_address_snapshot?.complement}
+                  </p>
                 )}
-                {order.addresses?.reference_point && (
-                  <p className="text-muted-foreground">Ref: {order.addresses.reference_point}</p>
+                {(order.addresses?.reference_point || order.delivery_address_snapshot?.reference_point) && (
+                  <p className="text-muted-foreground">
+                    Ref: {order.addresses?.reference_point || order.delivery_address_snapshot?.reference_point}
+                  </p>
                 )}
               </CardContent>
             </Card>
