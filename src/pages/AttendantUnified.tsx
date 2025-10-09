@@ -79,12 +79,26 @@ export default function AttendantUnified() {
     o.status === 'pending' && o.payment_status !== 'pending_payment'
   );
   
-  // Tocar som quando novo pedido chega
+  // Tocar som de sino 3 vezes quando novo pedido chega
   useEffect(() => {
     const currentPending = novosOrders.length;
     
     if (soundEnabled && currentPending > previousPendingCount.current && previousPendingCount.current > 0) {
-      audioRef.current?.play().catch(err => console.log('Audio play failed:', err));
+      const playBellSound = () => {
+        const audio = new Audio('/bell.mp3');
+        audio.volume = 0.7;
+        
+        // Tocar 3 vezes com intervalo de 400ms
+        audio.play().catch(err => console.log('Audio play failed:', err));
+        setTimeout(() => {
+          audio.play().catch(err => console.log('Audio play failed:', err));
+        }, 400);
+        setTimeout(() => {
+          audio.play().catch(err => console.log('Audio play failed:', err));
+        }, 800);
+      };
+      
+      playBellSound();
       toast.info("🔔 Novo pedido recebido!");
     }
     

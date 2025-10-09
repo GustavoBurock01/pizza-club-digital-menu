@@ -19,6 +19,7 @@ const OrderStatus = () => {
   const [order, setOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (orderId && user) {
@@ -29,6 +30,13 @@ const OrderStatus = () => {
 
   const fetchOrder = async () => {
     try {
+      setLoading(true);
+      
+      // Aguardar um pouco para garantir que o pedido foi persistido
+      if (retryCount === 0) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select(`
@@ -40,7 +48,16 @@ const OrderStatus = () => {
         .maybeSingle();
 
       if (orderError) throw orderError;
+      
       if (!orderData) {
+        // Tentar novamente até 3 vezes
+        if (retryCount < 3) {
+          console.log(`Pedido não encontrado, tentando novamente... (${retryCount + 1}/3)`);
+          setRetryCount(retryCount + 1);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return fetchOrder();
+        }
+        
         toast({
           title: "Pedido não encontrado",
           description: "Este pedido não existe ou você não tem permissão para visualizá-lo.",
@@ -62,8 +79,18 @@ const OrderStatus = () => {
 
       setOrder(orderData);
       setOrderItems(itemsData || []);
+      setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
       console.error('Erro ao carregar pedido:', error);
+      
+      // Tentar novamente em caso de erro
+      if (retryCount < 3) {
+        console.log(`Erro ao carregar, tentando novamente... (${retryCount + 1}/3)`);
+        setRetryCount(retryCount + 1);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return fetchOrder();
+      }
+      
       toast({
         title: "Erro ao carregar pedido",
         description: error.message,

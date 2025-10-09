@@ -55,7 +55,7 @@ export const MessagesHub = ({ isOpen, onClose, onOpenOrder }: MessagesHubProps) 
           created_at,
           is_read,
           sender_type,
-          orders!order_messages_order_id_fkey (
+          orders (
             customer_name,
             customer_phone,
             status
