@@ -68,8 +68,9 @@ const adminItems = [
   { title: "Clientes", url: "/admin/customers", icon: Users },
   { title: "Produtos", url: "/admin/products", icon: Package },
   { title: "Estoque", url: "/admin/stock", icon: Box },
+  { title: "Configurações", url: "/admin/configuracoes", icon: Settings2 },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Configurações", url: "/admin/settings", icon: Settings },
+  { title: "Sistema", url: "/admin/settings", icon: Settings },
 ];
 
 export function AppSidebar() {

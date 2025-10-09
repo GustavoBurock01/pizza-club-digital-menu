@@ -25,9 +25,14 @@ export const WABizSettings = ({
   onToggleSound,
   onOpenMessages 
 }: WABizSettingsProps) => {
+  // Estados locais temporários (não salvam automaticamente)
   const [autoAccept, setAutoAccept] = useState(false);
   const [printCopies, setPrintCopies] = useState("1");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Guardar valores originais para comparação
+  const [originalAutoAccept, setOriginalAutoAccept] = useState(false);
 
   // Carregar configurações da loja
   useEffect(() => {
@@ -41,6 +46,7 @@ export const WABizSettings = ({
         if (error) throw error;
         if (data) {
           setAutoAccept(data.auto_accept_orders || false);
+          setOriginalAutoAccept(data.auto_accept_orders || false);
         }
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
@@ -57,34 +63,32 @@ export const WABizSettings = ({
     }
   }, [isOpen]);
 
-  const handleAutoAcceptChange = async (checked: boolean) => {
-    setLoading(true);
+  const handleSaveSettings = async () => {
+    setSaving(true);
     try {
+      // Salvar auto-accept no banco
       const { error } = await supabase
         .from('store_settings')
-        .update({ auto_accept_orders: checked })
+        .update({ auto_accept_orders: autoAccept })
         .eq('id', (await supabase.from('store_settings').select('id').single()).data?.id);
 
       if (error) throw error;
 
-      setAutoAccept(checked);
-      toast.success(checked ? "Auto aceitar ativado" : "Auto aceitar desativado");
+      // Salvar cópias no localStorage
+      localStorage.setItem('print_copies', printCopies);
+      
+      setOriginalAutoAccept(autoAccept);
+      toast.success("Configurações salvas com sucesso!");
+      onClose();
     } catch (error: any) {
-      toast.error("Erro ao salvar configuração");
+      toast.error("Erro ao salvar configurações");
       console.error(error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handlePrintCopiesChange = (value: string) => {
-    const copies = parseInt(value) || 1;
-    if (copies >= 1 && copies <= 5) {
-      setPrintCopies(value);
-      localStorage.setItem('print_copies', value);
-      toast.success(`Cópias de impressão: ${copies}`);
-    }
-  };
+  const hasChanges = autoAccept !== originalAutoAccept;
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -129,8 +133,8 @@ export const WABizSettings = ({
               <Switch
                 id="auto-accept"
                 checked={autoAccept}
-                onCheckedChange={handleAutoAcceptChange}
-                disabled={loading}
+                onCheckedChange={setAutoAccept}
+                disabled={loading || saving}
               />
             </div>
           </div>
@@ -147,8 +151,9 @@ export const WABizSettings = ({
               min="1"
               max="5"
               value={printCopies}
-              onChange={(e) => handlePrintCopiesChange(e.target.value)}
+              onChange={(e) => setPrintCopies(e.target.value)}
               className="w-24"
+              disabled={saving}
             />
             <p className="text-xs text-muted-foreground">
               Número de cópias padrão ao imprimir (1-5)
@@ -174,6 +179,23 @@ export const WABizSettings = ({
               </p>
             </div>
           )}
+
+          {/* Botão de Salvar */}
+          <div className="pt-6 border-t">
+            <Button 
+              onClick={handleSaveSettings}
+              disabled={saving || loading || !hasChanges}
+              className="w-full"
+              size="lg"
+            >
+              {saving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+            {!hasChanges && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Nenhuma alteração pendente
+              </p>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

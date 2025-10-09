@@ -38,7 +38,6 @@ export default function AttendantUnified() {
   // Filtros
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   
-  const audioRef = useRef<HTMLAudioElement>(null);
   const previousPendingCount = useRef(0);
 
   const toggleSound = () => {
@@ -148,11 +147,6 @@ export default function AttendantUnified() {
 
   return (
     <>
-      <audio 
-        ref={audioRef} 
-        src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCp+zPDTgjMGHm7A7+OZQQ4YcLvv56RXFAg8munxy3goBSl6yvDWhzYHIHK/7+CTQhEadr3w55pMEBBOouTvwmkbBDeJ0fHJdygFKHvK79qOPAYdbbvu5aFRDwg5l+LxyXUkBSl5yvHaijYGH3K97+OYPQwZcrjv6Z9PEQ5LpeTwvWskBChzyO/ajDkHIXG87eKTRBEYdbnw6Z9OEAc9mOLxxxwABSJzzO7ekT4IBSBwtO/om0sRDkqn5fC9ayMEJnXI7+KOOwUjb77u5JxJEBdIp+Tvxm8kBSlyyO7dkDwHImyw7+KUQQ0Yabnv6p5MDg1Fo+TvwmkeBSRyyO/ekj0HImyw7uOYQA4YaLfv5ptLDww8nOHwvW0hBSlxyO/ckDsHImyw7+OXPwsYaLfv5ptLDww9nOHwvm0hBShwyO/ckzsHImyw7uOYQA0XaLfv5ptLDww9nOHwvm0hBSlxyO/ckzsHImyw7uOYQA0XaLfv5ZtLDww9nOHwv20hBSlxyO/ckzsHImyw7uOYQA0XaLfv5ZtKDws9nOHwvm0hBSlxyO/dlDsHIGyw7+OYPwwYaLfv5ZpLDgw9nOHwvm0hBSlxyO/dlDsHIGyw7+OYPwwYaLfv5ZpLDgw9nOHwvm0hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZtLDww9nOHwvm0hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwvm0hBShxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDws9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLDww9nOHwv20hBSlxyO/dlDsHIGyw7uOYQA0XaLfv5ZpLD" 
-        preload="auto" 
-      />
       <div className="min-h-screen bg-gray-50">
         {/* Header WABiz */}
         <WABizHeader
