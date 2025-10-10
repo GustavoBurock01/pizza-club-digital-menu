@@ -149,15 +149,23 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
 
       return { orders, stats };
     },
-    staleTime: 30000, // 30 segundos
-    refetchInterval: 60000, // 1 minuto (reduzido de múltiplos polls)
+    staleTime: 10000, // 10 segundos (reduzido para atualizar mais rápido)
+    refetchInterval: 30000, // 30 segundos (fallback se realtime falhar)
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba
     retry: 2,
   });
 
   // ===== REAL-TIME SUBSCRIPTION UNIFICADO =====
   useEffect(() => {
+    console.log('🔴 [ATTENDANT] Configurando realtime subscription');
+    
     const channel = supabase
-      .channel('attendant-realtime')
+      .channel('attendant-realtime', {
+        config: {
+          broadcast: { self: false },
+          presence: { key: 'attendant' }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -165,9 +173,20 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           schema: 'public',
           table: 'orders'
         },
-        () => {
-          // Invalidate única query em vez de múltiplas
+        (payload) => {
+          console.log('🔴 [ATTENDANT] Pedido atualizado via realtime:', payload.eventType, payload.new);
+          
+          // Invalidate e refetch imediatamente
           queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
+          queryClient.refetchQueries({ queryKey: ['attendant-data'] });
+          
+          // Toast para novo pedido
+          if (payload.eventType === 'INSERT') {
+            const newOrder = payload.new as any;
+            toast.info(`🔔 Novo pedido #${newOrder.id.substring(0, 8)}`, {
+              description: `Cliente: ${newOrder.customer_name || 'N/A'}`
+            });
+          }
         }
       )
       .on(
@@ -177,13 +196,27 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           schema: 'public',
           table: 'order_items'
         },
-        () => {
+        (payload) => {
+          console.log('🔴 [ATTENDANT] Item do pedido atualizado via realtime:', payload.eventType);
           queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔴 [ATTENDANT] Realtime status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [ATTENDANT] Realtime CONECTADO com sucesso!');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [ATTENDANT] Erro no canal realtime');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏰ [ATTENDANT] Timeout na conexão realtime');
+        } else if (status === 'CLOSED') {
+          console.warn('⚠️ [ATTENDANT] Conexão realtime fechada');
+        }
+      });
 
     return () => {
+      console.log('🔴 [ATTENDANT] Removendo canal realtime');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
