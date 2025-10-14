@@ -141,146 +141,134 @@ async function handleSubscriptionEvent(event: Stripe.Event, supabaseClient: any,
     status: subscription.status
   });
 
-  try {
-    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos
-    const { data: existingEvent } = await supabaseClient
-      .from('webhook_events')
-      .select('id')
-      .eq('event_id', event.id)
-      .maybeSingle();
+  // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos
+  const { data: existingEvent } = await supabaseClient
+    .from('webhook_events')
+    .select('id')
+    .eq('event_id', event.id)
+    .maybeSingle();
 
-    if (existingEvent) {
-      logStep("Event already processed, skipping", { eventId: event.id });
-      return;
-    }
+  if (existingEvent) {
+    logStep("Event already processed, skipping", { eventId: event.id });
+    return;
+  }
 
-    // Record event for idempotency
+  // Record event for idempotency
+  await supabaseClient
+    .from('webhook_events')
+    .insert({
+      event_id: event.id,
+      provider: 'stripe',
+      event_type: event.type,
+      payload: event
+    });
+
+
+  // Get customer to find user email
+  const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
+  if (!customer.email) {
+    logStep("No email found for customer", { customerId: customer.id });
+    return;
+  }
+
+  // Get user from profiles table using email
+  const { data: profile, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('id, email')
+    .eq('email', customer.email)
+    .single();
+
+  if (profileError || !profile) {
+    logStep("User not found in profiles", { email: customer.email, error: profileError });
+    return;
+  }
+
+  // Update profile with stripe_customer_id if missing
+  if (!profile.stripe_customer_id) {
     await supabaseClient
-      .from('webhook_events')
-      .insert({
-        event_id: event.id,
-        provider: 'stripe',
-        event_type: event.type,
-        payload: event
-      });
-
-    // ... keep existing code (customer retrieval and profile update)
-    
-  } catch (error) {
-    logStep("Error in handleSubscriptionEvent", { error });
-    throw error;
-  }
-}
-
-    // Get customer to find user email
-    const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
-    if (!customer.email) {
-      logStep("No email found for customer", { customerId: customer.id });
-      return;
-    }
-
-    // Get user from profiles table using email
-    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('id, email')
-      .eq('email', customer.email)
-      .single();
-
-    if (profileError || !profile) {
-      logStep("User not found in profiles", { email: customer.email, error: profileError });
-      return;
-    }
-
-    // Update profile with stripe_customer_id if missing
-    if (!profile.stripe_customer_id) {
-      await supabaseClient
-        .from('profiles')
-        .update({ stripe_customer_id: customer.id })
-        .eq('id', profile.id);
-      logStep("Updated profile with stripe_customer_id", { userId: profile.id, customerId: customer.id });
-    }
-
-    // Determine plan details from price_id - BUSCAR VALORES REAIS DO STRIPE
-    const priceId = subscription.items.data[0].price.id;
-    const price = await stripe.prices.retrieve(priceId);
-    const planPrice = (price.unit_amount || 0) / 100; // Converter centavos para reais
-    
-    // Map plan name by price_id from secrets
-    const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
-    const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
-    const annualPriceId = Deno.env.get("STRIPE_PRICE_ID_ANNUAL");
-    
-    let planName = 'Desconhecido';
-    
-    if (priceId === annualPriceId) {
-      planName = "Anual";
-    } else if (priceId === monthlyPriceId) {
-      planName = "Mensal";
-    } else if (priceId === trialPriceId) {
-      planName = "Trial";
-    }
-
-    logStep("Plan details determined from Stripe", { 
-      priceId: `${priceId.substring(0, 15)}...`,
-      planName, 
-      planPrice,
-      currency: price.currency 
-    });
-
-    const isActive = subscription.status === 'active';
-    const currentPeriodStart = new Date(subscription.current_period_start * 1000).toISOString();
-    const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-    const expiresAt = isActive ? currentPeriodEnd : null;
-    const canceledAt = subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null;
-
-    // Enhanced subscription data
-    const subscriptionData = {
-      user_id: profile.id,
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: priceId,
-      status: isActive ? 'active' : 'inactive',
-      plan_name: planName,
-      plan_price: planPrice,
-      expires_at: expiresAt,
-      current_period_start: currentPeriodStart,
-      current_period_end: currentPeriodEnd,
-      cancel_at_period_end: subscription.cancel_at_period_end || false,
-      canceled_at: canceledAt,
-      sync_status: 'webhook',
-      last_webhook_event: event.type,
-      webhook_event_id: event.id,
-      last_synced_at: new Date().toISOString(),
-      raw_metadata: {
-        stripe_customer_id: customer.id,
-        subscription_status: subscription.status,
-        payment_method: subscription.default_payment_method
-      },
-      updated_at: new Date().toISOString(),
-    };
-
-    // Update subscriptions table
-    const { error: upsertError } = await supabaseClient
-      .from('subscriptions')
-      .upsert(subscriptionData, { onConflict: 'user_id' });
-
-    if (upsertError) {
-      logStep("Error updating subscription", { error: upsertError });
-      throw upsertError;
-    }
-
-    logStep("Subscription updated successfully", {
-      userId: profile.id,
-      subscriptionId: subscription.id,
-      status: isActive ? 'active' : 'inactive',
-      planName,
-      planPrice,
-      expiresAt
-    });
-
-  } catch (error) {
-    logStep("Error in handleSubscriptionEvent", { error });
-    throw error;
+      .update({ stripe_customer_id: customer.id })
+      .eq('id', profile.id);
+    logStep("Updated profile with stripe_customer_id", { userId: profile.id, customerId: customer.id });
   }
+
+  // Determine plan details from price_id - BUSCAR VALORES REAIS DO STRIPE
+  const priceId = subscription.items.data[0].price.id;
+  const price = await stripe.prices.retrieve(priceId);
+  const planPrice = (price.unit_amount || 0) / 100; // Converter centavos para reais
+  
+  // Map plan name by price_id from secrets
+  const trialPriceId = Deno.env.get("STRIPE_PRICE_ID_TRIAL");
+  const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID_MONTHLY");
+  const annualPriceId = Deno.env.get("STRIPE_PRICE_ID_ANNUAL");
+  
+  let planName = 'Desconhecido';
+  
+  if (priceId === annualPriceId) {
+    planName = "Anual";
+  } else if (priceId === monthlyPriceId) {
+    planName = "Mensal";
+  } else if (priceId === trialPriceId) {
+    planName = "Trial";
+  }
+
+  // Calculate expires_at based on subscription period
+  const expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+
+  // Determine if subscription is truly active
+  const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+
+  logStep("Subscription details", {
+    priceId,
+    planName,
+    planPrice,
+    status: subscription.status,
+    isActive,
+    expiresAt
+  });
+
+  // Prepare subscription data
+  const subscriptionData = {
+    user_id: profile.id,
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: priceId,
+    status: isActive ? 'active' : 'inactive',
+    plan_name: planName,
+    plan_price: planPrice,
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: expiresAt,
+    expires_at: expiresAt,
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    sync_status: 'stripe',
+    last_webhook_event: event.type,
+    webhook_event_id: event.id,
+    last_synced_at: new Date().toISOString(),
+    raw_metadata: {
+      stripe_customer_id: customer.id,
+      subscription_status: subscription.status,
+      payment_method: subscription.default_payment_method
+    },
+    updated_at: new Date().toISOString(),
+  };
+
+  // Update subscriptions table
+  const { error: upsertError } = await supabaseClient
+    .from('subscriptions')
+    .upsert(subscriptionData, { onConflict: 'user_id' });
+
+  if (upsertError) {
+    logStep("Error updating subscription", { error: upsertError });
+    throw upsertError;
+  }
+
+  logStep("Subscription updated successfully", {
+    userId: profile.id,
+    subscriptionId: subscription.id,
+    status: isActive ? 'active' : 'inactive',
+    planName,
+    planPrice,
+    expiresAt
+  });
 }
 
 async function handleInvoiceEvent(event: Stripe.Event, supabaseClient: any, stripe: Stripe) {
