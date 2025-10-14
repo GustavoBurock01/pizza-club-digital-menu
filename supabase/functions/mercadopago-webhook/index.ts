@@ -146,22 +146,6 @@ serve(async (req) => {
     const forwardedFor = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
 
-    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos este evento
-    const eventId = payload.id?.toString() || `${payload.type}-${Date.now()}`;
-    const { data: existingEvent } = await supabase
-      .from("webhook_events")
-      .select("id")
-      .eq("event_id", eventId)
-      .maybeSingle();
-      
-    if (existingEvent) {
-      logStep("Event already processed, skipping");
-      return new Response(JSON.stringify({ received: true, duplicate: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     // SECURITY VALIDATIONS
     
     // 1. Validate webhook signature (if secret is configured)
@@ -434,6 +418,7 @@ serve(async (req) => {
           approvalTime: payment.date_approved,
           isLiveMode: payment.live_mode
         });
+      }
       
       // ✅ ERRO 2 FIX: Salvar evento para idempotência
       await supabaseService.from("webhook_events").insert({
