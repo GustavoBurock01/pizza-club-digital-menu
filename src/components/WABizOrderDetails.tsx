@@ -1,6 +1,6 @@
 // ===== MODAL DE DETALHES DO PEDIDO - VERSÃO COMPLETA COM CHAT E ITENS =====
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,8 @@ import {
 } from "lucide-react";
 import { useThermalPrint } from "@/hooks/useThermalPrint";
 import { OrderChatPanel } from "./OrderChatPanel";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrderChat } from "@/hooks/useOrderChat";
+import { useOrderItems } from "@/hooks/useOrderItems";
 
 interface OrderDetailsProps {
   order: any;
@@ -67,40 +67,11 @@ export const WABizOrderDetails = ({
   isUpdating,
 }: OrderDetailsProps) => {
   const [showPrintOptions, setShowPrintOptions] = useState(false);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState(true);
   const { printOrder, isPrinting } = useThermalPrint();
   const { unreadCount } = useOrderChat(order?.id || '');
-
-  // Buscar itens do pedido
-  useEffect(() => {
-    const fetchOrderItems = async () => {
-      if (!isOpen || !order?.id) return;
-      
-      setLoadingItems(true);
-      try {
-        const { data, error } = await supabase
-          .from('order_items')
-          .select(`
-            *,
-            products (
-              name,
-              image_url
-            )
-          `)
-          .eq('order_id', order.id);
-
-        if (error) throw error;
-        setOrderItems(data || []);
-      } catch (error) {
-        console.error('Erro ao buscar itens:', error);
-      } finally {
-        setLoadingItems(false);
-      }
-    };
-
-    fetchOrderItems();
-  }, [order?.id, isOpen]);
+  
+  // ✅ ERRO 5 FIX: Usar hook com retry automático
+  const { items: orderItems, loading: loadingItems } = useOrderItems(order?.id, isOpen);
 
   if (!order) return null;
 

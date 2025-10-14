@@ -156,16 +156,27 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
     return 'Erro no login. Tente novamente';
   };
 
+  // ✅ ERRO 8 FIX: Form submit com preventDefault adequado
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // ✅ Prevenir propagação
     
     if (isBlocked) {
       showMessage(messageSystem.auth.temporaryBlock(blockTimeLeft), toast);
       return;
     }
     
+    // Validação simples antes de prosseguir
+    if (!loginData.email || !loginData.password) {
+      setErrorMessage('Preencha todos os campos');
+      return;
+    }
+    
     // Prevent multiple submissions
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('[LOGIN] Already loading, ignoring submit');
+      return;
+    }
     
     setIsLoading(true);
     setErrorMessage('');
@@ -351,7 +362,11 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
 
   // ===== RENDER FUNCTIONS =====
   const renderLoginForm = () => (
-    <form onSubmit={handleLogin} className="space-y-4">
+    <form 
+      onSubmit={handleLogin} 
+      className="space-y-4"
+      noValidate
+    >
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input
@@ -391,7 +406,7 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
       </div>
 
       <Button 
-        type="submit" 
+        type="submit"
         className="w-full gradient-pizza text-white border-0"
         disabled={isLoading || isBlocked}
       >
@@ -407,10 +422,10 @@ export const UnifiedAuthForm = ({ initialMode = 'login' }: UnifiedAuthFormProps)
 
       <Button 
         variant="link" 
+        type="button"
         className="w-full text-sm" 
         disabled={isLoading || isBlocked}
         onClick={handleForgotPassword}
-        type="button"
       >
         Esqueci minha senha
       </Button>

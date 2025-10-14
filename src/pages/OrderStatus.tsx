@@ -6,10 +6,14 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Clock, CheckCircle, Truck, MapPin } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Clock, CheckCircle, Truck, MapPin, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
+import { OrderChatPanel } from '@/components/OrderChatPanel';
+import { useOrderChat } from '@/hooks/useOrderChat';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const OrderStatus = () => {
   const { orderId } = useParams();
@@ -20,6 +24,9 @@ const OrderStatus = () => {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  
+  // ✅ ERRO 6: Hook para chat com contador de mensagens não lidas
+  const { unreadCount } = useOrderChat(orderId || '');
 
   useEffect(() => {
     if (orderId && user) {
@@ -115,7 +122,14 @@ const OrderStatus = () => {
         },
         (payload) => {
           console.log('Order update received:', payload);
-          setOrder(payload.new);
+          
+          // ✅ ERRO 3 FIX: Normalizar payload - garantir items sempre é array
+          const normalizedOrder = {
+            ...payload.new,
+            items: Array.isArray(payload.new.items) ? payload.new.items : [],
+          };
+          
+          setOrder(normalizedOrder);
           
           // Show toast notification for status change
           const statusMessages = {
@@ -238,17 +252,18 @@ const OrderStatus = () => {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="ml-auto">
-              <h1 className="text-xl font-semibold">Status do Pedido</h1>
-            </div>
-          </header>
-          <div className="flex-1 bg-gray-50 p-6">
+    <ErrorBoundary>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+          <AppSidebar />
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger className="-ml-1" />
+              <div className="ml-auto">
+                <h1 className="text-xl font-semibold">Status do Pedido</h1>
+              </div>
+            </header>
+            <div className="flex-1 bg-gray-50 p-6">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center gap-4 mb-6">
                 <Button
@@ -356,63 +371,87 @@ const OrderStatus = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Order Items */}
-                <div className="space-y-3">
-                  {orderItems.map((item) => (
-                    <div key={item.id} className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{item.products?.name}</h4>
-                        <p className="text-xs text-muted-foreground">
-                          Qtd: {item.quantity}
-                        </p>
-                        {item.customizations && (
-                          <div className="text-xs text-muted-foreground">
-                            {item.customizations.halfAndHalf && (
-                              <div>Meio a meio: {item.customizations.halfAndHalf.firstHalf} / {item.customizations.halfAndHalf.secondHalf}</div>
-                            )}
-                            {item.customizations.crust && item.customizations.crust !== 'tradicional' && (
-                              <div>Borda: {item.customizations.crust}</div>
-                            )}
-                            {item.customizations.extras && item.customizations.extras.length > 0 && (
-                              <div>Extras: {item.customizations.extras.join(', ')}</div>
+                {/* ✅ ERRO 6: Adicionar Tabs com Chat */}
+                <Tabs defaultValue="items" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="items">Itens</TabsTrigger>
+                    <TabsTrigger value="chat" className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      Chat
+                      {unreadCount > 0 && (
+                        <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* TAB: Itens do Pedido */}
+                  <TabsContent value="items" className="space-y-4 mt-4">
+                    {/* Order Items */}
+                    <div className="space-y-3">
+                      {orderItems.map((item) => (
+                        <div key={item.id} className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{item.products?.name || 'Produto sem nome'}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Qtd: {item.quantity}
+                            </p>
+                            {item.customizations && (
+                              <div className="text-xs text-muted-foreground">
+                                {item.customizations.halfAndHalf && (
+                                  <div>Meio a meio: {item.customizations.halfAndHalf.firstHalf} / {item.customizations.halfAndHalf.secondHalf}</div>
+                                )}
+                                {item.customizations.crust && item.customizations.crust !== 'tradicional' && (
+                                  <div>Borda: {item.customizations.crust}</div>
+                                )}
+                                {item.customizations.extras && Array.isArray(item.customizations.extras) && item.customizations.extras.length > 0 && (
+                                  <div>Extras: {item.customizations.extras.join(', ')}</div>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
+                          <span className="text-sm font-medium">
+                            {formatPrice(item.total_price)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t pt-4 space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>{formatPrice(order.total_amount - order.delivery_fee)}</span>
                       </div>
-                      <span className="text-sm font-medium">
-                        {formatPrice(item.total_price)}
-                      </span>
+                      <div className="flex justify-between">
+                        <span>Taxa de entrega:</span>
+                        <span>{formatPrice(order.delivery_fee)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg border-t pt-2">
+                        <span>Total:</span>
+                        <span>{formatPrice(order.total_amount)}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
 
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatPrice(order.total_amount - order.delivery_fee)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Taxa de entrega:</span>
-                    <span>{formatPrice(order.delivery_fee)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-2">
-                    <span>Total:</span>
-                    <span>{formatPrice(order.total_amount)}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm">
-                    <strong>Pagamento:</strong> {order.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
-                                                  order.payment_method === 'debit_card' ? 'Cartão de Débito' : 
-                                                  order.payment_method === 'pix' ? 'PIX' : 'Dinheiro'}
-                  </div>
-                  {order.notes && (
-                    <div className="text-sm">
-                      <strong>Observações:</strong> {order.notes}
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <strong>Pagamento:</strong> {order.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
+                                                      order.payment_method === 'debit_card' ? 'Cartão de Débito' : 
+                                                      order.payment_method === 'pix' ? 'PIX' : 'Dinheiro'}
+                      </div>
+                      {order.notes && (
+                        <div className="text-sm">
+                          <strong>Observações:</strong> {order.notes}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+
+                  {/* TAB: Chat com Atendente */}
+                  <TabsContent value="chat" className="mt-4">
+                    <OrderChatPanel orderId={orderId || ''} customerName={order.customer_name} />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
         </div>
@@ -422,6 +461,7 @@ const OrderStatus = () => {
         </SidebarInset>
       </div>
     </SidebarProvider>
+    </ErrorBoundary>
   );
 };
 

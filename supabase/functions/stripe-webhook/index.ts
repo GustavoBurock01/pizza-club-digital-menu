@@ -98,6 +98,12 @@ serve(async (req) => {
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event, supabaseClient, stripe);
         break;
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event, supabaseClient);
+        break;
+      case 'payment_intent.payment_failed':
+        await handlePaymentIntentFailed(event, supabaseClient);
+        break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
@@ -136,12 +142,12 @@ async function handleSubscriptionEvent(event: Stripe.Event, supabaseClient: any,
   });
 
   try {
-    // Check idempotency - prevent duplicate processing
+    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos
     const { data: existingEvent } = await supabaseClient
       .from('webhook_events')
       .select('id')
       .eq('event_id', event.id)
-      .single();
+      .maybeSingle();
 
     if (existingEvent) {
       logStep("Event already processed, skipping", { eventId: event.id });
@@ -153,9 +159,18 @@ async function handleSubscriptionEvent(event: Stripe.Event, supabaseClient: any,
       .from('webhook_events')
       .insert({
         event_id: event.id,
+        provider: 'stripe',
         event_type: event.type,
         payload: event
       });
+
+    // ... keep existing code (customer retrieval and profile update)
+    
+  } catch (error) {
+    logStep("Error in handleSubscriptionEvent", { error });
+    throw error;
+  }
+}
 
     // Get customer to find user email
     const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
@@ -311,17 +326,36 @@ async function handleCheckoutCompleted(event: Stripe.Event, supabaseClient: any,
   });
 
   try {
+    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos este evento
+    const { data: existingEvent } = await supabaseClient
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", event.id)
+      .maybeSingle();
+      
+    if (existingEvent) {
+      logStep(`Event ${event.id} already processed, skipping`);
+      return;
+    }
+    
+    // Salvar evento para idempotência
+    await supabaseClient.from("webhook_events").insert({
+      event_id: event.id,
+      provider: "stripe",
+      event_type: event.type,
+      payload: event,
+    });
+    
     // If this is a subscription checkout, the subscription events will handle it
     if (session.mode === 'subscription') {
       logStep("Subscription checkout completed, subscription events will handle the update");
       return;
     }
 
-    // For order payments (not subscriptions)
+    // ✅ ERRO 2 FIX: Para pedidos (não assinaturas), confirmar automaticamente
     if (session.mode === 'payment' && session.metadata?.order_id) {
       const orderId = session.metadata.order_id;
       
-      // Update order status based on payment status
       let orderStatus = 'pending';
       let paymentStatus = 'pending';
       
@@ -348,7 +382,7 @@ async function handleCheckoutCompleted(event: Stripe.Event, supabaseClient: any,
         throw updateError;
       }
 
-      logStep("Order updated from checkout session", {
+      logStep("✅ Order confirmed automatically from checkout", {
         orderId,
         orderStatus,
         paymentStatus,
@@ -359,5 +393,68 @@ async function handleCheckoutCompleted(event: Stripe.Event, supabaseClient: any,
   } catch (error) {
     logStep("Error in handleCheckoutCompleted", { error });
     throw error;
+  }
+}
+
+async function handlePaymentIntentSucceeded(event: Stripe.Event, supabaseClient: any) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  logStep("Processing payment intent succeeded", { paymentIntentId: paymentIntent.id });
+
+  try {
+    // Idempotência
+    const { data: existingEvent } = await supabaseClient
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", event.id)
+      .maybeSingle();
+      
+    if (existingEvent) {
+      logStep(`Event ${event.id} already processed`);
+      return;
+    }
+    
+    const orderId = paymentIntent.metadata?.order_id;
+    
+    if (orderId) {
+      await supabaseClient
+        .from('orders')
+        .update({
+          status: 'confirmed',
+          payment_status: 'paid',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+        
+      logStep("✅ Order confirmed from payment_intent.succeeded", { orderId });
+    }
+    
+    // Salvar evento
+    await supabaseClient.from("webhook_events").insert({
+      event_id: event.id,
+      provider: "stripe",
+      event_type: event.type,
+      order_id: orderId,
+      payload: event,
+    });
+  } catch (error) {
+    logStep("Error in handlePaymentIntentSucceeded", { error });
+    throw error;
+  }
+}
+
+async function handlePaymentIntentFailed(event: Stripe.Event, supabaseClient: any) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  const orderId = paymentIntent.metadata?.order_id;
+  
+  if (orderId) {
+    await supabaseClient
+      .from('orders')
+      .update({
+        payment_status: 'failed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+      
+    logStep("Order payment marked as failed", { orderId });
   }
 }

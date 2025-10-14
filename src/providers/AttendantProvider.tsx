@@ -221,10 +221,37 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [queryClient]);
 
-  // ===== ACTIONS OTIMIZADAS =====
+  // ===== ACTIONS OTIMIZADAS COM OPTIMISTIC UPDATES =====
   const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
     setIsUpdating(true);
+    
     try {
+      // ✅ ERRO 4 FIX: OPTIMISTIC UPDATE - atualizar cache antes da resposta
+      queryClient.setQueryData(['attendant-data'], (old: any) => {
+        if (!old) return old;
+        
+        return {
+          ...old,
+          orders: old.orders.map((order: AttendantOrder) =>
+            order.id === orderId
+              ? { ...order, status, updated_at: new Date().toISOString() }
+              : order
+          ),
+          stats: {
+            ...old.stats,
+            pendingOrders: old.orders.filter((o: AttendantOrder) => 
+              o.id === orderId ? status === 'pending' : o.status === 'pending'
+            ).length,
+            preparingOrders: old.orders.filter((o: AttendantOrder) =>
+              o.id === orderId 
+                ? ['confirmed', 'preparing'].includes(status)
+                : ['confirmed', 'preparing'].includes(o.status)
+            ).length,
+          }
+        };
+      });
+
+      // Fazer atualização no servidor
       const { error } = await supabase
         .from('orders')
         .update({ 
@@ -235,12 +262,15 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Invalidate e refetch
+      // Invalidar para refetch em background
       queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
       
       toast.success("Status do pedido atualizado!");
     } catch (error: any) {
       console.error('Error updating order status:', error);
+      
+      // ✅ ROLLBACK em caso de erro
+      queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
       toast.error("Erro ao atualizar status do pedido");
       throw error;
     } finally {

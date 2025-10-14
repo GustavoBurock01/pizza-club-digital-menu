@@ -146,17 +146,21 @@ serve(async (req) => {
     const forwardedFor = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
 
-    // Log comprehensive security information
-    const sourceInfo = {
-      userAgent,
-      contentType,
-      origin,
-      forwardedFor,
-      realIp,
-      hasSignature: !!signature,
-      timestamp: new Date().toISOString()
-    };
-    logSecurity('🔍 WEBHOOK SOURCE ANALYSIS', sourceInfo);
+    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos este evento
+    const eventId = payload.id?.toString() || `${payload.type}-${Date.now()}`;
+    const { data: existingEvent } = await supabase
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", eventId)
+      .maybeSingle();
+      
+    if (existingEvent) {
+      logStep("Event already processed, skipping");
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     // SECURITY VALIDATIONS
     
@@ -188,6 +192,22 @@ serve(async (req) => {
     // Parse webhook data
     const webhookData = JSON.parse(payload);
     logStep('📨 Webhook data received', webhookData);
+    
+    // ✅ ERRO 2 FIX: Idempotência - verificar se já processamos
+    const eventId = webhookData.id?.toString() || `${webhookData.type}-${Date.now()}`;
+    const { data: existingEvent } = await supabaseService
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", eventId)
+      .maybeSingle();
+      
+    if (existingEvent) {
+      logStep("Event already processed, skipping");
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     // Handle payment notifications
     if (webhookData.type === 'payment') {
@@ -414,10 +434,18 @@ serve(async (req) => {
           approvalTime: payment.date_approved,
           isLiveMode: payment.live_mode
         });
-      }
+      
+      // ✅ ERRO 2 FIX: Salvar evento para idempotência
+      await supabaseService.from("webhook_events").insert({
+        event_id: eventId,
+        provider: "mercadopago",
+        event_type: webhookData.type,
+        order_id: orderId,
+        payload: webhookData,
+      });
     }
 
-    return new Response('✅ REAL WEBHOOK PROCESSED SUCCESSFULLY', { 
+    return new Response('✅ REAL WEBHOOK PROCESSED SUCCESSFULLY', {
       headers: corsHeaders,
       status: 200 
     });

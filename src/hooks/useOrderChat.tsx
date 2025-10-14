@@ -53,73 +53,134 @@ export const useOrderChat = (orderId: string) => {
 
   // Inscrever em mensagens em tempo real
   useEffect(() => {
+    if (!orderId) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
+    // Buscar mensagens iniciais
     fetchMessages();
 
-    const channel = supabase
-      .channel(`order-messages-${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'order_messages',
-          filter: `order_id=eq.${orderId}`,
-        },
-        (payload) => {
-          const newMessage = payload.new as OrderMessage;
-          setMessages((prev) => [...prev, newMessage]);
+    // ✅ ERRO 7 FIX: Gerenciar subscription com cleanup adequado
+    let channelRef: any = null;
 
-          // Aumentar contador se for mensagem do cliente
-          if (newMessage.sender_type === 'customer' && !newMessage.is_read) {
-            setUnreadCount((prev) => prev + 1);
+    const setupChannel = () => {
+      console.log(`[CHAT] Setting up channel for order ${orderId}`);
+      
+      channelRef = supabase
+        .channel(`order-messages-${orderId}`, {
+          config: {
+            broadcast: { self: false },
+          },
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'order_messages',
+            filter: `order_id=eq.${orderId}`,
+          },
+          (payload) => {
+            console.log('[CHAT] New message received:', payload.new);
+            const newMessage = payload.new as OrderMessage;
+            
+            setMessages((prev) => {
+              // Evitar duplicatas
+              if (prev.find(m => m.id === newMessage.id)) {
+                return prev;
+              }
+              return [...prev, newMessage];
+            });
+
+            if (newMessage.sender_type === 'customer' && !newMessage.is_read) {
+              setUnreadCount((prev) => prev + 1);
+              
+              const audio = new Audio('/notification.mp3');
+              audio.play().catch(() => {});
+            }
           }
-
-          // Som de notificação
-          if (newMessage.sender_type === 'customer') {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {});
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'order_messages',
+            filter: `order_id=eq.${orderId}`,
+          },
+          (payload) => {
+            const updatedMessage = payload.new as OrderMessage;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === updatedMessage.id ? updatedMessage : m))
+            );
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'order_messages',
-          filter: `order_id=eq.${orderId}`,
-        },
-        (payload) => {
-          const updatedMessage = payload.new as OrderMessage;
-          setMessages((prev) =>
-            prev.map((m) => (m.id === updatedMessage.id ? updatedMessage : m))
-          );
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log(`[CHAT] Subscription status: ${status}`);
+        });
+    };
 
+    setupChannel();
+
+    // ✅ Cleanup robusto
     return () => {
-      supabase.removeChannel(channel);
+      console.log(`[CHAT] Cleaning up channel for order ${orderId}`);
+      if (channelRef) {
+        supabase.removeChannel(channelRef);
+        channelRef = null;
+      }
     };
   }, [orderId, fetchMessages]);
 
-  // Enviar mensagem
+  // ✅ ERRO 6 FIX: Enviar mensagem com optimistic update
   const sendMessage = useCallback(
     async (message: string) => {
       if (!message.trim()) return;
 
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMessage: OrderMessage = {
+        id: tempId,
+        order_id: orderId,
+        sender_id: null,
+        sender_type: 'attendant',
+        message: message.trim(),
+        message_type: 'text',
+        media_url: null,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // ✅ OPTIMISTIC UPDATE - adicionar mensagem imediatamente
+      setMessages((prev) => [...prev, optimisticMessage]);
       setSending(true);
+
       try {
-        const { error } = await supabase.from('order_messages').insert({
-          order_id: orderId,
-          sender_type: 'attendant',
-          message: message.trim(),
-          message_type: 'text',
-        });
+        const { data, error } = await supabase
+          .from('order_messages')
+          .insert({
+            order_id: orderId,
+            sender_type: 'attendant',
+            message: message.trim(),
+            message_type: 'text',
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // ✅ Substituir mensagem temporária pela real
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? (data as OrderMessage) : m))
+        );
       } catch (error) {
         console.error('Erro ao enviar mensagem:', error);
+        
+        // ✅ ROLLBACK - remover mensagem em caso de erro
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        
         toast({
           title: 'Erro',
           description: 'Não foi possível enviar a mensagem.',
