@@ -48,6 +48,7 @@ const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
 const AdminStock = lazy(() => import("./pages/AdminStock"));
 const AdminConfig = lazy(() => import("./pages/AdminConfig"));
+const AdminCatalog = lazy(() => import("./pages/AdminCatalog"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -190,6 +191,13 @@ const App = () => {
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AdminProducts />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/admin/catalogo" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AdminCatalog />
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />

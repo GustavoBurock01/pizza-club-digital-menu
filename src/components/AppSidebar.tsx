@@ -66,6 +66,7 @@ const attendantItems = [
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
   { title: "Clientes", url: "/admin/customers", icon: Users },
+  { title: "Catálogo", url: "/admin/catalogo", icon: ChefHat },
   { title: "Produtos", url: "/admin/products", icon: Package },
   { title: "Estoque", url: "/admin/stock", icon: Box },
   { title: "Configurações", url: "/admin/configuracoes", icon: Settings2 },
