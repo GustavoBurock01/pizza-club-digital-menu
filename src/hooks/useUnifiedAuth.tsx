@@ -1,7 +1,9 @@
-// ===== SISTEMA DE AUTENTICAÇÃO UNIFICADO SIMPLIFICADO =====
+// ===== WRAPPER DE COMPATIBILIDADE - USA useAuth + useSubscription =====
 
-import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useSubscription } from '@/hooks/subscription/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,8 +27,8 @@ interface UnifiedAuthContextType {
   subscription: SubscriptionStatus;
   
   // Auth Actions
-  signUp: (email: string, password: string, userData: any) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
   
@@ -42,241 +44,89 @@ interface UnifiedAuthContextType {
 const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
 
 export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<SubscriptionStatus>({
-    subscribed: false,
-    status: 'inactive',
-    plan_name: 'Nenhum',
-    plan_price: 0,
-    expires_at: null,
-    loading: true,
-    hasSubscriptionHistory: false,
-  });
-
+  // Use new separated hooks
+  const auth = useAuth();
+  const sub = useSubscription();
   const { toast } = useToast();
 
-  // ===== AUTH STATE MANAGEMENT =====
-  useEffect(() => {
-    let mounted = true;
-
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!mounted) return;
-        
-        console.log('[UNIFIED-AUTH] Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Clear subscription on logout
-        if (event === 'SIGNED_OUT') {
-          setSubscription({
-            subscribed: false,
-            status: 'inactive',
-            plan_name: 'Nenhum',
-            plan_price: 0,
-            expires_at: null,
-            loading: false,
-            hasSubscriptionHistory: false,
-          });
-        }
-        
-        if (mounted) {
-          setLoading(false);
-        }
+  // ===== CREATE CHECKOUT (mantido do código antigo) =====
+  const createCheckout = async (planType: 'annual' | 'monthly' | 'trial' = 'annual') => {
+    try {
+      if (!auth.user || !auth.session) {
+        toast({
+          title: "Erro na autenticação",
+          description: "Você precisa estar logado para criar uma assinatura.",
+          variant: "destructive",
+        });
+        return;
       }
-    );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted) return;
-      
+      console.log('[UNIFIED-AUTH] Creating checkout session for plan:', planType);
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan_type: planType },
+        headers: {
+          Authorization: `Bearer ${auth.session.access_token}`,
+        },
+      });
+
       if (error) {
-        console.error('[UNIFIED-AUTH] Error getting session:', error);
+        console.error('[UNIFIED-AUTH] Edge function error:', error);
+        throw new Error(error.message || 'Erro ao conectar com o servidor de pagamento');
       }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
-    return () => {
-      mounted = false;
-      authSubscription.unsubscribe();
-    };
-  }, []);
+      if (data?.error) {
+        console.error('[UNIFIED-AUTH] Checkout error from edge function:', data.error);
+        throw new Error(data.error);
+      }
 
-  // ===== SUBSCRIPTION MANAGEMENT - SIMPLIFIED =====
-  const refreshSubscription = useCallback(async () => {
-    if (!user || !session) {
-      setSubscription(prev => ({ ...prev, subscribed: false, status: 'inactive', loading: false }));
-      return;
-    }
-
-    console.log('[UNIFIED-AUTH] Refreshing subscription for user:', user.id);
-    setSubscription(prev => ({ ...prev, loading: true }));
-
-    try {
-      // Verificar diretamente no banco de dados
-      const { data: subData, error } = await supabase
-        .from('subscriptions')
-        .select('status, plan_name, plan_price, expires_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (subData && subData.status === 'active') {
-        const now = new Date();
-        const expiresAt = subData.expires_at ? new Date(subData.expires_at) : null;
-        const isExpired = expiresAt && expiresAt < now;
-
-        setSubscription({
-          subscribed: !isExpired,
-          status: isExpired ? 'expired' : subData.status,
-          plan_name: subData.plan_name || 'Nenhum',
-          plan_price: subData.plan_price || 0,
-          expires_at: subData.expires_at,
-          loading: false,
-          hasSubscriptionHistory: true,
-        });
+      if (data?.url) {
+        console.log('[UNIFIED-AUTH] Redirecting to Stripe checkout:', data.url);
+        window.location.href = data.url;
       } else {
-        setSubscription({
-          subscribed: false,
-          status: 'inactive',
-          plan_name: 'Nenhum',
-          plan_price: 0,
-          expires_at: null,
-          loading: false,
-          hasSubscriptionHistory: false,
-        });
+        throw new Error('URL de checkout não retornada. Verifique a configuração do Stripe.');
       }
     } catch (error: any) {
-      console.error('[UNIFIED-AUTH] Error refreshing subscription:', error);
-      setSubscription(prev => ({ ...prev, loading: false, subscribed: false, status: 'inactive' }));
-    }
-  }, [user, session]);
-
-  // ===== AUTH ACTIONS =====
-  const signUp = async (email: string, password: string, userData: any) => {
-    try {
-      setLoading(true);
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      console.error('[UNIFIED-AUTH] Create checkout error:', error);
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: userData.name,
-            phone: userData.phone,
-            cpf: userData.cpf
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.user && !error) {
-        if (userData.address) {
-          const { error: addressError } = await supabase
-            .from('addresses')
-            .insert({
-              user_id: data.user.id,
-              street: userData.address.street,
-              number: userData.address.number,
-              complement: userData.address.complement || null,
-              neighborhood: userData.address.neighborhood,
-              zip_code: userData.address.zipCode,
-              reference_point: userData.address.reference || null,
-              is_default: true
-            });
-
-          if (addressError) {
-            console.error('[UNIFIED-AUTH] Error creating address:', addressError);
-          }
-        }
+      let errorMessage = 'Erro ao processar pagamento. Por favor, tente novamente.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
-
+      
       toast({
-        title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar a conta.",
-      });
-    } catch (error: any) {
-      console.error('[UNIFIED-AUTH] Sign up error:', error);
-      toast({
-        title: "Erro ao criar conta",
-        description: error.message,
+        title: "Erro ao criar checkout",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
+      
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Refresh subscription on successful login
-      if (data.user) {
-        setTimeout(() => {
-          refreshSubscription();
-        }, 1000);
-      }
-
-      if (data.user) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .maybeSingle();
-
-          const userRole = profile?.role || 'customer';
-
-          setTimeout(() => {
-            switch (userRole) {
-              case 'admin':
-                window.location.href = '/admin';
-                break;
-              case 'attendant':
-                window.location.href = '/attendant';
-                break;
-              default:
-                window.location.href = '/dashboard';
-                break;
-            }
-          }, 300);
-        } catch (roleError) {
-          console.error('[UNIFIED-AUTH] Error checking user role:', roleError);
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 300);
-        }
-      }
-
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
-      });
-    } catch (error: any) {
-      console.error('[UNIFIED-AUTH] Sign in error:', error);
-      // Don't show toast here - let the form handle error display
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  // ===== SUBSCRIPTION STATUS (formato antigo para compatibilidade) =====
+  const subscriptionStatus: SubscriptionStatus = {
+    subscribed: sub.isActive,
+    status: sub.subscription?.status || 'inactive',
+    plan_name: sub.subscription?.plan_name || 'Nenhum',
+    plan_price: sub.subscription?.plan_price || 0,
+    expires_at: sub.subscription?.expires_at || null,
+    loading: sub.isLoading,
+    hasSubscriptionHistory: !!sub.subscription,
   };
+
+  // Delegate to auth hook
+  const signUp = auth.signUp;
+  const signIn = auth.signIn;
+  const signOut = auth.signOut;
+  const updateProfile = auth.updateProfile;
+
+  // Delegate to subscription hook
+  const refreshSubscription = sub.refresh;
 
   const signOut = async () => {
     try {
