@@ -58,6 +58,12 @@ const GerenciarAppInformacoes = lazy(() => import("@/pages/admin/gerenciar-app/I
 const GerenciarAppFidelidade = lazy(() => import("@/pages/admin/gerenciar-app/fidelidade/index"));
 const GerenciarAppIntegracoes = lazy(() => import("@/pages/admin/gerenciar-app/Integracoes"));
 
+// FASE 4 - Configurações
+const Configuracoes = lazy(() => import("@/pages/admin/configuracoes/index"));
+const ConfigImpressao = lazy(() => import("@/pages/admin/configuracoes/Impressao"));
+const ConfigUsuarios = lazy(() => import("@/pages/admin/configuracoes/Usuarios"));
+const ConfigConta = lazy(() => import("@/pages/admin/configuracoes/Conta"));
+
 // OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
@@ -212,6 +218,19 @@ const App = () => {
                 <Route path="informacoes" element={<GerenciarAppInformacoes />} />
                 <Route path="fidelidade" element={<GerenciarAppFidelidade />} />
                 <Route path="integracoes" element={<GerenciarAppIntegracoes />} />
+              </Route>
+              
+              {/* ===== FASE 4 - CONFIGURAÇÕES ===== */}
+              <Route path="/admin/configuracoes-new" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <Configuracoes />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route path="impressao" element={<ConfigImpressao />} />
+                <Route path="usuarios" element={<ConfigUsuarios />} />
+                <Route path="conta" element={<ConfigConta />} />
               </Route>
               
               {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}

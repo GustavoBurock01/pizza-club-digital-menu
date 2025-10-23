@@ -70,7 +70,7 @@ const attendantItems = [
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
   { title: "Gerenciar App", url: "/admin/gerenciar-app", icon: Settings2 },
-  { title: "Configurações", url: "/admin/configuracoes", icon: Cog },
+  { title: "Configurações", url: "/admin/configuracoes-new", icon: Cog },
   { title: "Sistema", url: "/admin/sistema", icon: Server },
   { title: "Relatórios", url: "/admin/relatorios", icon: FileText },
   { title: "CRM", url: "/admin/crm", icon: Users },
