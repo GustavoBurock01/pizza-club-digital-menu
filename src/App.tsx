@@ -71,6 +71,14 @@ const SistemaStatus = lazy(() => import("@/pages/admin/sistema/Status"));
 const SistemaPlanos = lazy(() => import("@/pages/admin/sistema/Planos"));
 const SistemaBackups = lazy(() => import("@/pages/admin/sistema/Backups"));
 
+// FASE 6 - Relatórios
+const Relatorios = lazy(() => import("@/pages/admin/relatorios/index"));
+const RelatoriosAnalytics = lazy(() => import("@/pages/admin/relatorios/Analytics"));
+const RelatoriosPedidos = lazy(() => import("@/pages/admin/relatorios/Pedidos"));
+const RelatoriosVendas = lazy(() => import("@/pages/admin/relatorios/VendasCategoria"));
+const RelatoriosClientes = lazy(() => import("@/pages/admin/relatorios/Clientes"));
+const RelatoriosDelivery = lazy(() => import("@/pages/admin/relatorios/Delivery"));
+
 // OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
@@ -252,6 +260,21 @@ const App = () => {
                 <Route path="status" element={<SistemaStatus />} />
                 <Route path="planos" element={<SistemaPlanos />} />
                 <Route path="backups" element={<SistemaBackups />} />
+              </Route>
+
+              {/* ===== FASE 6 - RELATÓRIOS ===== */}
+              <Route path="/admin/relatorios" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <Relatorios />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route path="analytics" element={<RelatoriosAnalytics />} />
+                <Route path="pedidos" element={<RelatoriosPedidos />} />
+                <Route path="vendas" element={<RelatoriosVendas />} />
+                <Route path="clientes" element={<RelatoriosClientes />} />
+                <Route path="delivery" element={<RelatoriosDelivery />} />
               </Route>
               
               {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
