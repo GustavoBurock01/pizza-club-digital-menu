@@ -64,6 +64,13 @@ const ConfigImpressao = lazy(() => import("@/pages/admin/configuracoes/Impressao
 const ConfigUsuarios = lazy(() => import("@/pages/admin/configuracoes/Usuarios"));
 const ConfigConta = lazy(() => import("@/pages/admin/configuracoes/Conta"));
 
+// FASE 5 - Sistema
+const Sistema = lazy(() => import("@/pages/admin/sistema/index"));
+const SistemaLogs = lazy(() => import("@/pages/admin/sistema/Logs"));
+const SistemaStatus = lazy(() => import("@/pages/admin/sistema/Status"));
+const SistemaPlanos = lazy(() => import("@/pages/admin/sistema/Planos"));
+const SistemaBackups = lazy(() => import("@/pages/admin/sistema/Backups"));
+
 // OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
@@ -231,6 +238,20 @@ const App = () => {
                 <Route path="impressao" element={<ConfigImpressao />} />
                 <Route path="usuarios" element={<ConfigUsuarios />} />
                 <Route path="conta" element={<ConfigConta />} />
+              </Route>
+
+              {/* ===== FASE 5 - SISTEMA ===== */}
+              <Route path="/admin/sistema" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <Sistema />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route path="logs" element={<SistemaLogs />} />
+                <Route path="status" element={<SistemaStatus />} />
+                <Route path="planos" element={<SistemaPlanos />} />
+                <Route path="backups" element={<SistemaBackups />} />
               </Route>
               
               {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
