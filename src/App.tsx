@@ -43,10 +43,20 @@ const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 
 const Payment = lazy(() => import("./pages/Payment"));
 
-// NEW ADMIN STRUCTURE - FASE 1
+// NEW ADMIN STRUCTURE - FASE 1 & FASE 3
 const NewAdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
 const AdminReceitas = lazy(() => import("@/pages/admin/dashboard/Receitas"));
 const AdminAssinaturas = lazy(() => import("@/pages/admin/dashboard/Assinaturas"));
+
+// FASE 3 - Gerenciar App
+const GerenciarApp = lazy(() => import("@/pages/admin/gerenciar-app/index"));
+const GerenciarAppProdutos = lazy(() => import("@/pages/admin/gerenciar-app/produtos/index"));
+const GerenciarAppDelivery = lazy(() => import("@/pages/admin/gerenciar-app/Delivery"));
+const GerenciarAppRegrasPagamento = lazy(() => import("@/pages/admin/gerenciar-app/RegrasPagamento"));
+const GerenciarAppHorarios = lazy(() => import("@/pages/admin/gerenciar-app/Horarios"));
+const GerenciarAppInformacoes = lazy(() => import("@/pages/admin/gerenciar-app/Informacoes"));
+const GerenciarAppFidelidade = lazy(() => import("@/pages/admin/gerenciar-app/fidelidade/index"));
+const GerenciarAppIntegracoes = lazy(() => import("@/pages/admin/gerenciar-app/Integracoes"));
 
 // OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
@@ -164,7 +174,7 @@ const App = () => {
                 </UnifiedProtectedRoute>
               } />
               
-              {/* ===== NEW ADMIN ROUTES - FASE 1 ===== */}
+              {/* ===== NEW ADMIN ROUTES - FASE 1 & FASE 3 ===== */}
               <Route path="/admin" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
@@ -186,6 +196,23 @@ const App = () => {
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
+
+              {/* ===== FASE 3 - GERENCIAR APP ===== */}
+              <Route path="/admin/gerenciar-app" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <GerenciarApp />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route path="produtos" element={<GerenciarAppProdutos />} />
+                <Route path="delivery" element={<GerenciarAppDelivery />} />
+                <Route path="regras-pagamento" element={<GerenciarAppRegrasPagamento />} />
+                <Route path="horarios" element={<GerenciarAppHorarios />} />
+                <Route path="informacoes" element={<GerenciarAppInformacoes />} />
+                <Route path="fidelidade" element={<GerenciarAppFidelidade />} />
+                <Route path="integracoes" element={<GerenciarAppIntegracoes />} />
+              </Route>
               
               {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
               <Route path="/admin-old" element={
