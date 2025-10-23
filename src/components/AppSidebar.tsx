@@ -22,6 +22,10 @@ import {
   Headphones,
   Settings2,
   Box,
+  Cog,
+  Server,
+  Megaphone,
+  Plug,
 } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUnifiedStore } from '@/stores/simpleStore';
@@ -62,16 +66,16 @@ const attendantItems = [
   { title: "Clientes", url: "/attendant/customers", icon: Users },
 ];
 
-// Menu items for admins
+// Menu items for admins (NOVA HIERARQUIA)
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
-  { title: "Clientes", url: "/admin/customers", icon: Users },
-  { title: "Catálogo", url: "/admin/catalogo", icon: ChefHat },
-  { title: "Produtos", url: "/admin/products", icon: Package },
-  { title: "Estoque", url: "/admin/stock", icon: Box },
-  { title: "Configurações", url: "/admin/configuracoes", icon: Settings2 },
-  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Sistema", url: "/admin/settings", icon: Settings },
+  { title: "Gerenciar App", url: "/admin/gerenciar-app", icon: Settings2 },
+  { title: "Configurações", url: "/admin/configuracoes", icon: Cog },
+  { title: "Sistema", url: "/admin/sistema", icon: Server },
+  { title: "Relatórios", url: "/admin/relatorios", icon: FileText },
+  { title: "CRM", url: "/admin/crm", icon: Users },
+  { title: "Marketing", url: "/admin/marketing", icon: Megaphone },
+  { title: "Integrações", url: "/admin/integracoes", icon: Plug },
 ];
 
 export function AppSidebar() {

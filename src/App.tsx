@@ -43,6 +43,12 @@ const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 
 const Payment = lazy(() => import("./pages/Payment"));
 
+// NEW ADMIN STRUCTURE - FASE 1
+const NewAdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminReceitas = lazy(() => import("@/pages/admin/dashboard/Receitas"));
+const AdminAssinaturas = lazy(() => import("@/pages/admin/dashboard/Assinaturas"));
+
+// OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("./pages/AdminProducts"));
@@ -158,8 +164,31 @@ const App = () => {
                 </UnifiedProtectedRoute>
               } />
               
-              {/* Admin Routes */}
+              {/* ===== NEW ADMIN ROUTES - FASE 1 ===== */}
               <Route path="/admin" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <NewAdminDashboard />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/admin/dashboard/receitas" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <AdminReceitas />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              <Route path="/admin/dashboard/assinaturas" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <AdminAssinaturas />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              } />
+              
+              {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
+              <Route path="/admin-old" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <AdminDashboard />
                 </UnifiedProtectedRoute>
