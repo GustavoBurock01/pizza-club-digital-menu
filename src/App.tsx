@@ -20,13 +20,11 @@ import { smartPreload } from "@/utils/routePreloader";
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { AnalyticsDebugger } from './components/AnalyticsDebugger';
 
-// ===== BUNDLE OPTIMIZATION - APENAS 5 ROTAS CRÍTICAS =====
 // Core pages - loading instantâneo (não lazy loaded)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Menu from "./pages/Menu";
 import ExpressCheckout from "./pages/ExpressCheckout";
-import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 // Lazy load attendant unified
@@ -35,13 +33,11 @@ const AttendantUnified = lazy(() => import("./pages/AttendantUnified"));
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SubscriptionPlansPage = lazy(() => import("./pages/SubscriptionPlans"));
-
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
-
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
-
 const Payment = lazy(() => import("./pages/Payment"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // NEW ADMIN STRUCTURE - FASE 1 & FASE 3
 const NewAdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
@@ -86,19 +82,21 @@ const CRMSegmentacao = lazy(() => import("@/pages/admin/crm/Segmentacao"));
 const CRMComunicacao = lazy(() => import("@/pages/admin/crm/Comunicacao"));
 const CRMFidelidade = lazy(() => import("@/pages/admin/crm/Fidelidade"));
 
-// OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
-const AdminSettings = lazy(() => import("./pages/AdminSettings"));
-const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
-const AdminProducts = lazy(() => import("./pages/AdminProducts"));
-const AdminStock = lazy(() => import("./pages/AdminStock"));
-const AdminConfig = lazy(() => import("./pages/AdminConfig"));
-const AdminCatalog = lazy(() => import("./pages/AdminCatalog"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const IntegrationsManager = lazy(() => import("./pages/IntegrationsManager"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Phase2PremiumExperience = lazy(() => import("./components/Phase2PremiumExperience"));
+// FASE 8 - Marketing
+const Marketing = lazy(() => import("@/pages/admin/marketing/index"));
+const MarketingCupons = lazy(() => import("@/pages/admin/marketing/Cupons"));
+const MarketingPromocoes = lazy(() => import("@/pages/admin/marketing/Promocoes"));
+const MarketingCampanhas = lazy(() => import("@/pages/admin/marketing/Campanhas"));
+const MarketingBanners = lazy(() => import("@/pages/admin/marketing/Banners"));
 
-// Configuração do QueryClient movida para @/config/queryClient
+// FASE 9 - Integrações (Reorganizadas)
+const Integracoes = lazy(() => import("@/pages/admin/integracoes/index"));
+const IntegracoesDelivery = lazy(() => import("@/pages/admin/integracoes/Delivery"));
+const IntegracoesERP = lazy(() => import("@/pages/admin/integracoes/ERP"));
+const IntegracoesWebhooks = lazy(() => import("@/pages/admin/integracoes/Webhooks"));
+
+// Phase 2 Premium
+const Phase2PremiumExperience = lazy(() => import("./components/Phase2PremiumExperience"));
 
 const App = () => {
   // Preload de rotas críticas no mount
@@ -161,7 +159,11 @@ const App = () => {
                   </Suspense>
                 </UnifiedProtectedRoute>
               } />
-               <Route path="/phase2-premium" element={<Phase2PremiumExperience />} />
+               <Route path="/phase2-premium" element={
+                 <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                   <Phase2PremiumExperience />
+                 </Suspense>
+               } />
                <Route path="/menu" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
                   <ProtectedSubscriptionRoute>
@@ -298,79 +300,43 @@ const App = () => {
                 <Route path="comunicacao" element={<CRMComunicacao />} />
                 <Route path="fidelidade" element={<CRMFidelidade />} />
               </Route>
-              
-              {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
-              <Route path="/admin-old" element={
+
+              {/* ===== FASE 8 - MARKETING ===== */}
+              <Route path="/admin/marketing" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <AdminDashboard />
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <Marketing />
+                  </Suspense>
                 </UnifiedProtectedRoute>
-              } />
+              }>
+                <Route index element={<MarketingCupons />} />
+                <Route path="cupons" element={<MarketingCupons />} />
+                <Route path="promocoes" element={<MarketingPromocoes />} />
+                <Route path="campanhas" element={<MarketingCampanhas />} />
+                <Route path="banners" element={<MarketingBanners />} />
+              </Route>
+
+              {/* ===== FASE 9 - INTEGRAÇÕES (REORGANIZADAS) ===== */}
+              <Route path="/admin/integracoes" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <Integracoes />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route index element={<IntegracoesDelivery />} />
+                <Route path="delivery" element={<IntegracoesDelivery />} />
+                <Route path="erp" element={<IntegracoesERP />} />
+                <Route path="webhooks" element={<IntegracoesWebhooks />} />
+              </Route>
               
-              {/* Attendant Routes - Unified */}
+              {/* ===== ATTENDANT ROUTE ===== */}
               <Route path="/attendant" element={
                 <AttendantRoute>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AttendantUnified />
                   </Suspense>
                 </AttendantRoute>
-              } />
-              <Route path="/admin/settings" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminSettings />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/customers" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminCustomers />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/products" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminProducts />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/catalogo" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminCatalog />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/stock" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminStock />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/configuracoes" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AdminConfig />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              <Route path="/admin/analytics" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Analytics />
-                  </Suspense>
-                </UnifiedProtectedRoute>
-              } />
-              
-              {/* Integrations Route */}
-              <Route path="/admin/integrations" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <IntegrationsManager />
-                  </Suspense>
-                </UnifiedProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
