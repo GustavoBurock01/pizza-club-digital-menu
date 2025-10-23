@@ -79,6 +79,13 @@ const RelatoriosVendas = lazy(() => import("@/pages/admin/relatorios/VendasCateg
 const RelatoriosClientes = lazy(() => import("@/pages/admin/relatorios/Clientes"));
 const RelatoriosDelivery = lazy(() => import("@/pages/admin/relatorios/Delivery"));
 
+// FASE 7 - CRM
+const CRM = lazy(() => import("@/pages/admin/crm/index"));
+const CRMClientes = lazy(() => import("@/pages/admin/crm/Clientes"));
+const CRMSegmentacao = lazy(() => import("@/pages/admin/crm/Segmentacao"));
+const CRMComunicacao = lazy(() => import("@/pages/admin/crm/Comunicacao"));
+const CRMFidelidade = lazy(() => import("@/pages/admin/crm/Fidelidade"));
+
 // OLD ADMIN PAGES - Keep for now (will be migrated in later phases)
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminCustomers = lazy(() => import("./pages/AdminCustomers"));
@@ -275,6 +282,21 @@ const App = () => {
                 <Route path="vendas" element={<RelatoriosVendas />} />
                 <Route path="clientes" element={<RelatoriosClientes />} />
                 <Route path="delivery" element={<RelatoriosDelivery />} />
+              </Route>
+
+              {/* ===== FASE 7 - CRM ===== */}
+              <Route path="/admin/crm" element={
+                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                  <Suspense fallback={<OptimizedLoadingSpinner />}>
+                    <CRM />
+                  </Suspense>
+                </UnifiedProtectedRoute>
+              }>
+                <Route index element={<CRMClientes />} />
+                <Route path="clientes" element={<CRMClientes />} />
+                <Route path="segmentacao" element={<CRMSegmentacao />} />
+                <Route path="comunicacao" element={<CRMComunicacao />} />
+                <Route path="fidelidade" element={<CRMFidelidade />} />
               </Route>
               
               {/* ===== OLD ADMIN ROUTES - Mantidas temporariamente ===== */}
