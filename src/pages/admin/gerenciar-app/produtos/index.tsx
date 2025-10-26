@@ -4,6 +4,7 @@ import { SidebarCategorias } from './SidebarCategorias';
 import { PainelProdutos } from './PainelProdutos';
 import { Extras } from './Extras';
 import { Configuracoes } from './Configuracoes';
+import { AdminProductCrusts } from '@/components/AdminProductCrusts';
 
 export default function GerenciarAppProdutos() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export default function GerenciarAppProdutos() {
           <TabsList>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="extras">Extras</TabsTrigger>
+            <TabsTrigger value="bordas">Bordas Recheadas</TabsTrigger>
             <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           </TabsList>
 
@@ -39,6 +41,10 @@ export default function GerenciarAppProdutos() {
 
           <TabsContent value="extras" className="mt-6">
             <Extras />
+          </TabsContent>
+
+          <TabsContent value="bordas" className="mt-6">
+            <AdminProductCrusts />
           </TabsContent>
 
           <TabsContent value="configuracoes" className="mt-6">
