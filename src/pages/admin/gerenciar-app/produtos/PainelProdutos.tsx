@@ -19,15 +19,21 @@ export function PainelProdutos({ categoryId, subcategoryId }: Props) {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   const { data: products, isLoading, refetch } = useQuery({
-    queryKey: ['products', categoryId],
+    queryKey: ['products', categoryId, subcategoryId],
     queryFn: async () => {
       if (!categoryId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('name', { ascending: true });
+        .select('*');
+      
+      if (subcategoryId) {
+        query = query.eq('subcategory_id', subcategoryId);
+      } else {
+        query = query.eq('category_id', categoryId);
+      }
+      
+      const { data, error } = await query.order('name', { ascending: true });
       
       if (error) throw error;
       return data;
