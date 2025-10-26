@@ -245,13 +245,14 @@ const App = () => {
               </Route>
               
               {/* ===== FASE 4 - CONFIGURAÇÕES ===== */}
-              <Route path="/admin/configuracoes-new" element={
+              <Route path="/admin/configuracoes" element={
                 <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Configuracoes />
                   </Suspense>
                 </UnifiedProtectedRoute>
               }>
+                <Route index element={<ConfigImpressao />} />
                 <Route path="impressao" element={<ConfigImpressao />} />
                 <Route path="usuarios" element={<ConfigUsuarios />} />
                 <Route path="conta" element={<ConfigConta />} />

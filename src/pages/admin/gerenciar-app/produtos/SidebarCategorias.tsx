@@ -3,40 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Plus, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-interface Category {
-  id: string;
-  name: string;
-  subcategories?: { id: string; name: string }[];
-}
-
-// Mock data - substituir por dados reais do Supabase
-const mockCategories: Category[] = [
-  {
-    id: '1',
-    name: 'Pizzas Grandes',
-    subcategories: [
-      { id: '1-1', name: 'Salgadas' },
-      { id: '1-2', name: 'Doces' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Pizza Broto',
-    subcategories: [
-      { id: '2-1', name: 'Salgadas' },
-      { id: '2-2', name: 'Doces' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Bebidas',
-  },
-  {
-    id: '4',
-    name: 'Promoções',
-  },
-];
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/services/supabase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Props {
   selectedCategory: string | null;
@@ -51,7 +20,21 @@ export function SidebarCategorias({
   onSelectCategory,
   onSelectSubcategory,
 }: Props) {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['1']);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) =>
@@ -67,65 +50,60 @@ export function SidebarCategorias({
     toggleCategory(categoryId);
   };
 
+  if (isLoading) {
+    return (
+      <Card className="p-4">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4">
       <div className="mb-4">
         <h3 className="font-semibold mb-2">Categorias</h3>
         <Button variant="outline" size="sm" className="w-full">
           <Plus className="h-4 w-4 mr-2" />
-          Adicionar Menu
+          Adicionar Categoria
         </Button>
       </div>
 
       <div className="space-y-1">
-        {mockCategories.map((category) => (
+        {categories?.map((category) => (
           <div key={category.id}>
             <Button
               variant="ghost"
               size="sm"
               className={cn(
                 'w-full justify-between',
-                selectedCategory === category.id && !selectedSubcategory && 'bg-accent'
+                selectedCategory === category.id && 'bg-accent'
               )}
               onClick={() => handleCategoryClick(category.id)}
             >
-              <span>{category.name}</span>
-              {category.subcategories && (
-                <ChevronRight
-                  className={cn(
-                    'h-4 w-4 transition-transform',
-                    expandedCategories.includes(category.id) && 'rotate-90'
-                  )}
-                />
-              )}
+              <span className="flex items-center gap-2">
+                {category.icon && <span>{category.icon}</span>}
+                {category.name}
+              </span>
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 transition-transform',
+                  expandedCategories.includes(category.id) && 'rotate-90'
+                )}
+              />
             </Button>
-
-            {/* Subcategorias */}
-            {category.subcategories &&
-              expandedCategories.includes(category.id) && (
-                <div className="ml-4 mt-1 space-y-1">
-                  {category.subcategories.map((sub) => (
-                    <Button
-                      key={sub.id}
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        'w-full justify-start text-sm',
-                        selectedSubcategory === sub.id && 'bg-accent'
-                      )}
-                      onClick={() => {
-                        onSelectCategory(category.id);
-                        onSelectSubcategory(sub.id);
-                      }}
-                    >
-                      {sub.name}
-                    </Button>
-                  ))}
-                </div>
-              )}
           </div>
         ))}
       </div>
+
+      {categories?.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Nenhuma categoria cadastrada
+        </p>
+      )}
     </Card>
   );
 }

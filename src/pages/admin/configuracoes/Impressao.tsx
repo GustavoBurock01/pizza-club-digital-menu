@@ -4,21 +4,56 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Printer, TestTube } from 'lucide-react';
+import { Printer, TestTube, CheckCircle, XCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useThermalPrinterConfig } from '@/hooks/useThermalPrinterConfig';
+import { useThermalPrint } from '@/hooks/useThermalPrint';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 export default function Impressao() {
+  const { config, setConnectionType, setPrinterIP, setEnabled, saveConfig, isLoading } = useThermalPrinterConfig();
+  const { testPrinter, isPrinting } = useThermalPrint();
+  
+  const [localIP, setLocalIP] = useState(config.printerIP);
+  const [localType, setLocalType] = useState(config.connectionType);
+  const [localEnabled, setLocalEnabled] = useState(config.enabled);
+
+  const handleSave = async () => {
+    await saveConfig({
+      connectionType: localType,
+      printerIP: localIP,
+      enabled: localEnabled,
+    });
+    toast.success('Configurações salvas com sucesso!');
+  };
+
+  const handleTest = async () => {
+    await testPrinter(localType === 'network' ? localIP : undefined);
+  };
+
+  const lastTest = config.testResults?.[0];
+
   return (
     <div className="space-y-6">
       <Card className="p-6 space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
-            <Printer className="h-5 w-5" />
-            Configurações de Impressora Térmica
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Configure sua impressora térmica para impressão automática de pedidos
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
+              <Printer className="h-5 w-5" />
+              Configurações de Impressora Térmica Elgin i7 Plus
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Configure sua impressora térmica USB para impressão automática de comandas
+            </p>
+          </div>
+          {lastTest && (
+            <Badge variant={lastTest.success ? "default" : "destructive"} className="gap-1">
+              {lastTest.success ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+              {lastTest.success ? 'Funcionando' : 'Com erro'}
+            </Badge>
+          )}
         </div>
 
         <Separator />
@@ -31,112 +66,101 @@ export default function Impressao() {
               Imprimir automaticamente ao receber novos pedidos
             </p>
           </div>
-          <Switch id="thermal-enabled" />
+          <Switch 
+            id="thermal-enabled" 
+            checked={localEnabled}
+            onCheckedChange={setLocalEnabled}
+          />
         </div>
 
         {/* Tipo de impressora */}
         <div className="space-y-2">
-          <Label htmlFor="printer-type">Tipo de impressora</Label>
-          <Select defaultValue="usb">
+          <Label htmlFor="printer-type">Tipo de conexão</Label>
+          <Select value={localType} onValueChange={(value: 'usb' | 'network') => setLocalType(value)}>
             <SelectTrigger id="printer-type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="usb">USB</SelectItem>
+              <SelectItem value="usb">USB (Recomendado para Elgin i7 Plus)</SelectItem>
               <SelectItem value="network">Rede (IP)</SelectItem>
-              <SelectItem value="bluetooth">Bluetooth</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Endereço IP (se rede) */}
-        <div className="space-y-2">
-          <Label htmlFor="printer-ip">Endereço IP da impressora</Label>
-          <Input
-            id="printer-ip"
-            type="text"
-            placeholder="192.168.1.100"
-            className="max-w-md"
-          />
           <p className="text-xs text-muted-foreground">
-            Apenas para impressoras de rede
+            A Elgin i7 Plus funciona melhor via USB
           </p>
         </div>
 
-        {/* Largura do papel */}
-        <div className="space-y-2">
-          <Label htmlFor="paper-width">Largura do papel (mm)</Label>
-          <Select defaultValue="80">
-            <SelectTrigger id="paper-width" className="max-w-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="58">58mm</SelectItem>
-              <SelectItem value="80">80mm</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Número de cópias */}
-        <div className="space-y-2">
-          <Label htmlFor="copies">Número de cópias</Label>
-          <Input
-            id="copies"
-            type="number"
-            defaultValue="1"
-            min="1"
-            max="5"
-            className="max-w-xs"
-          />
-        </div>
-
-        <Separator />
-
-        {/* Opções de impressão */}
-        <div className="space-y-4">
-          <h4 className="font-medium">Opções de impressão</h4>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="print-customer-info">Imprimir dados do cliente</Label>
-              <p className="text-sm text-muted-foreground">Nome, telefone e endereço</p>
-            </div>
-            <Switch id="print-customer-info" defaultChecked />
+        {/* Endereço IP (se rede) */}
+        {localType === 'network' && (
+          <div className="space-y-2">
+            <Label htmlFor="printer-ip">Endereço IP da impressora</Label>
+            <Input
+              id="printer-ip"
+              type="text"
+              value={localIP}
+              onChange={(e) => setLocalIP(e.target.value)}
+              placeholder="192.168.1.100"
+              className="max-w-md"
+            />
+            <p className="text-xs text-muted-foreground">
+              Apenas para impressoras de rede
+            </p>
           </div>
+        )}
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="print-qr">Imprimir QR Code</Label>
-              <p className="text-sm text-muted-foreground">Para rastreamento do pedido</p>
+        {/* Histórico de testes */}
+        {config.testResults && config.testResults.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <Label>Últimos testes</Label>
+              <div className="space-y-2">
+                {config.testResults.slice(0, 3).map((result, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    {result.success ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <span className={result.success ? 'text-green-600' : 'text-destructive'}>
+                      {result.message}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {config.lastTested && (
+                <p className="text-xs text-muted-foreground">
+                  Último teste: {new Date(config.lastTested).toLocaleString('pt-BR')}
+                </p>
+              )}
             </div>
-            <Switch id="print-qr" defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="print-logo">Imprimir logo da empresa</Label>
-              <p className="text-sm text-muted-foreground">Logo no topo do cupom</p>
-            </div>
-            <Switch id="print-logo" defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="cut-paper">Cortar papel automaticamente</Label>
-              <p className="text-sm text-muted-foreground">Após finalizar impressão</p>
-            </div>
-            <Switch id="cut-paper" defaultChecked />
-          </div>
-        </div>
+          </>
+        )}
 
         <div className="flex gap-3 pt-4">
-          <Button>
+          <Button onClick={handleSave} disabled={isLoading}>
             Salvar Configurações
           </Button>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleTest}
+            disabled={isPrinting || !localEnabled}
+          >
             <TestTube className="h-4 w-4" />
-            Imprimir Teste
+            {isPrinting ? 'Testando...' : 'Testar Impressão'}
           </Button>
+        </div>
+
+        <div className="bg-muted p-4 rounded-lg">
+          <h4 className="font-medium mb-2 text-sm">📝 Instruções de instalação</h4>
+          <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+            <li>Conecte a impressora Elgin i7 Plus via cabo USB ao computador</li>
+            <li>Instale os drivers da Elgin (disponíveis no site do fabricante)</li>
+            <li>Certifique-se que a impressora está ligada e com papel</li>
+            <li>Clique em "Testar Impressão" para verificar a conexão</li>
+            <li>Se funcionar, ative a "Impressão automática"</li>
+          </ol>
         </div>
       </Card>
     </div>
