@@ -61,9 +61,21 @@ export function SidebarCategorias({
     );
   };
 
+  const getCategorySubcategories = (categoryId: string) => {
+    return subcategories?.filter(sub => sub.category_id === categoryId) || [];
+  };
+
   const handleCategoryClick = (categoryId: string) => {
+    const categorySubs = getCategorySubcategories(categoryId);
     onSelectCategory(categoryId);
-    onSelectSubcategory(null);
+    
+    // Se tem subcategorias, seleciona automaticamente a primeira
+    if (categorySubs.length > 0) {
+      onSelectSubcategory(categorySubs[0].id);
+    } else {
+      onSelectSubcategory(null);
+    }
+    
     toggleCategory(categoryId);
   };
 
@@ -80,10 +92,6 @@ export function SidebarCategorias({
   const openAddSubcategoryModal = (categoryId: string) => {
     setModalParentId(categoryId);
     setModalOpen(true);
-  };
-
-  const getCategorySubcategories = (categoryId: string) => {
-    return subcategories?.filter(sub => sub.category_id === categoryId) || [];
   };
 
   if (isLoading) {
