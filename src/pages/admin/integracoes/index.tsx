@@ -1,3 +1,4 @@
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Truck, Building2, Webhook } from 'lucide-react';
 import Delivery from './Delivery';
@@ -6,14 +7,10 @@ import Webhooks from './Webhooks';
 
 export default function Integracoes() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Integrações</h1>
-        <p className="text-muted-foreground">
-          Conecte seu sistema com ferramentas externas
-        </p>
-      </div>
-
+    <AdminLayout 
+      title="Integrações" 
+      description="Conecte seu sistema com ferramentas externas"
+    >
       <Tabs defaultValue="delivery" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="delivery" className="flex items-center gap-2">
@@ -42,6 +39,6 @@ export default function Integracoes() {
           <Webhooks />
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminLayout>
   );
 }

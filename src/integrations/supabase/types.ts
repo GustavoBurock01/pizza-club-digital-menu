@@ -76,7 +76,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
         }
         Insert: {
@@ -87,7 +87,7 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Update: {
@@ -98,7 +98,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Relationships: []
@@ -163,6 +163,54 @@ export type Database = {
           timeout_seconds?: number | null
           updated_at?: string
           worker_id?: string | null
+        }
+        Relationships: []
+      }
+      banners: {
+        Row: {
+          click_count: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          order_position: number | null
+          position: string | null
+          title: string
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          click_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          order_position?: number | null
+          position?: string | null
+          title: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          click_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          order_position?: number | null
+          position?: string | null
+          title?: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Relationships: []
       }
@@ -253,6 +301,123 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_discount_amount: number | null
+          min_order_value: number | null
+          updated_at: string | null
+          usage_limit: number | null
+          used_count: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_value?: number | null
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_value?: number | null
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      customer_segment_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          segment_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          segment_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          segment_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_segment_members_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "customer_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_segment_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_segments: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          criteria: Json
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          criteria: Json
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          criteria?: Json
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       delivery_integrations: {
         Row: {
           api_key: string | null
@@ -291,6 +456,57 @@ export type Database = {
           webhook_url?: string | null
         }
         Relationships: []
+      }
+      delivery_platform_orders: {
+        Row: {
+          created_at: string | null
+          external_order_id: string
+          id: string
+          internal_order_id: string | null
+          order_data: Json | null
+          platform: string
+          status: string
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_order_id: string
+          id?: string
+          internal_order_id?: string | null
+          order_data?: Json | null
+          platform: string
+          status: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_order_id?: string
+          id?: string
+          internal_order_id?: string | null
+          order_data?: Json | null
+          platform?: string
+          status?: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_platform_orders_internal_order_id_fkey"
+            columns: ["internal_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_platform_orders_internal_order_id_fkey"
+            columns: ["internal_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_zones: {
         Row: {
@@ -688,6 +904,218 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      loyalty_points: {
+        Row: {
+          created_at: string | null
+          id: string
+          lifetime_points: number | null
+          points: number | null
+          tier_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lifetime_points?: number | null
+          points?: number | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lifetime_points?: number | null
+          points?: number | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_points_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_redemptions: {
+        Row: {
+          id: string
+          points_used: number
+          redeemed_at: string | null
+          reward_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          points_used: number
+          redeemed_at?: string | null
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          points_used?: number
+          redeemed_at?: string | null
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          points_cost: number
+          reward_type: string
+          reward_value: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          points_cost: number
+          reward_type: string
+          reward_value?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          points_cost?: number
+          reward_type?: string
+          reward_value?: Json | null
+        }
+        Relationships: []
+      }
+      loyalty_tiers: {
+        Row: {
+          benefits: Json | null
+          color: string | null
+          created_at: string | null
+          id: string
+          min_orders: number
+          name: string
+        }
+        Insert: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          min_orders: number
+          name: string
+        }
+        Update: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          min_orders?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          campaign_type: string
+          click_count: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          message: string
+          name: string
+          open_count: number | null
+          scheduled_at: string | null
+          segment_id: string | null
+          sent_at: string | null
+          sent_count: number | null
+          status: string | null
+          subject: string | null
+          template_id: string | null
+          total_recipients: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_type: string
+          click_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          message: string
+          name: string
+          open_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          subject?: string | null
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          click_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          message?: string
+          name?: string
+          open_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          subject?: string | null
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "customer_segments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -1285,6 +1713,57 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          min_quantity: number | null
+          name: string
+          promotion_type: string
+          target_category_ids: string[] | null
+          target_product_ids: string[] | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          min_quantity?: number | null
+          name: string
+          promotion_type: string
+          target_category_ids?: string[] | null
+          target_product_ids?: string[] | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          min_quantity?: number | null
+          name?: string
+          promotion_type?: string
+          target_category_ids?: string[] | null
+          target_product_ids?: string[] | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       rum_metrics: {
         Row: {
           connection_type: string | null
@@ -1342,7 +1821,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string | null
         }
@@ -1351,7 +1830,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -1360,7 +1839,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -1920,10 +2399,7 @@ export type Database = {
           success: boolean
         }[]
       }
-      auto_reconcile_payments: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      auto_reconcile_payments: { Args: never; Returns: number }
       check_subscription_cache: {
         Args: { p_ttl_minutes?: number; p_user_id: string }
         Returns: {
@@ -1935,18 +2411,9 @@ export type Database = {
           status: string
         }[]
       }
-      cleanup_expired_stock_reservations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_monitoring_data: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_old_queue_items: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_expired_stock_reservations: { Args: never; Returns: number }
+      cleanup_monitoring_data: { Args: never; Returns: number }
+      cleanup_old_queue_items: { Args: never; Returns: number }
       complete_queue_item: {
         Args: { p_order_id?: string; p_queue_id: string; p_result_data?: Json }
         Returns: {
@@ -2005,7 +2472,7 @@ export type Database = {
         }[]
       }
       get_admin_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_order_value: number
           completed_orders: number
@@ -2017,12 +2484,9 @@ export type Database = {
           total_users: number
         }[]
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
       get_order_details_for_staff: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           city: string
           created_at: string
@@ -2046,7 +2510,7 @@ export type Database = {
         }[]
       }
       get_order_health_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_completion_time_minutes: number
           expired_orders: number
@@ -2064,18 +2528,9 @@ export type Database = {
           total_revenue: number
         }[]
       }
-      has_any_role: {
-        Args: { required_roles: string[] }
-        Returns: boolean
-      }
-      has_role: {
-        Args: { required_role: string }
-        Returns: boolean
-      }
-      is_admin: {
-        Args: { user_id?: string }
-        Returns: boolean
-      }
+      has_any_role: { Args: { required_roles: string[] }; Returns: boolean }
+      has_role: { Args: { required_role: string }; Returns: boolean }
+      is_admin: { Args: { user_id?: string }; Returns: boolean }
       log_admin_action: {
         Args: {
           p_action: string
@@ -2099,14 +2554,8 @@ export type Database = {
         Args: { p_external_id: string; p_order_data: Json; p_platform: string }
         Returns: string
       }
-      refresh_admin_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      validate_cpf_format: {
-        Args: { cpf_input: string }
-        Returns: boolean
-      }
+      refresh_admin_stats: { Args: never; Returns: undefined }
+      validate_cpf_format: { Args: { cpf_input: string }; Returns: boolean }
       validate_password_strength: {
         Args: { password_input: string }
         Returns: Json
@@ -2116,7 +2565,7 @@ export type Database = {
         Returns: boolean
       }
       validate_subscription_consistency: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           inconsistency_type: string
           local_status: string

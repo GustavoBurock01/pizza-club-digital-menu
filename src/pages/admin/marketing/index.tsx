@@ -1,3 +1,4 @@
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tag, Percent, Mail, Image } from 'lucide-react';
 import Cupons from './Cupons';
@@ -7,14 +8,10 @@ import Banners from './Banners';
 
 export default function Marketing() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Marketing</h1>
-        <p className="text-muted-foreground">
-          Gerencie campanhas, cupons e promoções
-        </p>
-      </div>
-
+    <AdminLayout 
+      title="Marketing" 
+      description="Gerencie campanhas, cupons e promoções"
+    >
       <Tabs defaultValue="cupons" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="cupons" className="flex items-center gap-2">
@@ -51,6 +48,6 @@ export default function Marketing() {
           <Banners />
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminLayout>
   );
 }

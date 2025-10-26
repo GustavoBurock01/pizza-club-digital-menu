@@ -1,3 +1,4 @@
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Target, MessageSquare, Award } from 'lucide-react';
 import Clientes from './Clientes';
@@ -7,14 +8,10 @@ import Fidelidade from './Fidelidade';
 
 export default function CRM() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">CRM</h1>
-        <p className="text-muted-foreground">
-          Gestão de relacionamento com clientes
-        </p>
-      </div>
-
+    <AdminLayout 
+      title="CRM" 
+      description="Gestão de relacionamento com clientes"
+    >
       <Tabs defaultValue="clientes" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="clientes" className="flex items-center gap-2">
@@ -51,6 +48,6 @@ export default function CRM() {
           <Fidelidade />
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminLayout>
   );
 }
