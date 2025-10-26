@@ -173,6 +173,36 @@ export function useMarketingData() {
     },
   });
 
+  const updatePromotion = useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { error } = await supabase
+        .from('promotions')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+      toast.success('Promoção atualizada');
+    },
+  });
+
+  const deletePromotion = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('promotions')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promotions'] });
+      toast.success('Promoção removida');
+    },
+  });
+
   // Banners
   const { data: banners, isLoading: loadingBanners } = useQuery({
     queryKey: ['banners'],
@@ -201,6 +231,36 @@ export function useMarketingData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       toast.success('Banner criado com sucesso');
+    },
+  });
+
+  const updateBanner = useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { error } = await supabase
+        .from('banners')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['banners'] });
+      toast.success('Banner atualizado');
+    },
+  });
+
+  const deleteBanner = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('banners')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['banners'] });
+      toast.success('Banner removido');
     },
   });
 
@@ -277,12 +337,16 @@ export function useMarketingData() {
     promotions,
     loadingPromotions,
     createPromotion: createPromotion.mutate,
+    updatePromotion: updatePromotion.mutate,
+    deletePromotion: deletePromotion.mutate,
     promotionStats,
     
     // Banners
     banners,
     loadingBanners,
     createBanner: createBanner.mutate,
+    updateBanner: updateBanner.mutate,
+    deleteBanner: deleteBanner.mutate,
     bannerStats,
     
     // Campaigns

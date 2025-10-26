@@ -2,49 +2,29 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Mail, MessageSquare, Send, TrendingUp, Users, DollarSign } from 'lucide-react';
-
-const campaigns = [
-  {
-    id: 1,
-    name: 'Black Friday 2024',
-    type: 'email',
-    status: 'sent',
-    sent: 487,
-    opened: 356,
-    clicked: 189,
-    converted: 67,
-    revenue: 2340.00,
-    date: '2024-01-20',
-  },
-  {
-    id: 2,
-    name: 'Promoção de Verão',
-    type: 'whatsapp',
-    status: 'scheduled',
-    sent: 0,
-    opened: 0,
-    clicked: 0,
-    converted: 0,
-    revenue: 0,
-    date: '2024-02-01',
-  },
-  {
-    id: 3,
-    name: 'Cupom Fidelidade',
-    type: 'email',
-    status: 'sent',
-    sent: 342,
-    opened: 287,
-    clicked: 156,
-    converted: 89,
-    revenue: 3120.00,
-    date: '2024-01-18',
-  },
-];
+import { useMarketingData } from '@/hooks/useMarketingData';
 
 export default function Campanhas() {
+  const { campaigns, loadingCampaigns } = useMarketingData();
+
   const getTotalRevenue = () => {
-    return campaigns.reduce((acc, c) => acc + c.revenue, 0);
+    return campaigns?.reduce((acc, c) => acc + (c.sent_count || 0), 0) || 0;
+  };
+
+  const getSentCampaigns = () => {
+    return campaigns?.filter(c => c.status === 'sent').length || 0;
+  };
+
+  const getTotalSent = () => {
+    return campaigns?.reduce((acc, c) => acc + (c.sent_count || 0), 0) || 0;
+  };
+
+  const getAvgConversion = () => {
+    const sent = campaigns?.filter(c => c.status === 'sent') || [];
+    if (sent.length === 0) return 0;
+    const totalSent = sent.reduce((acc, c) => acc + (c.sent_count || 0), 0);
+    const totalOpened = sent.reduce((acc, c) => acc + (c.open_count || 0), 0);
+    return totalSent > 0 ? ((totalOpened / totalSent) * 100).toFixed(1) : 0;
   };
 
   return (
@@ -58,7 +38,7 @@ export default function Campanhas() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Campanhas Enviadas</p>
-              <p className="text-2xl font-bold">2</p>
+              <p className="text-2xl font-bold">{getSentCampaigns()}</p>
             </div>
           </div>
         </Card>
@@ -70,7 +50,7 @@ export default function Campanhas() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Alcançado</p>
-              <p className="text-2xl font-bold">829</p>
+              <p className="text-2xl font-bold">{getTotalSent()}</p>
             </div>
           </div>
         </Card>
@@ -81,8 +61,8 @@ export default function Campanhas() {
               <TrendingUp className="h-5 w-5 text-purple-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Taxa de Conversão</p>
-              <p className="text-2xl font-bold">18.8%</p>
+              <p className="text-sm text-muted-foreground">Taxa de Abertura</p>
+              <p className="text-2xl font-bold">{getAvgConversion()}%</p>
             </div>
           </div>
         </Card>
@@ -93,8 +73,8 @@ export default function Campanhas() {
               <DollarSign className="h-5 w-5 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Receita Gerada</p>
-              <p className="text-2xl font-bold">R$ {(getTotalRevenue() / 1000).toFixed(1)}k</p>
+              <p className="text-sm text-muted-foreground">Total de Campanhas</p>
+              <p className="text-2xl font-bold">{campaigns?.length || 0}</p>
             </div>
           </div>
         </Card>
@@ -110,72 +90,84 @@ export default function Campanhas() {
           </Button>
         </div>
 
-        <div className="space-y-3">
-          {campaigns.map((campaign) => (
+        {loadingCampaigns ? (
+          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        ) : campaigns && campaigns.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhuma campanha cadastrada
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {campaigns?.map((campaign) => (
             <Card key={campaign.id} className="p-4">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h4 className="font-semibold">{campaign.name}</h4>
                     <Badge variant={campaign.status === 'sent' ? 'default' : 'secondary'}>
-                      {campaign.status === 'sent' ? 'Enviada' : 'Agendada'}
+                      {campaign.status === 'sent' ? 'Enviada' : campaign.status === 'scheduled' ? 'Agendada' : 'Rascunho'}
                     </Badge>
                     <Badge variant="outline" className="gap-1">
-                      {campaign.type === 'email' ? (
+                      {campaign.campaign_type === 'email' ? (
                         <><Mail className="h-3 w-3" /> Email</>
+                      ) : campaign.campaign_type === 'sms' ? (
+                        <><MessageSquare className="h-3 w-3" /> SMS</>
                       ) : (
                         <><MessageSquare className="h-3 w-3" /> WhatsApp</>
                       )}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Enviada em {campaign.date}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {campaign.sent_at 
+                      ? `Enviada em ${new Date(campaign.sent_at).toLocaleDateString()}` 
+                      : campaign.scheduled_at
+                      ? `Agendada para ${new Date(campaign.scheduled_at).toLocaleDateString()}`
+                      : `Criada em ${new Date(campaign.created_at).toLocaleDateString()}`
+                    }
+                  </p>
                 </div>
               </div>
 
               {campaign.status === 'sent' && (
-                <div className="grid grid-cols-5 gap-4 pt-3 border-t">
+                <div className="grid grid-cols-4 gap-4 pt-3 border-t">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Enviados</p>
-                    <p className="text-xl font-bold">{campaign.sent}</p>
+                    <p className="text-xl font-bold">{campaign.sent_count || 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Abertos</p>
                     <p className="text-xl font-bold text-blue-500">
-                      {campaign.opened}
-                      <span className="text-sm ml-1">
-                        ({((campaign.opened / campaign.sent) * 100).toFixed(0)}%)
-                      </span>
+                      {campaign.open_count || 0}
+                      {campaign.sent_count > 0 && (
+                        <span className="text-sm ml-1">
+                          ({(((campaign.open_count || 0) / campaign.sent_count) * 100).toFixed(0)}%)
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Cliques</p>
                     <p className="text-xl font-bold text-purple-500">
-                      {campaign.clicked}
-                      <span className="text-sm ml-1">
-                        ({((campaign.clicked / campaign.sent) * 100).toFixed(0)}%)
-                      </span>
+                      {campaign.click_count || 0}
+                      {campaign.sent_count > 0 && (
+                        <span className="text-sm ml-1">
+                          ({(((campaign.click_count || 0) / campaign.sent_count) * 100).toFixed(0)}%)
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Conversões</p>
+                    <p className="text-sm text-muted-foreground mb-1">Destinatários</p>
                     <p className="text-xl font-bold text-green-500">
-                      {campaign.converted}
-                      <span className="text-sm ml-1">
-                        ({((campaign.converted / campaign.sent) * 100).toFixed(0)}%)
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Receita</p>
-                    <p className="text-xl font-bold text-yellow-500">
-                      R$ {campaign.revenue.toFixed(2)}
+                      {campaign.total_recipients || 0}
                     </p>
                   </div>
                 </div>
               )}
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
