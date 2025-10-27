@@ -5,6 +5,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useRole } from '@/hooks/useUnifiedProfile';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useSubscriptionGlobal } from '@/components/SubscriptionGlobalProvider';
 
 interface UnifiedProtectedRouteProps {
   children: React.ReactNode;
@@ -19,9 +20,10 @@ export const UnifiedProtectedRoute = ({
   requireSubscription = false,
   requireRole
 }: UnifiedProtectedRouteProps) => {
-  const { user, subscription, loading: authLoading } = useUnifiedAuth();
+  const { user, loading: authLoading } = useUnifiedAuth();
   const { role, isAdmin, isAttendant, isCustomer, loading: roleLoading } = useRole();
   const location = useLocation();
+  const { isActive: subActive, isLoading: subLoading, hasBeenChecked } = useSubscriptionGlobal();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export const UnifiedProtectedRoute = ({
   }, [authLoading, roleLoading]);
 
   // Show loading while checking
-  if (isChecking || authLoading || (requireRole && roleLoading)) {
+  if (isChecking || authLoading || (requireRole && roleLoading) || (requireSubscription && !hasBeenChecked && subLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -97,13 +99,9 @@ export const UnifiedProtectedRoute = ({
     }
   }
 
-  // Subscription check - redirect to plans for ANY protected route when no subscription
-  if (requireSubscription && user && !subscription.loading && !subscription.subscribed) {
-    console.log('[ROUTE-GUARD] Redirecting to plans - accessing protected route without subscription:', { 
-      user: !!user, 
-      loading: subscription.loading, 
-      subscribed: subscription.subscribed,
-      status: subscription.status,
+  // Subscription check - only redirect after global subscription check completes
+  if (requireSubscription && user && hasBeenChecked && !subActive) {
+    console.log('[ROUTE-GUARD] Redirecting to plans - no active subscription after check', {
       path: location.pathname
     });
     return <Navigate to="/plans" replace />;
