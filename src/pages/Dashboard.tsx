@@ -31,7 +31,8 @@ const Dashboard = () => {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const hasReconciled = user ? sessionStorage.getItem(`reconciled_${user.id}`) === 'true' : false;
+  const lastRecon = user ? Number(sessionStorage.getItem(`reconciled_${user.id}`) || '0') : 0;
+  const hasReconciledRecently = lastRecon && (Date.now() - lastRecon < 60_000);
 
   useEffect(() => {
     fetchRecentOrders();
@@ -183,7 +184,7 @@ const Dashboard = () => {
 
           {/* Banner de assinatura - mostra reconciliação antes de bloquear */}
           {!isActive && (
-            hasReconciled ? (
+            hasReconciledRecently ? (
               <Alert className="border-orange-200 bg-orange-50">
                 <Sparkles className="h-4 w-4 text-orange-600" />
                 <AlertDescription className="flex items-center justify-between">
@@ -230,7 +231,7 @@ const Dashboard = () => {
                   <CardDescription className="text-sm">
                     {isActive 
                       ? 'Explore nosso cardápio'
-                      : (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
+                      : (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                     }
                   </CardDescription>
                 </CardHeader>
@@ -257,7 +258,7 @@ const Dashboard = () => {
                   <CardTitle className="text-lg">Repetir Último</CardTitle>
                   <CardDescription className="text-sm">
                     {!isActive 
-                      ? (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
+                      ? (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                       : recentOrders.length > 0 
                         ? 'Peça novamente' 
                         : 'Nenhum pedido anterior'
@@ -288,7 +289,7 @@ const Dashboard = () => {
                   <CardDescription className="text-sm">
                     {isActive 
                       ? 'Veja todas as opções'
-                      : (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
+                      : (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                     }
                   </CardDescription>
                 </CardHeader>

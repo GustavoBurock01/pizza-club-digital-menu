@@ -83,8 +83,9 @@ export const ProtectedRoute = ({
 
   // ===== SUBSCRIPTION CHECK =====
   if (requireSubscription && user && !hasSubscription) {
-    const hasReconciled = user ? sessionStorage.getItem(`reconciled_${user.id}`) === 'true' : false;
-    if (subLoading || !hasReconciled) {
+    const lastRecon = user ? Number(sessionStorage.getItem(`reconciled_${user.id}`) || '0') : 0;
+    const reconciledRecently = lastRecon && (Date.now() - lastRecon < 60_000);
+    if (subLoading || !reconciledRecently) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="w-full max-w-md px-6">

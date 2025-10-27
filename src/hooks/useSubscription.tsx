@@ -220,7 +220,7 @@ export const useSubscription = (userId?: string) => {
       }
     } finally {
       // Mark that we've attempted reconciliation to avoid UI deadlocks
-      try { sessionStorage.setItem(`reconciled_${userId}`, 'true'); } catch {}
+      try { sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); } catch {}
       // Trigger refetch after any attempt
       queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
     }
@@ -245,18 +245,16 @@ export const useSubscription = (userId?: string) => {
   // ===== AUTO RECONCILE ON FIRST LOAD =====
   useEffect(() => {
     if (userId && !query.isLoading && !query.data?.isActive) {
-      // Tentar reconciliar apenas uma vez após o primeiro load
-      const hasReconciled = sessionStorage.getItem(`reconciled_${userId}`);
-      if (!hasReconciled) {
+      // Reconciliar se nunca tentou OU se a última tentativa tem mais de 60s
+      const lastRecon = Number(sessionStorage.getItem(`reconciled_${userId}`) || '0');
+      const shouldReconcile = !lastRecon || (Date.now() - lastRecon > 60_000);
+      if (shouldReconcile) {
         console.log('[SUBSCRIPTION] First load - attempting reconciliation');
-        
-        // Set timeout para evitar reconsciliação muito rápida no primeiro load
         const timeout = setTimeout(() => {
           reconcile().then(() => {
-            sessionStorage.setItem(`reconciled_${userId}`, 'true');
+            try { sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); } catch {}
           });
         }, 1000);
-        
         return () => clearTimeout(timeout);
       }
     }
