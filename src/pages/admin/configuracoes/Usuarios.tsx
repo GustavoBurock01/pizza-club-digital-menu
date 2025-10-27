@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -25,12 +28,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const mockUsers = [
-  { id: '1', name: 'João Silva', email: 'joao@email.com', role: 'admin', status: 'active' },
-  { id: '2', name: 'Maria Santos', email: 'maria@email.com', role: 'atendente', status: 'active' },
-  { id: '3', name: 'Pedro Costa', email: 'pedro@email.com', role: 'atendente', status: 'inactive' },
-];
-
 const getRoleBadge = (role: string) => {
   const variants: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
     admin: { label: 'Admin', variant: 'default' },
@@ -46,6 +43,30 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function Usuarios() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -106,9 +127,21 @@ export default function Usuarios() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockUsers.map((user) => {
-              const roleBadge = getRoleBadge(user.role);
-              const statusBadge = getStatusBadge(user.status);
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  Carregando usuários...
+                </TableCell>
+              </TableRow>
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Nenhum usuário encontrado
+                </TableCell>
+              </TableRow>
+            ) : users.map((user) => {
+              const roleBadge = getRoleBadge(user.role || 'customer');
+              const statusBadge = getStatusBadge('active');
               
               return (
                 <TableRow key={user.id}>

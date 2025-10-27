@@ -170,25 +170,6 @@ const ExpressCheckout = () => {
   const handleCreateOrder = async () => {
     if (loading) return;
     
-    // Validação final de perfil antes de processar
-    if (!profile?.full_name) {
-      toast({
-        title: "Perfil incompleto",
-        description: "Complete seu nome em 'Minha Conta' antes de finalizar o pedido.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (deliveryMethod === 'delivery' && !profile?.phone) {
-      toast({
-        title: "Telefone obrigatório",
-        description: "Para entregas, cadastre seu telefone em 'Minha Conta'.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     // Verificar rate limiting
     if (!user?.id || !checkCheckoutRateLimit(user.id)) {
       toast({

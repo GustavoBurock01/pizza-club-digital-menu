@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -25,15 +28,56 @@ const orderStats = [
   { label: 'Taxa de Cancelamento', value: '3.2%', icon: TrendingUp, color: 'text-red-500' },
 ];
 
-const mockOrders = [
-  { date: '23/10/2025', orders: 45, revenue: 'R$ 1.890', avgTicket: 'R$ 42,00', canceled: 2 },
-  { date: '22/10/2025', orders: 52, revenue: 'R$ 2.080', avgTicket: 'R$ 40,00', canceled: 1 },
-  { date: '21/10/2025', orders: 38, revenue: 'R$ 1.520', avgTicket: 'R$ 40,00', canceled: 3 },
-  { date: '20/10/2025', orders: 48, revenue: 'R$ 1.920', avgTicket: 'R$ 40,00', canceled: 2 },
-  { date: '19/10/2025', orders: 41, revenue: 'R$ 1.640', avgTicket: 'R$ 40,00', canceled: 1 },
-];
-
 export default function Pedidos() {
+  const [ordersData, setOrdersData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrdersData();
+  }, []);
+
+  const fetchOrdersData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Agrupar por dia
+      const grouped = data.reduce((acc: any, order: any) => {
+        const date = new Date(order.created_at).toLocaleDateString('pt-BR');
+        if (!acc[date]) {
+          acc[date] = { date, orders: 0, revenue: 0, canceled: 0, total: 0 };
+        }
+        acc[date].orders++;
+        if (order.status === 'cancelled') {
+          acc[date].canceled++;
+        }
+        if (order.status !== 'cancelled') {
+          acc[date].revenue += Number(order.total_amount);
+          acc[date].total += Number(order.total_amount);
+        }
+        return acc;
+      }, {});
+      
+      const formattedData = Object.values(grouped).map((day: any) => ({
+        date: day.date,
+        orders: day.orders,
+        revenue: day.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+        avgTicket: (day.revenue / (day.orders - day.canceled)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+        canceled: day.canceled
+      }));
+      
+      setOrdersData(formattedData.slice(0, 7)); // Últimos 7 dias
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -84,8 +128,12 @@ export default function Pedidos() {
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Pedidos por Dia</h3>
         <div className="h-64 flex items-end justify-between gap-2">
-          {mockOrders.reverse().map((day, i) => {
-            const maxOrders = 52;
+          {loading ? (
+            <div className="w-full text-center py-8">Carregando...</div>
+          ) : ordersData.length === 0 ? (
+            <div className="w-full text-center py-8 text-muted-foreground">Nenhum dado disponível</div>
+          ) : ordersData.slice().reverse().map((day, i) => {
+            const maxOrders = Math.max(...ordersData.map(d => d.orders), 1);
             const height = (day.orders / maxOrders) * 100;
             
             return (
@@ -123,7 +171,19 @@ export default function Pedidos() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockOrders.reverse().map((day, index) => {
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  Carregando dados...
+                </TableCell>
+              </TableRow>
+            ) : ordersData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Nenhum dado disponível
+                </TableCell>
+              </TableRow>
+            ) : ordersData.slice().reverse().map((day, index) => {
               const cancelRate = ((day.canceled / day.orders) * 100).toFixed(1);
               
               return (

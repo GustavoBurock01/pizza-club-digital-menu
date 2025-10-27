@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -30,49 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const mockBackups = [
-  { 
-    id: '1', 
-    date: '23/10/2025 22:00', 
-    type: 'Automático', 
-    size: '245 MB', 
-    status: 'success',
-    retention: '30 dias'
-  },
-  { 
-    id: '2', 
-    date: '22/10/2025 22:00', 
-    type: 'Automático', 
-    size: '243 MB', 
-    status: 'success',
-    retention: '29 dias'
-  },
-  { 
-    id: '3', 
-    date: '21/10/2025 22:00', 
-    type: 'Automático', 
-    size: '241 MB', 
-    status: 'success',
-    retention: '28 dias'
-  },
-  { 
-    id: '4', 
-    date: '20/10/2025 15:30', 
-    type: 'Manual', 
-    size: '240 MB', 
-    status: 'success',
-    retention: 'Permanente'
-  },
-  { 
-    id: '5', 
-    date: '20/10/2025 22:00', 
-    type: 'Automático', 
-    size: '239 MB', 
-    status: 'failed',
-    retention: '-'
-  },
-];
-
 const getStatusBadge = (status: string) => {
   return status === 'success' 
     ? { icon: CheckCircle, label: 'Sucesso', variant: 'default' as const, className: 'bg-green-500' }
@@ -80,6 +39,29 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function Backups() {
+  const [backups, setBackups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBackups();
+  }, []);
+
+  const fetchBackups = async () => {
+    try {
+      // Por enquanto, retornar vazio até implementar sistema de backups
+      setBackups([]);
+    } catch (error) {
+      console.error('Erro ao carregar backups:', error);
+      toast.error('Erro ao carregar backups');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    toast.info('Sistema de backup em desenvolvimento');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -224,7 +206,19 @@ export default function Backups() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockBackups.map((backup) => {
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  Carregando backups...
+                </TableCell>
+              </TableRow>
+            ) : backups.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Nenhum backup encontrado. Sistema em desenvolvimento.
+                </TableCell>
+              </TableRow>
+            ) : backups.map((backup) => {
               const statusConfig = getStatusBadge(backup.status);
               const StatusIcon = statusConfig.icon;
               

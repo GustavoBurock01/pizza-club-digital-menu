@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -19,37 +22,6 @@ import {
 } from '@/components/ui/select';
 import { Search, Download, RefreshCw, AlertCircle, Info, CheckCircle } from 'lucide-react';
 
-const mockLogs = [
-  { 
-    id: '1', 
-    timestamp: '2025-10-23 22:35:01', 
-    level: 'info', 
-    message: 'Order #1234 created successfully',
-    source: 'orders'
-  },
-  { 
-    id: '2', 
-    timestamp: '2025-10-23 22:30:01', 
-    level: 'info', 
-    message: 'No expired orders found',
-    source: 'expire-orders'
-  },
-  { 
-    id: '3', 
-    timestamp: '2025-10-23 22:25:30', 
-    level: 'warning', 
-    message: 'Low stock alert for product #567',
-    source: 'stock'
-  },
-  { 
-    id: '4', 
-    timestamp: '2025-10-23 22:20:15', 
-    level: 'error', 
-    message: 'Payment processing failed for order #1233',
-    source: 'payment'
-  },
-];
-
 const getLevelBadge = (level: string) => {
   const config = {
     info: { icon: Info, variant: 'outline' as const, className: 'text-blue-500' },
@@ -61,6 +33,44 @@ const getLevelBadge = (level: string) => {
 };
 
 export default function Logs() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_action_logs')
+        .select('*, profiles(full_name, email)')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      
+      const formattedLogs = data.map((log: any) => ({
+        id: log.id,
+        timestamp: new Date(log.created_at).toLocaleString('pt-BR'),
+        level: 'info',
+        module: log.entity_type,
+        source: log.entity_type,
+        user: log.profiles?.full_name || log.profiles?.email || 'Sistema',
+        action: log.action,
+        message: `${log.action} - ${log.entity_type}`,
+        details: JSON.stringify(log.changes)
+      }));
+      
+      setLogs(formattedLogs);
+    } catch (error) {
+      console.error('Erro ao carregar logs:', error);
+      toast.error('Erro ao carregar logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -126,7 +136,19 @@ export default function Logs() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockLogs.map((log) => {
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  Carregando logs...
+                </TableCell>
+              </TableRow>
+            ) : logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Nenhum log encontrado
+                </TableCell>
+              </TableRow>
+            ) : logs.map((log) => {
               const levelConfig = getLevelBadge(log.level);
               const LevelIcon = levelConfig.icon;
               
