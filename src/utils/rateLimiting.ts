@@ -1,8 +1,14 @@
-// ===== RATE LIMITING E CONTROLE DE FREQUÊNCIA =====
+// ===== RATE LIMITING E CONTROLE DE FREQUÊNCIA (APRIMORADO FASE 1) =====
 
 interface RateLimitEntry {
   count: number;
   resetTime: number;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
 }
 
 class RateLimiter {
@@ -39,11 +45,45 @@ class RateLimiter {
     }
 
     if (entry.count >= maxRequests) {
+      console.warn(`[RateLimit] Limite excedido para ${identifier}`);
       return false;
     }
 
     entry.count++;
     return true;
+  }
+
+  public check(identifier: string, maxRequests: number, windowMs: number): RateLimitResult {
+    const now = Date.now();
+    const entry = this.storage.get(identifier);
+
+    if (!entry || entry.resetTime <= now) {
+      // Primeira requisição ou janela expirada
+      this.storage.set(identifier, {
+        count: 1,
+        resetTime: now + windowMs
+      });
+      return {
+        allowed: true,
+        remaining: maxRequests - 1,
+        resetAt: now + windowMs,
+      };
+    }
+
+    if (entry.count >= maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: entry.resetTime,
+      };
+    }
+
+    entry.count++;
+    return {
+      allowed: true,
+      remaining: maxRequests - entry.count,
+      resetAt: entry.resetTime,
+    };
   }
 
   public getRemainingTime(identifier: string): number {
@@ -52,6 +92,10 @@ class RateLimiter {
     
     const remaining = entry.resetTime - Date.now();
     return Math.max(0, remaining);
+  }
+
+  public reset(identifier: string) {
+    this.storage.delete(identifier);
   }
 
   public destroy() {

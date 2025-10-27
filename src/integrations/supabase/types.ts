@@ -1764,6 +1764,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number | null
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number | null
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number | null
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       rum_metrics: {
         Row: {
           connection_type: string | null
@@ -2210,6 +2240,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           created_at: string
@@ -2414,6 +2468,7 @@ export type Database = {
       cleanup_expired_stock_reservations: { Args: never; Returns: number }
       cleanup_monitoring_data: { Args: never; Returns: number }
       cleanup_old_queue_items: { Args: never; Returns: number }
+      cleanup_rate_limits: { Args: never; Returns: number }
       complete_queue_item: {
         Args: { p_order_id?: string; p_queue_id: string; p_result_data?: Json }
         Returns: {
@@ -2527,6 +2582,10 @@ export type Database = {
           total_orders: number
           total_revenue: number
         }[]
+      }
+      get_user_primary_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
       }
       has_any_role: { Args: { required_roles: string[] }; Returns: boolean }
       has_role: { Args: { required_role: string }; Returns: boolean }

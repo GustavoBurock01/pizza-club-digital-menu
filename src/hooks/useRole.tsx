@@ -38,11 +38,14 @@ export const useRole = (): RoleStatus => {
       }
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
+        // Usar nova tabela user_roles ao invés de profiles
+        const { data: userRoles, error } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', user.id)
-          .single();
+          .eq('user_id', user.id)
+          .order('role', { ascending: true })
+          .limit(1)
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching user role:', error);
@@ -52,7 +55,7 @@ export const useRole = (): RoleStatus => {
           return;
         }
 
-        const userRole = (profile?.role as UserRole) || 'customer';
+        const userRole = (userRoles?.role as UserRole) || 'customer';
 
         if (isMounted) {
           setRoleState({ role: userRole, loading: false });
