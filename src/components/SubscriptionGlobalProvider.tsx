@@ -1,48 +1,35 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useSubscriptionCore } from '@/hooks/useSubscriptionCore';
+import React, { createContext, useContext } from 'react';
+import { useSimpleSubscriptionCheck } from '@/hooks/useSimpleSubscriptionCheck';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 interface SubscriptionGlobalContextType {
   isActive: boolean;
   isLoading: boolean;
   hasBeenChecked: boolean;
+  forceCheck: () => Promise<void>;
 }
 
 const SubscriptionGlobalContext = createContext<SubscriptionGlobalContextType>({
   isActive: false,
   isLoading: true,
   hasBeenChecked: false,
+  forceCheck: async () => {},
 });
 
 export const useSubscriptionGlobal = () => useContext(SubscriptionGlobalContext);
 
 export const SubscriptionGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated } = useUnifiedAuth();
-  const [hasBeenChecked, setHasBeenChecked] = useState(false);
+  const { user } = useUnifiedAuth();
   
-  // Fazer verificação apenas uma vez quando o usuário está autenticado
-  const { isActive, isLoading } = useSubscriptionCore(user?.id, {
-    enabled: isAuthenticated() && !hasBeenChecked,
-  });
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated()) {
-      setHasBeenChecked(true);
-    }
-  }, [isLoading, isAuthenticated]);
-
-  // Reset quando usuário faz logout
-  useEffect(() => {
-    if (!user) {
-      setHasBeenChecked(false);
-    }
-  }, [user]);
+  // Usar verificação simples com cache local
+  const { isActive, isLoading, hasBeenChecked, forceCheck } = useSimpleSubscriptionCheck(user?.id);
 
   return (
     <SubscriptionGlobalContext.Provider value={{
       isActive,
-      isLoading: isLoading && !hasBeenChecked,
+      isLoading,
       hasBeenChecked,
+      forceCheck,
     }}>
       {children}
     </SubscriptionGlobalContext.Provider>
