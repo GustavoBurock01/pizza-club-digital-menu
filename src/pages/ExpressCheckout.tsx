@@ -63,7 +63,7 @@ const ExpressCheckout = () => {
   });
 
   // ===== MEMOIZED CALCULATIONS =====
-  const subtotal = useMemo(() => getSubtotal(), [items]);
+  const subtotal = useMemo(() => getSubtotal(), [items, getSubtotal]);
   const deliveryFee = useMemo(() => deliveryMethod === 'delivery' ? 5 : 0, [deliveryMethod]);
   
   // Update delivery fee in store when delivery method changes
@@ -71,7 +71,7 @@ const ExpressCheckout = () => {
     setDeliveryFee(deliveryFee);
   }, [deliveryFee, setDeliveryFee]);
   
-  const total = useMemo(() => getTotal(), [getTotal]);
+  const total = useMemo(() => subtotal + deliveryFee, [subtotal, deliveryFee]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
