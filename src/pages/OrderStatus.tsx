@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -24,15 +24,15 @@ const OrderStatus = () => {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
-  
+  const orderChannelRef = useRef<any>(null);
   // ✅ ERRO 6: Hook para chat com contador de mensagens não lidas
   const { unreadCount } = useOrderChat(orderId || '');
 
   useEffect(() => {
-    if (orderId && user) {
-      fetchOrder();
-      setupRealtimeSubscription();
-    }
+    if (!orderId || !user) return;
+    fetchOrder();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
   }, [orderId, user]);
 
   const fetchOrder = async () => {
@@ -110,8 +110,12 @@ const OrderStatus = () => {
   };
 
   const setupRealtimeSubscription = () => {
+    if (orderChannelRef.current) {
+      return () => {};
+    }
+    
     const channel = supabase
-      .channel('order-updates')
+      .channel(`order-updates:${orderId}`)
       .on(
         'postgres_changes',
         {
@@ -123,7 +127,6 @@ const OrderStatus = () => {
         (payload) => {
           console.log('Order update received:', payload);
           
-          // ✅ ERRO 3 FIX: Normalizar payload - garantir items sempre é array
           const normalizedOrder = {
             ...payload.new,
             items: Array.isArray(payload.new.items) ? payload.new.items : [],
@@ -131,7 +134,6 @@ const OrderStatus = () => {
           
           setOrder(normalizedOrder);
           
-          // Show toast notification for status change
           const statusMessages = {
             pending: 'Pedido recebido',
             confirmed: 'Pedido confirmado!',
@@ -151,8 +153,13 @@ const OrderStatus = () => {
       )
       .subscribe();
 
+    orderChannelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (orderChannelRef.current) {
+        supabase.removeChannel(orderChannelRef.current);
+        orderChannelRef.current = null;
+      }
     };
   };
 
