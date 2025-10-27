@@ -207,6 +207,9 @@ export const useAuth = () => {
         title: "Logout realizado!",
         description: "Até a próxima!",
       });
+      
+      // Redirect to auth page
+      window.location.href = '/auth';
     } catch (error: any) {
       console.error('[AUTH] Sign out error:', error);
       
@@ -218,6 +221,9 @@ export const useAuth = () => {
         title: "Logout realizado",
         description: "Sessão encerrada.",
       });
+      
+      // Redirect even on error
+      window.location.href = '/auth';
     }
   }, [toast]);
 
