@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { CartCustomization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, Minus, Plus } from 'lucide-react';
+import { supabase } from '@/services/supabase';
+import { useQuery } from '@tanstack/react-query';
 
 interface ProductCustomizerProps {
   product: any;
@@ -19,7 +21,7 @@ interface ProductCustomizerProps {
 }
 
 // Configurações dinâmicas baseadas no tipo de produto
-const getProductConfig = (product: any) => {
+const getProductConfig = (product: any, crustData: any[], extraData: any[]) => {
   const categoryName = product?.subcategory?.category?.name || '';
   const subcategoryName = product?.subcategory?.name || '';
   
@@ -27,34 +29,19 @@ const getProductConfig = (product: any) => {
   const isPizzaCategory = categoryName === 'Pizzas Grandes' || categoryName === 'Pizzas Broto';
   
   if (isPizzaCategory) {
-    // Opções de bordas recheadas específicas para pizzas
+    // Opções de bordas recheadas do banco de dados
     const crustOptions = [
       { id: 'tradicional', name: 'Tradicional', price: 0 },
-      { id: 'catupiry', name: 'Borda Recheada - Catupiry', price: 8 },
-      { id: 'cheddar', name: 'Borda Recheada - Cheddar', price: 8 },
-      { id: 'chocolate', name: 'Borda Recheada - Chocolate', price: 10 },
-      { id: 'goiabada', name: 'Borda Recheada - Goiabada', price: 10 },
-      { id: 'presunto_queijo', name: 'Borda Recheada - Presunto e Queijo', price: 12 },
+      ...crustData.map(crust => ({
+        id: crust.id,
+        name: `Borda Recheada - ${crust.name}`,
+        price: crust.price
+      }))
     ];
 
-    // Adicionais específicos para pizzas  
-    const extraOptions = [
-      'Queijo Extra',
-      'Mussarela Extra', 
-      'Calabresa',
-      'Presunto',
-      'Champignon',
-      'Azeitona Preta',
-      'Azeitona Verde',
-      'Cebola',
-      'Tomate',
-      'Pimentão',
-      'Milho',
-      'Palmito',
-      'Bacon',
-      'Catupiry Extra'
-    ];
-
+    // Adicionais do banco de dados
+    const extraOptions = extraData.map(extra => extra.name);
+    
     // Preço diferente baseado no tamanho da pizza
     const extraPrice = categoryName === 'Pizzas Grandes' ? 4 : 3;
 
@@ -64,6 +51,7 @@ const getProductConfig = (product: any) => {
       crustOptions,
       extraOptions,
       extraPrice,
+      extraData, // Passar os dados completos para ter acesso aos preços
       isPizza: true
     };
   }
@@ -117,7 +105,37 @@ const getProductConfig = (product: any) => {
 };
 
 export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomizerProps) => {
-  const config = getProductConfig(product);
+  // Buscar bordas recheadas do banco de dados
+  const { data: crustData = [] } = useQuery({
+    queryKey: ['product_crusts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_crusts')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Buscar extras do banco de dados
+  const { data: extraData = [] } = useQuery({
+    queryKey: ['product_extras'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_extras')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const config = getProductConfig(product, crustData, extraData);
   
   const [selectedCrust, setSelectedCrust] = useState('tradicional');
   const [selectedTemperature, setSelectedTemperature] = useState('gelada');
@@ -160,8 +178,14 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
     }
     
     // Adicionar preço dos extras
-    if (config.showExtras && config.extraPrice) {
-      total += selectedExtras.length * config.extraPrice * quantity;
+    if (config.showExtras && config.extraData) {
+      // Usar preços reais do banco de dados
+      selectedExtras.forEach(extraName => {
+        const extra = config.extraData.find((e: any) => e.name === extraName);
+        if (extra) {
+          total += extra.price * quantity;
+        }
+      });
     }
     
     return total;
@@ -318,9 +342,6 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Label className="text-base font-semibold">Adicionais</Label>
-                <Badge variant="outline" className="text-xs">
-                  {formatPrice(config.extraPrice || 0)} cada
-                </Badge>
                 {config.isPizza && (
                   <Badge variant="secondary" className="text-xs">
                     Para pizzas
@@ -340,9 +361,12 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
                           : `${selectedExtras.length} ${selectedExtras.length === 1 ? 'adicional selecionado' : 'adicionais selecionados'}`
                         }
                       </div>
-                      {selectedExtras.length > 0 && (
+                      {selectedExtras.length > 0 && config.extraData && (
                         <div className="text-sm text-muted-foreground">
-                          +{formatPrice((config.extraPrice || 0) * selectedExtras.length)}
+                          +{formatPrice(selectedExtras.reduce((sum, extraName) => {
+                            const extra = config.extraData.find((e: any) => e.name === extraName);
+                            return sum + (extra?.price || 0);
+                          }, 0))}
                         </div>
                       )}
                     </div>
@@ -354,24 +378,29 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
                     <div className="text-sm font-medium text-center mb-3 text-muted-foreground">
                       Escolha seus adicionais
                     </div>
-                    <div className="grid gap-2">
-                      {config.extraOptions.map((extra) => (
-                        <div key={extra} className="flex items-center space-x-3 p-2 hover:bg-accent rounded-lg border transition-colors">
-                          <Checkbox
-                            id={extra}
-                            checked={selectedExtras.includes(extra)}
-                            onCheckedChange={(checked) => handleExtraChange(extra, checked as boolean)}
-                          />
-                          <Label htmlFor={extra} className="flex-1 cursor-pointer">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{extra}</span>
-                              <span className="text-sm font-semibold text-pizza-orange">
-                                +{formatPrice(config.extraPrice || 0)}
-                              </span>
-                            </div>
-                          </Label>
-                        </div>
-                      ))}
+                     <div className="grid gap-2">
+                      {config.extraOptions.map((extra) => {
+                        const extraItem = config.extraData?.find((e: any) => e.name === extra);
+                        const extraPrice = extraItem?.price || 0;
+                        
+                        return (
+                          <div key={extra} className="flex items-center space-x-3 p-2 hover:bg-accent rounded-lg border transition-colors">
+                            <Checkbox
+                              id={extra}
+                              checked={selectedExtras.includes(extra)}
+                              onCheckedChange={(checked) => handleExtraChange(extra, checked as boolean)}
+                            />
+                            <Label htmlFor={extra} className="flex-1 cursor-pointer">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{extra}</span>
+                                <span className="text-sm font-semibold text-pizza-orange">
+                                  +{formatPrice(extraPrice)}
+                                </span>
+                              </div>
+                            </Label>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </PopoverContent>
@@ -383,11 +412,16 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
                     Adicionais selecionados:
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {selectedExtras.map((extra) => (
-                      <Badge key={extra} variant="secondary" className="text-xs">
-                        {extra} <span className="ml-1 text-pizza-orange">+{formatPrice(config.extraPrice || 0)}</span>
-                      </Badge>
-                    ))}
+                    {selectedExtras.map((extra) => {
+                      const extraItem = config.extraData?.find((e: any) => e.name === extra);
+                      const extraPrice = extraItem?.price || 0;
+                      
+                      return (
+                        <Badge key={extra} variant="secondary" className="text-xs">
+                          {extra} <span className="ml-1 text-pizza-orange">+{formatPrice(extraPrice)}</span>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
