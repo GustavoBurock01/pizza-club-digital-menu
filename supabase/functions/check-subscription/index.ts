@@ -140,19 +140,21 @@ serve(async (req) => {
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      status: "all",
+      limit: 5,
     });
     
-    const hasActiveSub = subscriptions.data.length > 0;
+    const activeLike = ['active', 'trialing'];
+    const sub = subscriptions.data.find((s) => activeLike.includes(s.status));
+    const hasActiveSub = !!sub && (sub.current_period_end * 1000) > Date.now();
     let planName = 'Nenhum';
     let planPrice = 0;
     let expiresAt = null;
     let stripeSubscriptionId = null;
     let stripePriceId = null; // Adicionar variável para priceId
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+    if (hasActiveSub && sub) {
+      const subscription = sub;
       stripeSubscriptionId = subscription.id;
       stripePriceId = subscription.items.data[0].price.id; // Definir priceId aqui
       expiresAt = new Date(subscription.current_period_end * 1000).toISOString();

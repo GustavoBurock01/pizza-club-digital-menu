@@ -94,7 +94,8 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
     ? new Date(data.expires_at).getTime() > Date.now()
     : false;
 
-  const isActive = data.status === 'active' && periodEndOk;
+  const statusText = String((data as any).status);
+  const isActive = (statusText === 'active' || statusText === 'trialing') && periodEndOk;
 
   const result: SubscriptionData = {
     isActive,

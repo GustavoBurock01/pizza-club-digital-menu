@@ -12,6 +12,7 @@ import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { SubscriptionReconciling } from '@/components/SubscriptionReconciling';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabase";
@@ -30,6 +31,7 @@ const Dashboard = () => {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const hasReconciled = user ? sessionStorage.getItem(`reconciled_${user.id}`) === 'true' : false;
 
   useEffect(() => {
     fetchRecentOrders();
@@ -179,23 +181,28 @@ const Dashboard = () => {
               </p>
             </div>
 
-          {/* Banner de assinatura - só mostra se não tiver assinatura ativa */}
+          {/* Banner de assinatura - mostra reconciliação antes de bloquear */}
           {!isActive && (
-            <Alert className="border-orange-200 bg-orange-50">
-              <Sparkles className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-orange-800 font-medium">
-                  Assinatura necessária para acessar o cardápio completo!
-                </span>
-                <Button 
-                  className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                  onClick={() => navigate('/plans')}
-                >
-                  Ver Planos
-                </Button>
-              </AlertDescription>
-            </Alert>
+            hasReconciled ? (
+              <Alert className="border-orange-200 bg-orange-50">
+                <Sparkles className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span className="text-orange-800 font-medium">
+                    Assinatura necessária para acessar o cardápio completo!
+                  </span>
+                  <Button 
+                    className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
+                    onClick={() => navigate('/plans')}
+                  >
+                    Ver Planos
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <SubscriptionReconciling />
+            )
           )}
+
 
           {/* Ações Rápidas */}
           <div>
@@ -223,7 +230,7 @@ const Dashboard = () => {
                   <CardDescription className="text-sm">
                     {isActive 
                       ? 'Explore nosso cardápio'
-                      : '🔒 Assine para acessar'
+                      : (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                     }
                   </CardDescription>
                 </CardHeader>
@@ -250,7 +257,7 @@ const Dashboard = () => {
                   <CardTitle className="text-lg">Repetir Último</CardTitle>
                   <CardDescription className="text-sm">
                     {!isActive 
-                      ? '🔒 Assine para acessar'
+                      ? (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                       : recentOrders.length > 0 
                         ? 'Peça novamente' 
                         : 'Nenhum pedido anterior'
@@ -281,7 +288,7 @@ const Dashboard = () => {
                   <CardDescription className="text-sm">
                     {isActive 
                       ? 'Veja todas as opções'
-                      : '🔒 Assine para acessar'
+                      : (!hasReconciled ? 'Verificando assinatura...' : '🔒 Assine para acessar')
                     }
                   </CardDescription>
                 </CardHeader>

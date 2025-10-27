@@ -109,7 +109,7 @@ serve(async (req) => {
     let stripeSubscriptionId = null;
     let stripePriceId = null;
 
-    if (stripeSubscription && stripeSubscription.status === 'active') {
+    if (stripeSubscription && (stripeSubscription.status === 'active' || stripeSubscription.status === 'trialing')) {
       stripeSubscriptionId = stripeSubscription.id;
       stripePriceId = stripeSubscription.items.data[0].price.id;
       status = 'active';
