@@ -32,6 +32,7 @@ const AttendantUnified = lazy(() => import("./pages/AttendantUnified"));
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SubscriptionPlansPage = lazy(() => import("./pages/SubscriptionPlans"));
+const SubscriptionDebugPage = lazy(() => import("./pages/SubscriptionDebug"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
@@ -123,6 +124,13 @@ const App = () => {
                 <ProtectedRoute requireAuth={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <SubscriptionPlansPage />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/subscription-debug" element={
+                <ProtectedRoute requireAuth={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <SubscriptionDebugPage />
                   </Suspense>
                 </ProtectedRoute>
               } />

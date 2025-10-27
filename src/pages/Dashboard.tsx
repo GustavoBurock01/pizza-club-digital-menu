@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { user, createCheckout } = useUnifiedAuth();
+  const { user, createCheckout, refreshSubscription } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
   const { isLoading: subscriptionLoading, isActive } = useSubscriptionContext();
   const navigate = useNavigate();
@@ -120,10 +120,19 @@ const Dashboard = () => {
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
     try {
-      // Force page reload to trigger SubscriptionGlobalProvider refresh
-      window.location.reload();
+      // Usar refresh do novo sistema unificado
+      await refreshSubscription();
+      toast({
+        title: "Assinatura atualizada",
+        description: "Status da assinatura foi verificado novamente.",
+      });
     } catch (error) {
       console.error('Error refreshing subscription:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível verificar a assinatura.",
+        variant: "destructive",
+      });
     } finally {
       setRefreshing(false);
     }
@@ -310,7 +319,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  {/* Subscription details now managed by SubscriptionGlobalProvider */}
+                  {/* Sistema de assinatura unificado com cache de 24h */}
                 </Card>
 
                 <Card>
