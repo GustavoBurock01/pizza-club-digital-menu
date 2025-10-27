@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 
-// ===== COMPONENTE DE IMAGEM OTIMIZADA =====
+// ===== COMPONENTE DE IMAGEM OTIMIZADA (FASE 3) =====
 
 interface OptimizedImageProps {
   src: string;
@@ -11,25 +11,65 @@ interface OptimizedImageProps {
   lazy?: boolean;
   onLoad?: () => void;
   onError?: () => void;
+  width?: number;
+  height?: number;
+  priority?: boolean;
 }
 
-export const OptimizedImage = ({
+// Detectar suporte a WebP
+const supportsWebP = (() => {
+  if (typeof window === 'undefined') return false;
+  const canvas = document.createElement('canvas');
+  return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+})();
+
+// Converter URL para WebP se possível
+const getOptimizedSrc = (src: string): string => {
+  if (!supportsWebP || !src) return src;
+  
+  // Se a imagem já é WebP, retornar como está
+  if (src.endsWith('.webp')) return src;
+  
+  // Para imagens externas, tentar adicionar parâmetro de formato
+  if (src.startsWith('http')) {
+    try {
+      const url = new URL(src);
+      // Verificar se é Supabase Storage
+      if (url.hostname.includes('supabase')) {
+        url.searchParams.set('format', 'webp');
+        return url.toString();
+      }
+    } catch {
+      return src;
+    }
+  }
+  
+  return src;
+};
+
+const OptimizedImageComponent = ({
   src,
   alt,
   className,
   placeholder = '/placeholder.svg',
   lazy = true,
+  width,
+  height,
+  priority = false,
   onLoad,
   onError
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(lazy ? placeholder : src);
+  const optimizedSrc = getOptimizedSrc(src);
+  const [imageSrc, setImageSrc] = useState(
+    lazy && !priority ? placeholder : optimizedSrc
+  );
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    if (!lazy || !imgRef.current) {
-      setImageSrc(src);
+    if (!lazy || priority || !imgRef.current) {
+      setImageSrc(optimizedSrc);
       return;
     }
 
@@ -37,25 +77,28 @@ export const OptimizedImage = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setImageSrc(src);
+            setImageSrc(optimizedSrc);
             observer.unobserve(entry.target);
           }
         });
       },
       {
-        rootMargin: '50px',
+        rootMargin: priority ? '100px' : '50px',
         threshold: 0.1
       }
     );
 
-    observer.observe(imgRef.current);
+    const currentRef = imgRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
 
     return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
-  }, [src, lazy]);
+  }, [optimizedSrc, lazy, priority]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -75,6 +118,8 @@ export const OptimizedImage = ({
         ref={imgRef}
         src={imageSrc}
         alt={alt}
+        width={width}
+        height={height}
         onLoad={handleLoad}
         onError={handleError}
         className={cn(
@@ -83,8 +128,9 @@ export const OptimizedImage = ({
           isLoaded && 'opacity-100',
           isError && 'opacity-50'
         )}
-        loading={lazy ? 'lazy' : 'eager'}
+        loading={lazy && !priority ? 'lazy' : 'eager'}
         decoding="async"
+        fetchPriority={priority ? 'high' : 'auto'}
       />
       
       {/* Loading skeleton */}
@@ -103,3 +149,6 @@ export const OptimizedImage = ({
     </div>
   );
 };
+
+// Memoizar componente para evitar re-renders desnecessários
+export const OptimizedImage = memo(OptimizedImageComponent);
