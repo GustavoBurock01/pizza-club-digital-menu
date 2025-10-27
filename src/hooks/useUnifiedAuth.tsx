@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useAuth as useAuthCore } from '@/hooks/auth/useAuth';
-import { useSubscriptionGlobal } from '@/components/SubscriptionGlobalProvider';
+import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,9 +44,9 @@ interface UnifiedAuthContextType {
 const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
 
 export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
-  // Use auth + global subscription state
+  // Use auth + subscription context
   const auth = useAuthCore();
-  const { isActive: subActive, isLoading: subLoading, forceCheck } = useSubscriptionGlobal();
+  const { isActive: subActive, isLoading: subLoading, refresh: refreshSub } = useSubscriptionContext();
   const { toast } = useToast();
 
   // ===== CREATE CHECKOUT =====
@@ -133,7 +133,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       setTimeout(() => {
-        forceCheck();
+        refreshSub();
         toast({
           title: "Pagamento realizado com sucesso!",
           description: "Sua assinatura foi ativada. Bem-vindo ao Pizza Club!",
@@ -141,7 +141,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState({}, document.title, window.location.pathname);
       }, 2000);
     }
-  }, [forceCheck, toast]);
+  }, [refreshSub, toast]);
 
   const value: UnifiedAuthContextType = {
     user: auth.user,
@@ -153,7 +153,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     signOut: auth.signOut,
     updateProfile: auth.updateProfile,
     createCheckout,
-    refreshSubscription: forceCheck,
+    refreshSubscription: refreshSub,
     isAuthenticated,
     hasValidSubscription,
   };

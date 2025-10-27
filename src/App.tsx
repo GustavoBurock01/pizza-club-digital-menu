@@ -6,9 +6,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/config/queryClient";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
-import { SubscriptionGlobalProvider } from "@/components/SubscriptionGlobalProvider";
-import { UnifiedProtectedRoute } from "@/routes/UnifiedProtectedRoute";
-import { ProtectedSubscriptionRoute } from "@/components/ProtectedSubscriptionRoute";
+import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 
 import { AttendantRoute } from "@/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -108,7 +107,7 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UnifiedAuthProvider>
-          <SubscriptionGlobalProvider>
+          <SubscriptionProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -121,43 +120,41 @@ const App = () => {
                 </Suspense>
               } />
               <Route path="/plans" element={
-                <UnifiedProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <SubscriptionPlansPage />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
-               {/* New Payment Routes with ProtectedSubscriptionRoute */}
+               {/* Payment Routes */}
                 <Route path="/payment/pix" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Payment />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
-              {/* Unified Payment Route */}
               <Route path="/payment" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Payment />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
-              {/* Legacy Payment Route */}
               <Route path="/payment/:orderId" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Payment />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
               {/* Customer Routes */}
               <Route path="/dashboard" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Dashboard />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
                <Route path="/phase2-premium" element={
                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
@@ -165,75 +162,67 @@ const App = () => {
                  </Suspense>
                } />
                <Route path="/menu" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <ProtectedSubscriptionRoute>
-                    <Menu />
-                  </ProtectedSubscriptionRoute>
-                </UnifiedProtectedRoute>
+                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Menu />
+                </ProtectedRoute>
                } />
               <Route path="/checkout" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <ProtectedSubscriptionRoute>
-                    <ExpressCheckout />
-                  </ProtectedSubscriptionRoute>
-                </UnifiedProtectedRoute>
+                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <ExpressCheckout />
+                </ProtectedRoute>
               } />
                <Route path="/orders" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <ProtectedSubscriptionRoute>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <Orders />
-                    </Suspense>
-                  </ProtectedSubscriptionRoute>
-                </UnifiedProtectedRoute>
+                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Orders />
+                  </Suspense>
+                </ProtectedRoute>
               } />
               <Route path="/account" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
+                <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Account />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
               <Route path="/order-status/:orderId" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="customer">
-                  <ProtectedSubscriptionRoute>
-                    <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                      <OrderStatus />
-                    </Suspense>
-                  </ProtectedSubscriptionRoute>
-                </UnifiedProtectedRoute>
+                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <OrderStatus />
+                  </Suspense>
+                </ProtectedRoute>
               } />
               
-              {/* ===== NEW ADMIN ROUTES - FASE 1 & FASE 3 ===== */}
+              {/* ===== ADMIN ROUTES ===== */}
               <Route path="/admin" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <NewAdminDashboard />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
               <Route path="/admin/dashboard/receitas" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <AdminReceitas />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
               <Route path="/admin/dashboard/assinaturas" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <AdminAssinaturas />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               } />
 
               {/* ===== FASE 3 - GERENCIAR APP ===== */}
               <Route path="/admin/gerenciar-app" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <GerenciarApp />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route path="produtos" element={<GerenciarAppProdutos />} />
                 <Route path="delivery" element={<GerenciarAppDelivery />} />
@@ -246,11 +235,11 @@ const App = () => {
               
               {/* ===== FASE 4 - CONFIGURAÇÕES ===== */}
               <Route path="/admin/configuracoes" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Configuracoes />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route index element={<ConfigImpressao />} />
                 <Route path="impressao" element={<ConfigImpressao />} />
@@ -260,11 +249,11 @@ const App = () => {
 
               {/* ===== FASE 5 - SISTEMA ===== */}
               <Route path="/admin/sistema" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Sistema />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route path="logs" element={<SistemaLogs />} />
                 <Route path="status" element={<SistemaStatus />} />
@@ -274,11 +263,11 @@ const App = () => {
 
               {/* ===== FASE 6 - RELATÓRIOS ===== */}
               <Route path="/admin/relatorios" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Relatorios />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route path="analytics" element={<RelatoriosAnalytics />} />
                 <Route path="pedidos" element={<RelatoriosPedidos />} />
@@ -289,11 +278,11 @@ const App = () => {
 
               {/* ===== FASE 7 - CRM ===== */}
               <Route path="/admin/crm" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <CRM />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route index element={<CRMClientes />} />
                 <Route path="clientes" element={<CRMClientes />} />
@@ -304,11 +293,11 @@ const App = () => {
 
               {/* ===== FASE 8 - MARKETING ===== */}
               <Route path="/admin/marketing" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Marketing />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route index element={<MarketingCupons />} />
                 <Route path="cupons" element={<MarketingCupons />} />
@@ -319,11 +308,11 @@ const App = () => {
 
               {/* ===== FASE 9 - INTEGRAÇÕES (REORGANIZADAS) ===== */}
               <Route path="/admin/integracoes" element={
-                <UnifiedProtectedRoute requireAuth={true} requireRole="admin">
+                <ProtectedRoute requireAuth={true} requireRole="admin">
                   <Suspense fallback={<OptimizedLoadingSpinner />}>
                     <Integracoes />
                   </Suspense>
-                </UnifiedProtectedRoute>
+                </ProtectedRoute>
               }>
                 <Route index element={<IntegracoesDelivery />} />
                 <Route path="delivery" element={<IntegracoesDelivery />} />
@@ -346,7 +335,7 @@ const App = () => {
         <PWAInstallPrompt />
         {import.meta.env.DEV && <AnalyticsDebugger />}
           </TooltipProvider>
-        </SubscriptionGlobalProvider>
+        </SubscriptionProvider>
       </UnifiedAuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>

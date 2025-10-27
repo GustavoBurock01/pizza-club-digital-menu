@@ -269,6 +269,26 @@ async function handleSubscriptionEvent(event: Stripe.Event, supabaseClient: any,
     planPrice,
     expiresAt
   });
+
+  // ✅ BROADCAST VIA REALTIME para invalidar cache instantaneamente
+  try {
+    await supabaseClient
+      .channel(`subscription_${profile.id}`)
+      .send({
+        type: 'broadcast',
+        event: 'subscription_updated',
+        payload: {
+          userId: profile.id,
+          status: isActive ? 'active' : 'inactive',
+          planName,
+          expiresAt,
+        },
+      });
+    logStep("Realtime broadcast sent", { userId: profile.id });
+  } catch (broadcastError) {
+    // Não falhar por erro de broadcast (não crítico)
+    logStep("Warning: Realtime broadcast failed", { error: broadcastError });
+  }
 }
 
 async function handleInvoiceEvent(event: Stripe.Event, supabaseClient: any, stripe: Stripe) {
