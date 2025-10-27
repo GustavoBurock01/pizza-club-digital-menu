@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useAuth as useAuthCore } from '@/hooks/auth/useAuth';
-import { useSubscription as useSubscriptionCore } from '@/hooks/subscription/useSubscription';
+import { useSubscriptionGlobal } from '@/components/SubscriptionGlobalProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,9 +44,9 @@ interface UnifiedAuthContextType {
 const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
 
 export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
-  // Use new separated hooks
+  // Use auth + global subscription state
   const auth = useAuthCore();
-  const sub = useSubscriptionCore();
+  const { isActive: subActive, isLoading: subLoading, forceCheck } = useSubscriptionGlobal();
   const { toast } = useToast();
 
   // ===== CREATE CHECKOUT =====
@@ -110,13 +110,13 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ===== SUBSCRIPTION STATUS (formato antigo para compatibilidade) =====
   const subscriptionStatus: SubscriptionStatus = {
-    subscribed: sub.isActive,
-    status: sub.subscription?.status || 'inactive',
-    plan_name: sub.subscription?.plan_name || 'Nenhum',
-    plan_price: sub.subscription?.plan_price || 0,
-    expires_at: sub.subscription?.expires_at || null,
-    loading: sub.isLoading,
-    hasSubscriptionHistory: !!sub.subscription,
+    subscribed: subActive,
+    status: subActive ? 'active' : 'inactive',
+    plan_name: subActive ? 'Ativa' : 'Nenhum',
+    plan_price: 0,
+    expires_at: null,
+    loading: subLoading,
+    hasSubscriptionHistory: subActive,
   };
 
   // ===== UTILITY FUNCTIONS =====
@@ -125,24 +125,15 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth.user, auth.session]);
 
   const hasValidSubscription = useCallback(() => {
-    return sub.isActive;
-  }, [sub.isActive]);
+    return subActive;
+  }, [subActive]);
 
-  // Auto-refresh subscription when auth state is resolved
-  useEffect(() => {
-    if (!auth.user || !auth.session) {
-      return;
-    }
-    // User logged in: refresh subscription immediately
-    sub.refresh();
-  }, [auth.user?.id, auth.session?.access_token]);
-
-  // Auto-refresh subscription on success
+  // Refresh subscription only after successful checkout redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       setTimeout(() => {
-        sub.refresh();
+        forceCheck();
         toast({
           title: "Pagamento realizado com sucesso!",
           description: "Sua assinatura foi ativada. Bem-vindo ao Pizza Club!",
@@ -150,31 +141,19 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState({}, document.title, window.location.pathname);
       }, 2000);
     }
-  }, [sub.refresh, toast]);
-
-  // Auto-refresh on window focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (auth.user) {
-        sub.refresh();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [auth.user, sub.refresh]);
+  }, [forceCheck, toast]);
 
   const value: UnifiedAuthContextType = {
     user: auth.user,
     session: auth.session,
-    loading: auth.loading || sub.isLoading,
+    loading: auth.loading || subLoading,
     subscription: subscriptionStatus,
     signUp: auth.signUp,
     signIn: auth.signIn,
     signOut: auth.signOut,
     updateProfile: auth.updateProfile,
     createCheckout,
-    refreshSubscription: sub.refresh,
+    refreshSubscription: forceCheck,
     isAuthenticated,
     hasValidSubscription,
   };

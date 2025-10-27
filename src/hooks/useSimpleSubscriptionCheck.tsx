@@ -24,8 +24,8 @@ export function useSimpleSubscriptionCheck(userId?: string) {
       const data: SubscriptionCache = JSON.parse(cached);
       const now = Date.now();
       
-      // Verificar se o cache é válido (não expirou e é do mesmo usuário)
-      if (data.userId === userId && (now - data.checkedAt) < CACHE_DURATION) {
+      // Verificar se o cache é válido (não expirou, é do mesmo usuário e é positivo)
+      if (data.userId === userId && data.isActive && (now - data.checkedAt) < CACHE_DURATION) {
         return data;
       }
       
@@ -40,9 +40,19 @@ export function useSimpleSubscriptionCheck(userId?: string) {
   const setCachedStatus = useCallback((active: boolean) => {
     if (!userId) return;
     
+    // Só cachear quando estiver ATIVA para evitar falsos negativos persistentes
+    if (!active) {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+      } catch (error) {
+        console.error('[SUBSCRIPTION-CACHE] Error clearing cache for false status:', error);
+      }
+      return;
+    }
+
     try {
       const cache: SubscriptionCache = {
-        isActive: active,
+        isActive: true,
         checkedAt: Date.now(),
         userId,
       };
