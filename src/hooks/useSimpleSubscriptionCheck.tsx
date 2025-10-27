@@ -71,43 +71,48 @@ export function useSimpleSubscriptionCheck(userId?: string) {
     }
   }, []);
 
-  // Verificar assinatura no Stripe
-  const checkStripeSubscription = useCallback(async (): Promise<boolean> => {
+  // Verificar assinatura no banco (sincronizada via webhooks)
+  const checkDbSubscription = useCallback(async (): Promise<boolean | 'unknown'> => {
     if (!userId) return false;
 
     try {
-      console.log('[SUBSCRIPTION-CHECK] Checking Stripe subscription for user:', userId);
-      
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        console.error('[SUBSCRIPTION-CHECK] No valid session');
-        return false;
-      }
+      console.log('[SUBSCRIPTION-CHECK] Checking DB subscription for user:', userId);
 
-      const { data, error } = await supabase.functions.invoke('subscription/check', {
-        headers: { 'Authorization': `Bearer ${session.session.access_token}` },
-      });
+      // Lê a assinatura mais recente do usuário
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('status,current_period_end')
+        .eq('user_id', userId)
+        .order('current_period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
-        console.error('[SUBSCRIPTION-CHECK] Error checking subscription:', error);
-        // Em caso de erro, usar o cache se disponível
+        console.error('[SUBSCRIPTION-CHECK] DB error checking subscription:', error);
         const cached = getCachedStatus();
-        return cached?.isActive ?? false;
+        return cached?.isActive ?? 'unknown';
       }
 
-      const active = data?.subscribed === true && data?.status === 'active';
-      console.log('[SUBSCRIPTION-CHECK] Stripe subscription status:', { active, data });
-      
+      if (!data) {
+        // Sem registro ainda: tratar como desconhecido
+        return 'unknown';
+      }
+
+      const periodEndOk = data.current_period_end
+        ? new Date(data.current_period_end).getTime() > Date.now()
+        : true;
+      const active = data.status === 'active' && periodEndOk;
+      console.log('[SUBSCRIPTION-CHECK] DB subscription status:', { active, data });
+
       return active;
     } catch (error) {
-      console.error('[SUBSCRIPTION-CHECK] Exception:', error);
-      // Em caso de erro, usar o cache se disponível
+      console.error('[SUBSCRIPTION-CHECK] Exception (DB):', error);
       const cached = getCachedStatus();
-      return cached?.isActive ?? false;
+      return cached?.isActive ?? 'unknown';
     }
   }, [userId, getCachedStatus]);
 
-  // Verificar assinatura (cache ou Stripe)
+  // Verificar assinatura (cache ou DB)
   const checkSubscription = useCallback(async () => {
     if (!userId) {
       setIsActive(false);
@@ -126,15 +131,22 @@ export function useSimpleSubscriptionCheck(userId?: string) {
       return;
     }
 
-    // Se não tem cache, verificar no Stripe
+    // Se não tem cache, verificar no DB (sincronizado por webhooks)
     setIsLoading(true);
-    const active = await checkStripeSubscription();
-    
-    setIsActive(active);
-    setCachedStatus(active);
+    const status = await checkDbSubscription();
+
+    if (status === 'unknown') {
+      console.warn('[SUBSCRIPTION-CHECK] Status unknown, skipping enforcement for now');
+      setIsLoading(false);
+      setHasBeenChecked(false);
+      return;
+    }
+
+    setIsActive(status);
+    setCachedStatus(status);
     setIsLoading(false);
     setHasBeenChecked(true);
-  }, [userId, getCachedStatus, checkStripeSubscription, setCachedStatus]);
+  }, [userId, getCachedStatus, checkDbSubscription, setCachedStatus])
 
   // Forçar nova verificação (ignorando cache)
   const forceCheck = useCallback(async () => {
@@ -145,12 +157,19 @@ export function useSimpleSubscriptionCheck(userId?: string) {
     setHasBeenChecked(false);
     setIsLoading(true);
     
-    const active = await checkStripeSubscription();
-    setIsActive(active);
-    setCachedStatus(active);
+    const status = await checkDbSubscription();
+
+    if (status === 'unknown') {
+      setIsLoading(false);
+      setHasBeenChecked(false);
+      return;
+    }
+
+    setIsActive(status);
+    setCachedStatus(status);
     setIsLoading(false);
     setHasBeenChecked(true);
-  }, [userId, clearCache, checkStripeSubscription, setCachedStatus]);
+  }, [userId, clearCache, checkDbSubscription, setCachedStatus])
 
   // Verificar quando o userId muda
   useEffect(() => {
