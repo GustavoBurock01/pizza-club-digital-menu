@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useAuth as useAuthCore } from '@/hooks/auth/useAuth';
-import { useSubscription as useSubscriptionHook } from '@/hooks/useSubscription';
+import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,9 +44,9 @@ interface UnifiedAuthContextType {
 const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
 
 export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
-  // Use auth + subscription hook direto (não o contexto!)
+  // Use auth core + subscription context (evita duplicação de canais realtime)
   const auth = useAuthCore();
-  const subscription = useSubscriptionHook(auth.user?.id);
+  const subscription = useSubscriptionContext();
   const { toast } = useToast();
 
   // ===== CREATE CHECKOUT =====

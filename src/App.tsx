@@ -107,8 +107,8 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <UnifiedAuthProvider>
-          <SubscriptionProvider>
+        <SubscriptionProvider>
+          <UnifiedAuthProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -342,11 +342,11 @@ const App = () => {
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
         <PWAInstallPrompt />
         {import.meta.env.DEV && <AnalyticsDebugger />}
-          </TooltipProvider>
+            </TooltipProvider>
+          </UnifiedAuthProvider>
         </SubscriptionProvider>
-      </UnifiedAuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
