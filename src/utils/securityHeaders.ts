@@ -31,6 +31,7 @@ class SecurityHeadersManager {
   private getSecurityConfig(): SecurityConfig {
     const isDevelopment = import.meta.env.DEV;
     const supabaseUrl = 'https://xpgsfovrxguphlvncgwn.supabase.co';
+    const supabaseWssUrl = supabaseUrl.replace('https://', 'wss://');
     
     return {
       contentSecurityPolicy: {
@@ -66,6 +67,7 @@ class SecurityHeadersManager {
           'connect-src': [
             "'self'",
             supabaseUrl,
+            supabaseWssUrl,
             'wss://realtime-pooler.supabase.com',
             'https://api.mercadopago.com',
             'https://api.stripe.com',

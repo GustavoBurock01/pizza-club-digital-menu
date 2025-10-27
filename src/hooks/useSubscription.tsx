@@ -65,9 +65,9 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
 
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('status, plan_name, plan_price, current_period_end, stripe_subscription_id')
+    .select('status, plan_name, plan_price, expires_at, stripe_subscription_id')
     .eq('user_id', userId)
-    .order('current_period_end', { ascending: false })
+    .order('expires_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -90,8 +90,8 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
   }
 
   // Verificar se está ativa e não expirou
-  const periodEndOk = data.current_period_end
-    ? new Date(data.current_period_end).getTime() > Date.now()
+  const periodEndOk = data.expires_at
+    ? new Date(data.expires_at).getTime() > Date.now()
     : false;
 
   const isActive = data.status === 'active' && periodEndOk;
@@ -101,7 +101,7 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
     status: data.status || 'inactive',
     planName: data.plan_name || 'Nenhum',
     planPrice: Number(data.plan_price) || 0,
-    expiresAt: data.current_period_end,
+    expiresAt: data.expires_at,
     stripeSubscriptionId: data.stripe_subscription_id,
   };
 
@@ -178,22 +178,34 @@ export const useSubscription = (userId?: string) => {
     try {
       console.log('[SUBSCRIPTION] Reconciling with Stripe...');
       
-      const { data, error } = await supabase.functions.invoke('subscription/reconcile', {
+      // Primary reconciliation against Stripe updating Supabase
+      const { data, error } = await supabase.functions.invoke('reconcile-subscription', {
         body: { user_id: userId }
       });
       
       if (error) {
         console.error('[SUBSCRIPTION] Reconciliation error:', error);
-        return;
+        throw error;
       }
       
       console.log('[SUBSCRIPTION] Reconciliation result:', data);
-      
-      // Refresh após reconciliação
+    } catch (error) {
+      console.error('[SUBSCRIPTION] Reconciliation failed, trying fallback check-subscription...', error);
+      // Fallback: direct check that also upserts an active sub if found
+      try {
+        const { data: checkData, error: checkError } = await supabase.functions.invoke('check-subscription', {});
+        if (checkError) {
+          console.error('[SUBSCRIPTION] Fallback check-subscription error:', checkError);
+        } else {
+          console.log('[SUBSCRIPTION] Fallback check-subscription result:', checkData);
+        }
+      } catch (fallbackErr) {
+        console.error('[SUBSCRIPTION] Fallback check-subscription failed:', fallbackErr);
+      }
+    } finally {
+      // Refresh after any attempt
       clearLocalCache(userId);
       queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
-    } catch (error) {
-      console.error('[SUBSCRIPTION] Reconciliation failed:', error);
     }
   }, [userId, queryClient]);
 

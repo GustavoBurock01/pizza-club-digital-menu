@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useRole } from '@/hooks/useUnifiedProfile';
 import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { SubscriptionReconciling } from '@/components/SubscriptionReconciling';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -82,7 +83,17 @@ export const ProtectedRoute = ({
 
   // ===== SUBSCRIPTION CHECK =====
   if (requireSubscription && user && !hasSubscription) {
-    console.log('[ROUTE-GUARD] Redirecting to plans - no active subscription');
+    const hasReconciled = user ? sessionStorage.getItem(`reconciled_${user.id}`) === 'true' : false;
+    if (subLoading || !hasReconciled) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-full max-w-md px-6">
+            <SubscriptionReconciling />
+          </div>
+        </div>
+      );
+    }
+    console.log('[ROUTE-GUARD] Redirecting to plans - no active subscription after reconciliation');
     return <Navigate to="/plans" replace />;
   }
 

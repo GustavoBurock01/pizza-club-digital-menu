@@ -1,4 +1,3 @@
-
 project_id = "xpgsfovrxguphlvncgwn"
 
 [api]
@@ -92,3 +91,6 @@ verify_jwt = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.reconcile-subscription]
+verify_jwt = true
