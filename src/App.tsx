@@ -133,11 +133,11 @@ const App = () => {
                   </Suspense>
                 </ProtectedRoute>
               } />
-               {/* Payment & Checkout Routes */}
+               {/* Checkout & Payment Routes */}
               <Route path="/checkout" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <Payment />
+                    <Checkout />
                   </Suspense>
                 </ProtectedRoute>
               } />
