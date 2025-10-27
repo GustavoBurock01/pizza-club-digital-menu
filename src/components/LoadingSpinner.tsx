@@ -14,9 +14,10 @@ export const LoadingSpinner = ({ size = 'md', text }: LoadingSpinnerProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <Loader2 className={`${sizeClasses[size]} animate-spin text-pizza-red`} />
-      {text && <p className="mt-2 text-sm text-muted-foreground">{text}</p>}
+    <div className="flex flex-col items-center justify-center p-4 sm:p-6" role="status" aria-live="polite">
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-primary`} />
+      {text && <p className="mt-2 sm:mt-3 text-sm sm:text-base text-muted-foreground">{text}</p>}
+      <span className="sr-only">Carregando...</span>
     </div>
   );
 };
