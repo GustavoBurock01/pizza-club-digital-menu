@@ -199,13 +199,29 @@ export const useSubscription = (userId?: string) => {
           console.error('[SUBSCRIPTION] Fallback check-subscription error:', checkError);
         } else {
           console.log('[SUBSCRIPTION] Fallback check-subscription result:', checkData);
+          // If subscribed, optimistically seed local cache for instant unlock
+          if ((checkData as any)?.subscribed) {
+            const payload = checkData as any;
+            const optimistic: SubscriptionData = {
+              isActive: true,
+              status: payload.status || 'active',
+              planName: payload.plan_name || 'Ativo',
+              planPrice: Number(payload.plan_price) || 0,
+              expiresAt: payload.expires_at || null,
+              stripeSubscriptionId: payload.stripe_subscription_id || null,
+            };
+            setLocalCache(userId, optimistic);
+            // Also update React Query cache immediately for instant unlock
+            queryClient.setQueryData(['subscription', userId], optimistic as any);
+          }
         }
       } catch (fallbackErr) {
         console.error('[SUBSCRIPTION] Fallback check-subscription failed:', fallbackErr);
       }
     } finally {
-      // Refresh after any attempt
-      clearLocalCache(userId);
+      // Mark that we've attempted reconciliation to avoid UI deadlocks
+      try { sessionStorage.setItem(`reconciled_${userId}`, 'true'); } catch {}
+      // Trigger refetch after any attempt
       queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
     }
   }, [userId, queryClient]);

@@ -206,10 +206,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in reconcile-subscription", { message: errorMessage });
+    const message = error instanceof Error ? error.message : (typeof error === 'string' ? error : JSON.stringify(error));
+    logStep("ERROR in reconcile-subscription", { message });
     return new Response(JSON.stringify({ 
-      error: errorMessage,
+      error: message,
       success: false 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
