@@ -57,12 +57,9 @@ export default defineConfig(({ mode }) => ({
     },
     // Otimizações adicionais
     target: 'es2015',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production',
-      },
+    minify: 'esbuild',
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
     // Code splitting
     chunkSizeWarningLimit: 1000,
