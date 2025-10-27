@@ -48,7 +48,7 @@ export const useCoupon = () => {
         .select('*')
         .eq('code', code.toUpperCase())
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (couponError || !coupon) {
         toast({
@@ -58,11 +58,14 @@ export const useCoupon = () => {
         });
         return null;
       }
+      
+      // Type assertion para o tipo correto
+      const typedCoupon = coupon as Coupon;
 
       // Validar período de validade
       const now = new Date();
-      const validFrom = new Date(coupon.valid_from);
-      const validUntil = new Date(coupon.valid_until);
+      const validFrom = new Date(typedCoupon.valid_from);
+      const validUntil = new Date(typedCoupon.valid_until);
 
       if (now < validFrom) {
         toast({
@@ -83,17 +86,17 @@ export const useCoupon = () => {
       }
 
       // Validar valor mínimo do pedido
-      if (coupon.min_order_value && orderTotal < coupon.min_order_value) {
+      if (typedCoupon.min_order_value && orderTotal < typedCoupon.min_order_value) {
         toast({
           title: "Valor mínimo não atingido",
-          description: `Pedido mínimo de R$ ${coupon.min_order_value.toFixed(2)} para usar este cupom`,
+          description: `Pedido mínimo de R$ ${typedCoupon.min_order_value.toFixed(2)} para usar este cupom`,
           variant: "destructive",
         });
         return null;
       }
 
       // Validar limite de uso
-      if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+      if (typedCoupon.usage_limit && typedCoupon.used_count >= typedCoupon.usage_limit) {
         toast({
           title: "Cupom esgotado",
           description: "Este cupom atingiu o limite de uso",
@@ -105,9 +108,9 @@ export const useCoupon = () => {
       // Verificar se usuário já usou este cupom (se logado)
       if (user) {
         const { data: previousUse } = await supabase
-          .from('coupon_uses')
+          .from('coupon_uses' as any)
           .select('*')
-          .eq('coupon_id', coupon.id)
+          .eq('coupon_id', typedCoupon.id)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -123,21 +126,21 @@ export const useCoupon = () => {
 
       // Calcular desconto
       let discountAmount = 0;
-      if (coupon.discount_type === 'percent') {
-        discountAmount = (orderTotal * coupon.discount_value) / 100;
+      if (typedCoupon.discount_type === 'percent') {
+        discountAmount = (orderTotal * typedCoupon.discount_value) / 100;
         
         // Aplicar limite máximo de desconto se houver
-        if (coupon.max_discount_amount && discountAmount > coupon.max_discount_amount) {
-          discountAmount = coupon.max_discount_amount;
+        if (typedCoupon.max_discount_amount && discountAmount > typedCoupon.max_discount_amount) {
+          discountAmount = typedCoupon.max_discount_amount;
         }
       } else {
-        discountAmount = coupon.discount_value;
+        discountAmount = typedCoupon.discount_value;
       }
 
       // Garantir que o desconto não seja maior que o total
       discountAmount = Math.min(discountAmount, orderTotal);
 
-      setAppliedCoupon(coupon);
+      setAppliedCoupon(typedCoupon);
       
       toast({
         title: "Cupom aplicado!",
@@ -145,7 +148,7 @@ export const useCoupon = () => {
       });
 
       return {
-        coupon,
+        coupon: typedCoupon,
         discountAmount,
       };
     } catch (error: any) {
@@ -173,7 +176,7 @@ export const useCoupon = () => {
     try {
       // Registrar uso do cupom
       await supabase
-        .from('coupon_uses')
+        .from('coupon_uses' as any)
         .insert([{
           coupon_id: couponId,
           user_id: userId,
@@ -181,7 +184,7 @@ export const useCoupon = () => {
         }]);
 
       // Incrementar contador de uso
-      await supabase.rpc('increment_coupon_usage', { coupon_id: couponId });
+      await supabase.rpc('increment_coupon_usage' as any, { coupon_id: couponId });
     } catch (error) {
       console.error('Error registering coupon use:', error);
     }

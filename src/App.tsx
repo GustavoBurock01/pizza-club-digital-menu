@@ -36,6 +36,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const Payment = lazy(() => import("./pages/Payment"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // NEW ADMIN STRUCTURE - FASE 1 & FASE 3

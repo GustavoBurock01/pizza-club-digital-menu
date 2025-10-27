@@ -39,13 +39,16 @@ export default function Checkout() {
   // Store do carrinho
   const { 
     items, 
-    subtotal, 
-    total,
     deliveryFee,
     deliveryMethod,
     setDeliveryMethod,
-    setDeliveryFee 
+    setDeliveryFee,
+    getSubtotal,
+    getTotal 
   } = useUnifiedStore();
+  
+  const subtotal = getSubtotal();
+  const total = getTotal();
   
   // Hooks
   const { profile } = useProfile();
