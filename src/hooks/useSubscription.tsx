@@ -172,6 +172,31 @@ export const useSubscription = (userId?: string) => {
   }, [userId, queryClient]);
 
   // ===== MÉTODOS =====
+  const reconcile = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      console.log('[SUBSCRIPTION] Reconciling with Stripe...');
+      
+      const { data, error } = await supabase.functions.invoke('subscription/reconcile', {
+        body: { user_id: userId }
+      });
+      
+      if (error) {
+        console.error('[SUBSCRIPTION] Reconciliation error:', error);
+        return;
+      }
+      
+      console.log('[SUBSCRIPTION] Reconciliation result:', data);
+      
+      // Refresh após reconciliação
+      clearLocalCache(userId);
+      queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
+    } catch (error) {
+      console.error('[SUBSCRIPTION] Reconciliation failed:', error);
+    }
+  }, [userId, queryClient]);
+
   const refresh = useCallback(async () => {
     if (!userId) return;
     
@@ -187,6 +212,26 @@ export const useSubscription = (userId?: string) => {
     clearLocalCache(userId);
     queryClient.removeQueries({ queryKey: ['subscription', userId] });
   }, [userId, queryClient]);
+
+  // ===== AUTO RECONCILE ON FIRST LOAD =====
+  useEffect(() => {
+    if (userId && !query.isLoading && !query.data?.isActive) {
+      // Tentar reconciliar apenas uma vez após o primeiro load
+      const hasReconciled = sessionStorage.getItem(`reconciled_${userId}`);
+      if (!hasReconciled) {
+        console.log('[SUBSCRIPTION] First load - attempting reconciliation');
+        
+        // Set timeout para evitar reconsciliação muito rápida no primeiro load
+        const timeout = setTimeout(() => {
+          reconcile().then(() => {
+            sessionStorage.setItem(`reconciled_${userId}`, 'true');
+          });
+        }, 1000);
+        
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [userId, query.isLoading, query.data?.isActive, reconcile]);
 
   return {
     // Data
@@ -205,5 +250,6 @@ export const useSubscription = (userId?: string) => {
     // Methods
     refresh,
     clearCache,
+    reconcile,
   };
 };

@@ -35,6 +35,7 @@ interface UnifiedAuthContextType {
   // Subscription Actions
   createCheckout: (planType?: 'annual' | 'monthly' | 'trial') => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  reconcileSubscription: () => Promise<void>;
   
   // Utility Functions
   isAuthenticated: () => boolean;
@@ -154,6 +155,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     updateProfile: auth.updateProfile,
     createCheckout,
     refreshSubscription: subscription.refresh,
+    reconcileSubscription: subscription.reconcile,
     isAuthenticated,
     hasValidSubscription,
   };

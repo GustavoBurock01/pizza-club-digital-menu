@@ -26,7 +26,8 @@ export const ProtectedRoute = ({
   const location = useLocation();
 
   // ===== LOADING STATE =====
-  const isLoading = authLoading || (requireRole && roleLoading) || (requireSubscription && subLoading);
+  // Não bloquear apenas por subscription loading (reconciliação em background)
+  const isLoading = authLoading || (requireRole && roleLoading);
 
   if (isLoading) {
     return (
@@ -36,7 +37,6 @@ export const ProtectedRoute = ({
           <p className="text-muted-foreground">
             {requireRole === 'admin' ? 'Verificando permissões...' :
              requireRole === 'attendant' ? 'Verificando acesso...' :
-             requireSubscription ? 'Verificando assinatura...' :
              'Carregando...'}
           </p>
         </div>

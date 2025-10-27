@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { user, createCheckout, refreshSubscription } = useUnifiedAuth();
+  const { user, createCheckout, refreshSubscription, reconcileSubscription } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
   const { isLoading: subscriptionLoading, isActive } = useSubscriptionContext();
   const navigate = useNavigate();
@@ -120,8 +120,12 @@ const Dashboard = () => {
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
     try {
-      // Usar refresh do novo sistema unificado
+      // Primeiro tenta reconciliar com Stripe
+      await reconcileSubscription?.();
+      
+      // Depois faz o refresh
       await refreshSubscription();
+      
       toast({
         title: "Assinatura atualizada",
         description: "Status da assinatura foi verificado novamente.",

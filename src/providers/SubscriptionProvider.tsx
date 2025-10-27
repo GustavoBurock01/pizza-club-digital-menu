@@ -14,6 +14,7 @@ interface SubscriptionContextType {
   isError: boolean;
   refresh: () => Promise<void>;
   clearCache: () => void;
+  reconcile: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -32,6 +33,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     isError: subscription.isError,
     refresh: subscription.refresh,
     clearCache: subscription.clearCache,
+    reconcile: subscription.reconcile,
   };
 
   return (
