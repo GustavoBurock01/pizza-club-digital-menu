@@ -301,55 +301,6 @@ export type Database = {
         }
         Relationships: []
       }
-      coupon_uses: {
-        Row: {
-          coupon_id: string
-          created_at: string | null
-          id: string
-          order_id: string | null
-          used_at: string
-          user_id: string
-        }
-        Insert: {
-          coupon_id: string
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          used_at?: string
-          user_id: string
-        }
-        Update: {
-          coupon_id?: string
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          used_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coupon_uses_coupon_id_fkey"
-            columns: ["coupon_id"]
-            isOneToOne: false
-            referencedRelation: "coupons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coupon_uses_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coupon_uses_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders_with_details"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       coupons: {
         Row: {
           code: string
@@ -1341,15 +1292,12 @@ export type Database = {
       orders: {
         Row: {
           address_id: string | null
-          coupon_code: string | null
-          coupon_id: string | null
           created_at: string | null
           customer_name: string | null
           customer_phone: string | null
           delivery_address_snapshot: Json | null
           delivery_fee: number | null
           delivery_method: string | null
-          discount_amount: number | null
           estimated_delivery_time: number | null
           id: string
           notes: string | null
@@ -1362,15 +1310,12 @@ export type Database = {
         }
         Insert: {
           address_id?: string | null
-          coupon_code?: string | null
-          coupon_id?: string | null
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_address_snapshot?: Json | null
           delivery_fee?: number | null
           delivery_method?: string | null
-          discount_amount?: number | null
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
@@ -1383,15 +1328,12 @@ export type Database = {
         }
         Update: {
           address_id?: string | null
-          coupon_code?: string | null
-          coupon_id?: string | null
           created_at?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_address_snapshot?: Json | null
           delivery_fee?: number | null
           delivery_method?: string | null
-          discount_amount?: number | null
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
@@ -1408,13 +1350,6 @@ export type Database = {
             columns: ["address_id"]
             isOneToOne: false
             referencedRelation: "addresses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_coupon_id_fkey"
-            columns: ["coupon_id"]
-            isOneToOne: false
-            referencedRelation: "coupons"
             referencedColumns: ["id"]
           },
           {
@@ -2654,10 +2589,6 @@ export type Database = {
       }
       has_any_role: { Args: { required_roles: string[] }; Returns: boolean }
       has_role: { Args: { required_role: string }; Returns: boolean }
-      increment_coupon_usage: {
-        Args: { p_coupon_id: string }
-        Returns: undefined
-      }
       is_admin: { Args: { user_id?: string }; Returns: boolean }
       log_admin_action: {
         Args: {

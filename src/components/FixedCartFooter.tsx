@@ -21,20 +21,20 @@ export const FixedCartFooter = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-3 sm:p-4 md:left-64 z-40 safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 md:left-64 z-40">
       <div className="max-w-2xl mx-auto">
         <Button 
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11 sm:h-12 flex items-center justify-between text-sm sm:text-base"
+          className="w-full gradient-pizza text-white h-12 flex items-center justify-between"
           onClick={() => navigate('/checkout')}
         >
           <div className="flex items-center gap-2">
             <div className="relative">
-              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-              <Badge className="absolute -top-2 -right-2 h-4 w-4 sm:h-5 sm:w-5 p-0 text-[10px] sm:text-xs bg-accent text-accent-foreground flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5" />
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs bg-pizza-orange text-white">
                 {itemCount}
               </Badge>
             </div>
-            <span className="font-medium">Ver sacola</span>
+            <span>Ver sacola</span>
           </div>
           <span className="font-bold">{formatPrice(total)}</span>
         </Button>
