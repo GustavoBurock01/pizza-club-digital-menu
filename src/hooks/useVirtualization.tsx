@@ -1,84 +1,67 @@
-// ===== VIRTUALIZATION HOOK PARA LISTAS GRANDES =====
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+// ===== HOOK PARA VIRTUALIZAÇÃO DE LISTAS GRANDES =====
 
-interface UseVirtualizationOptions {
+interface VirtualizationOptions {
   itemHeight: number;
   containerHeight: number;
   overscan?: number;
 }
 
-/**
- * Hook para virtualizar listas grandes e melhorar performance
- * Renderiza apenas os itens visíveis + buffer (overscan)
- */
 export const useVirtualization = <T,>(
   items: T[],
-  options: UseVirtualizationOptions
+  options: VirtualizationOptions
 ) => {
-  const { itemHeight, containerHeight, overscan = 3 } = options;
+  const { itemHeight, containerHeight, overscan = 5 } = options;
   const [scrollTop, setScrollTop] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const { visibleItems, totalHeight, offsetY } = useMemo(() => {
-    const itemsPerView = Math.ceil(containerHeight / itemHeight);
-    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-    const endIndex = Math.min(
-      items.length,
-      startIndex + itemsPerView + overscan * 2
-    );
+  const totalHeight = items.length * itemHeight;
+  const visibleCount = Math.ceil(containerHeight / itemHeight);
 
-    return {
-      visibleItems: items.slice(startIndex, endIndex).map((item, index) => ({
-        item,
-        index: startIndex + index,
-      })),
-      totalHeight: items.length * itemHeight,
-      offsetY: startIndex * itemHeight,
-    };
-  }, [items, scrollTop, itemHeight, containerHeight, overscan]);
+  const startIndex = useMemo(() => {
+    const index = Math.floor(scrollTop / itemHeight);
+    return Math.max(0, index - overscan);
+  }, [scrollTop, itemHeight, overscan]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  const endIndex = useMemo(() => {
+    const index = startIndex + visibleCount + overscan * 2;
+    return Math.min(items.length - 1, index);
+  }, [startIndex, visibleCount, overscan, items.length]);
 
-    const handleScroll = () => {
-      setScrollTop(container.scrollTop);
-    };
+  const visibleItems = useMemo(() => {
+    return items.slice(startIndex, endIndex + 1).map((item, index) => ({
+      item,
+      index: startIndex + index,
+      style: {
+        position: 'absolute' as const,
+        top: (startIndex + index) * itemHeight,
+        height: itemHeight,
+        width: '100%'
+      }
+    }));
+  }, [items, startIndex, endIndex, itemHeight]);
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
   }, []);
 
   return {
-    containerRef,
-    visibleItems,
     totalHeight,
-    offsetY,
+    visibleItems,
+    handleScroll,
+    containerProps: {
+      style: {
+        height: containerHeight,
+        overflow: 'auto',
+        position: 'relative' as const
+      },
+      onScroll: handleScroll
+    },
+    innerProps: {
+      style: {
+        height: totalHeight,
+        position: 'relative' as const
+      }
+    }
   };
 };
-
-/**
- * Exemplo de uso:
- * 
- * const items = [...]; // Array com 1000+ itens
- * 
- * const { containerRef, visibleItems, totalHeight, offsetY } = useVirtualization(
- *   items,
- *   { itemHeight: 60, containerHeight: 400 }
- * );
- * 
- * return (
- *   <div ref={containerRef} style={{ height: 400, overflow: 'auto' }}>
- *     <div style={{ height: totalHeight, position: 'relative' }}>
- *       <div style={{ transform: `translateY(${offsetY}px)` }}>
- *         {visibleItems.map(({ item, index }) => (
- *           <div key={index} style={{ height: 60 }}>
- *             {item.name}
- *           </div>
- *         ))}
- *       </div>
- *     </div>
- *   </div>
- * );
- */

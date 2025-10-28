@@ -21,40 +21,38 @@ export const MenuHeader = ({
   productsCount = 0
 }: MenuHeaderProps) => {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-6">
+    <div className="flex items-center gap-4 mb-6">
       <SidebarTrigger className="md:hidden" />
-      <div className="flex-1 w-full sm:w-auto">
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-2">
           {currentView !== 'categories' && (
             <>
-              <Button variant="ghost" onClick={handleBackToCategories} className="p-1 h-auto">
+              <Button variant="ghost" onClick={handleBackToCategories} className="p-1">
                 <Home className="h-4 w-4" />
               </Button>
-              <span className="text-muted-foreground text-sm">/</span>
-              <span className="text-muted-foreground text-sm truncate max-w-[150px]">{getCurrentCategoryName()}</span>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-muted-foreground">{getCurrentCategoryName()}</span>
               {currentView === 'products' && (
                 <>
-                  <span className="text-muted-foreground text-sm">/</span>
-                  <span className="font-medium text-sm truncate max-w-[150px]">{getCurrentSubcategoryName()}</span>
+                  <span className="text-muted-foreground">/</span>
+                  <span className="font-medium">{getCurrentSubcategoryName()}</span>
                 </>
               )}
             </>
           )}
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+        <h1 className="text-3xl font-bold text-pizza-dark mb-2">
           {currentView === 'categories' && "Cardápio Exclusivo 🍕"}
           {currentView === 'subcategories' && `${getCurrentCategoryName()}`}
           {currentView === 'products' && `${getCurrentSubcategoryName()}`}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground">
           {currentView === 'categories' && "Escolha uma categoria para começar"}
           {currentView === 'subcategories' && "Selecione uma subcategoria"}
           {currentView === 'products' && `${productsCount} ${productsCount === 1 ? 'produto encontrado' : 'produtos encontrados'}`}
         </p>
       </div>
-      <div className="sm:ml-auto">
-        <UnifiedCartSystem variant="drawer" />
-      </div>
+      <UnifiedCartSystem variant="drawer" />
     </div>
   );
 };

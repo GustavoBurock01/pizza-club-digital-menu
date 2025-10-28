@@ -1,12 +1,114 @@
-// ===== HOOK ÚNICO DE ASSINATURA - REFATORADO (FASE 2) =====
+// ===== HOOK ÚNICO DE ASSINATURA - OTIMIZADO =====
+// Verificação: 1x por dia via cache
+// Sincronização: Automática via webhooks + realtime
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from './subscription/types';
-import { getLocalCache, setLocalCache, clearLocalCache, CACHE_DURATION_MS } from './subscription/useSubscriptionCache';
-import { fetchSubscription } from './subscription/useSubscriptionFetch';
-import { useSubscriptionRealtime } from './subscription/useSubscriptionRealtime';
+
+interface SubscriptionData {
+  isActive: boolean;
+  status: string;
+  planName: string;
+  planPrice: number;
+  expiresAt: string | null;
+  stripeSubscriptionId: string | null;
+}
+
+const CACHE_KEY = 'subscription_cache';
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+// ===== CACHE LOCAL (BACKUP) =====
+const getLocalCache = (userId: string): SubscriptionData | null => {
+  try {
+    const cached = localStorage.getItem(`${CACHE_KEY}_${userId}`);
+    if (!cached) return null;
+
+    const { data, timestamp } = JSON.parse(cached);
+    const now = Date.now();
+
+    // Cache válido por 24h
+    if (now - timestamp < CACHE_DURATION_MS) {
+      return data;
+    }
+
+    // Cache expirado
+    localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const setLocalCache = (userId: string, data: SubscriptionData) => {
+  try {
+    localStorage.setItem(
+      `${CACHE_KEY}_${userId}`,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch {
+    // Silently fail se localStorage estiver cheio
+  }
+};
+
+const clearLocalCache = (userId: string) => {
+  try {
+    localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+  } catch {
+    // Silently fail
+  }
+};
+
+// ===== FETCH SUBSCRIPTION DO BANCO =====
+const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
+  console.log('[SUBSCRIPTION] Fetching from database for user:', userId);
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('status, plan_name, plan_price, expires_at, stripe_subscription_id')
+    .eq('user_id', userId)
+    .order('expires_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[SUBSCRIPTION] Database error:', error);
+    throw error;
+  }
+
+  // Sem assinatura = inativo
+  if (!data) {
+    console.log('[SUBSCRIPTION] No subscription found');
+    return {
+      isActive: false,
+      status: 'inactive',
+      planName: 'Nenhum',
+      planPrice: 0,
+      expiresAt: null,
+      stripeSubscriptionId: null,
+    };
+  }
+
+  // Verificar se está ativa e não expirou
+  const periodEndOk = data.expires_at
+    ? new Date(data.expires_at).getTime() > Date.now()
+    : false;
+
+  const statusText = String((data as any).status);
+  const isActive = (statusText === 'active' || statusText === 'trialing') && periodEndOk;
+
+  const result: SubscriptionData = {
+    isActive,
+    status: data.status || 'inactive',
+    planName: data.plan_name || 'Nenhum',
+    planPrice: Number(data.plan_price) || 0,
+    expiresAt: data.expires_at,
+    stripeSubscriptionId: data.stripe_subscription_id,
+  };
+
+  console.log('[SUBSCRIPTION] Fetched:', result);
+  return result;
+};
 
 // ===== HOOK PRINCIPAL =====
 export const useSubscription = (userId?: string) => {
@@ -36,8 +138,39 @@ export const useSubscription = (userId?: string) => {
     }
   }, [query.data, userId, query.isError]);
 
-  // Hook Realtime
-  useSubscriptionRealtime(userId);
+  // ===== REALTIME: Escutar mudanças na tabela subscriptions =====
+  useEffect(() => {
+    if (!userId) return;
+
+    console.log('[SUBSCRIPTION] Setting up realtime listener for user:', userId);
+
+    const channel = supabase
+      .channel(`subscription_${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('[SUBSCRIPTION] Realtime update received:', payload);
+          
+          // Invalidar cache do React Query
+          queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
+          
+          // Limpar cache local para forçar nova busca
+          clearLocalCache(userId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[SUBSCRIPTION] Cleaning up realtime listener');
+      supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
 
   // ===== MÉTODOS =====
   const reconcile = useCallback(async () => {
