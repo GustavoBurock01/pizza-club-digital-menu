@@ -23,10 +23,13 @@ serve(async (req) => {
       throw new Error('Invalid metrics data')
     }
 
+    // Remove id field to let database generate UUID automatically
+    const metricsToInsert = metrics.map(({ id, ...metric }) => metric)
+
     // Store metrics in database
     const { error } = await supabaseClient
       .from('rum_metrics')
-      .insert(metrics)
+      .insert(metricsToInsert)
 
     if (error) {
       console.error('Database error:', error)

@@ -401,23 +401,20 @@ class RealUserMonitoring {
 
   // ===== PUBLIC METHODS =====
   public recordMetric(metric: Omit<RUMMetric, 'id'>) {
-    const fullMetric: RUMMetric = {
-      ...metric,
-      id: `metric_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-
+    // Don't generate ID here - let database generate UUID automatically
+    const fullMetric = metric as RUMMetric;
     this.metrics.push(fullMetric);
   }
 
   public reportError(error: Omit<ErrorReport, 'id' | 'session_id' | 'timestamp' | 'page_url' | 'user_agent'>) {
-    const fullError: ErrorReport = {
+    // Don't generate ID here - let database generate UUID automatically
+    const fullError = {
       ...error,
-      id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       session_id: this.sessionId,
       timestamp: new Date().toISOString(),
       page_url: window.location.href,
       user_agent: navigator.userAgent
-    };
+    } as ErrorReport;
 
     this.errorReports.push(fullError);
     

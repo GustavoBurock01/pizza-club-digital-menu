@@ -23,10 +23,13 @@ serve(async (req) => {
       throw new Error('Invalid error reports data')
     }
 
+    // Remove id field to let database generate UUID automatically
+    const errorsToInsert = errors.map(({ id, ...errorReport }) => errorReport)
+
     // Store error reports in database
     const { error } = await supabaseClient
       .from('error_reports')
-      .insert(errors)
+      .insert(errorsToInsert)
 
     if (error) {
       console.error('Database error:', error)
