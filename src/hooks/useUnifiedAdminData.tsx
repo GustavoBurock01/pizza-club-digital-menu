@@ -101,8 +101,7 @@ const fetchUnifiedStats = async (): Promise<UnifiedAdminStats> => {
       
       supabase
         .from('profiles')
-        .select('id, created_at, role')
-        .eq('role', 'customer'),
+        .select('id, created_at'),
       
       supabase
         .from('order_items')

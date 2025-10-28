@@ -12,10 +12,11 @@ interface Profile {
   phone?: string;
   cpf?: string;
   avatar_url?: string;
-  role: 'customer' | 'admin' | 'seller' | 'attendant';
   created_at: string;
   updated_at: string;
 }
+
+type UserRole = 'customer' | 'admin' | 'seller' | 'attendant';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const profileCache = new Map<string, { data: Profile; timestamp: number }>();
@@ -23,6 +24,7 @@ const profileCache = new Map<string, { data: Profile; timestamp: number }>();
 export const useUnifiedProfile = () => {
   const { user } = useUnifiedAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -31,7 +33,7 @@ export const useUnifiedProfile = () => {
 
   // Memoized role computations
   const roleInfo = useMemo(() => {
-    if (!profile?.role) {
+    if (!userRole) {
       return {
         role: null,
         isAdmin: false,
@@ -43,19 +45,20 @@ export const useUnifiedProfile = () => {
     }
 
     return {
-      role: profile.role,
-      isAdmin: profile.role === 'admin',
-      isAttendant: profile.role === 'attendant',
-      isCustomer: profile.role === 'customer',
-      isSeller: profile.role === 'seller',
+      role: userRole,
+      isAdmin: userRole === 'admin',
+      isAttendant: userRole === 'attendant',
+      isCustomer: userRole === 'customer',
+      isSeller: userRole === 'seller',
       loading: false
     };
-  }, [profile?.role, loading]);
+  }, [userRole, loading]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndRole = async () => {
       if (!debouncedUser?.id) {
         setProfile(null);
+        setUserRole(null);
         setLoading(false);
         profileCache.clear(); // Clear cache when no user
         return;
@@ -76,23 +79,42 @@ export const useUnifiedProfile = () => {
           return;
         }
 
-        console.log('[PROFILE] Fetching profile for user:', debouncedUser.id);
+        console.log('[PROFILE] Fetching profile and role for user:', debouncedUser.id);
 
-        const { data, error: fetchError } = await supabase
+        // Fetch profile (without role column)
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', debouncedUser.id)
           .single();
 
-        if (fetchError) {
-          console.error('Error fetching profile:', fetchError);
-          setError(fetchError.message);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          setError(profileError.message);
           setProfile(null);
+          setUserRole(null);
           profileCache.delete(cacheKey);
         } else {
-          setProfile(data);
+          // Fetch role from user_roles table (single source of truth)
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', debouncedUser.id)
+            .order('role', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (roleError) {
+            console.error('Error fetching role:', roleError);
+          }
+
+          const role = (roleData?.role as UserRole) || 'customer';
+          
+          setProfile(profileData);
+          setUserRole(role);
+          
           // Cache the result
-          profileCache.set(cacheKey, { data, timestamp: now });
+          profileCache.set(cacheKey, { data: profileData, timestamp: now });
           
           // Clean old cache entries
           profileCache.forEach((value, key) => {
@@ -105,12 +127,13 @@ export const useUnifiedProfile = () => {
         console.error('Profile fetch error:', err);
         setError(err.message);
         setProfile(null);
+        setUserRole(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchProfileAndRole();
   }, [debouncedUser?.id]);
 
   const updateProfile = async (updates: Partial<Profile>) => {

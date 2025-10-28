@@ -75,13 +75,14 @@ export const useAuth = () => {
 
       // Redirect based on role
       if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: roleData } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', data.user.id)
+          .eq('user_id', data.user.id)
+          .limit(1)
           .maybeSingle();
 
-        const role = profile?.role || 'customer';
+        const role = roleData?.role || 'customer';
         
         setTimeout(() => {
           switch (role) {

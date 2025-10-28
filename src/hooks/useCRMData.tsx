@@ -133,6 +133,21 @@ export function useCRMData() {
   const { data: customers, isLoading: loadingCustomers } = useQuery({
     queryKey: ['customers-with-loyalty'],
     queryFn: async () => {
+      // First get all customer user_ids from user_roles
+      const { data: customerRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'customer');
+      
+      if (rolesError) throw rolesError;
+      
+      const customerIds = customerRoles?.map(r => r.user_id) || [];
+      
+      if (customerIds.length === 0) {
+        return [];
+      }
+      
+      // Then get profiles with loyalty points for those users
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -143,7 +158,7 @@ export function useCRMData() {
             tier_id
           )
         `)
-        .eq('role', 'customer')
+        .in('id', customerIds)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
