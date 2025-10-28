@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2, Plus, Minus } from 'lucide-react';
 import { PaymentCategory, PaymentMethod } from '@/types';
 
 interface CustomerData {
@@ -41,7 +41,7 @@ interface CustomerData {
 }
 
 const ExpressCheckout = () => {
-  const { items, getSubtotal, getTotal, clearCart, removeItem, setDeliveryFee } = useUnifiedStore();
+  const { items, getSubtotal, getTotal, clearCart, removeItem, setDeliveryFee, updateQuantity } = useUnifiedStore();
   const { user } = useUnifiedAuth();
   const { addresses } = useAddresses();
   const { toast } = useToast();
@@ -63,6 +63,14 @@ const ExpressCheckout = () => {
   const [isGuest, setIsGuest] = useState(!user);
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    street: '',
+    number: '',
+    neighborhood: '',
+    complement: '',
+    reference_point: ''
+  });
 
   const [customerData, setCustomerData] = useState<CustomerData>({
     street: '',
@@ -74,12 +82,14 @@ const ExpressCheckout = () => {
   // ===== MEMOIZED CALCULATIONS =====
   const subtotal = useMemo(() => getSubtotal(), [items, getSubtotal]);
   const calculatedDeliveryFee = useMemo(() => {
+    // Só calcular taxa após a etapa de revisão
+    if (step === 'review') return 0;
     if (deliveryMethod === 'pickup') return 0;
     if (selectedNeighborhood) {
       return getDeliveryFee(selectedNeighborhood);
     }
     return 0;
-  }, [deliveryMethod, selectedNeighborhood, getDeliveryFee]);
+  }, [step, deliveryMethod, selectedNeighborhood, getDeliveryFee]);
   
   // Update delivery fee in store when it changes
   useEffect(() => {
@@ -108,9 +118,16 @@ const ExpressCheckout = () => {
         return items.length > 0;
       case 'address':
         if (deliveryMethod === 'pickup') return true;
-        if (deliveryMethod === 'delivery' && !selectedNeighborhood) return false;
-        if (!isGuest && selectedAddressId) return true;
-        return customerData.street && customerData.number && customerData.neighborhood;
+        if (deliveryMethod === 'delivery') {
+          // Se tem endereço salvo selecionado com bairro, válido
+          if (selectedAddressId && selectedNeighborhood) return true;
+          // Se está preenchendo novo endereço
+          if (showAddressForm) {
+            return newAddress.street && newAddress.number && newAddress.neighborhood;
+          }
+          return false;
+        }
+        return false;
       case 'payment':
         // Validar apenas o método de pagamento
         // Perfil será validado no momento de criar o pedido
@@ -121,7 +138,7 @@ const ExpressCheckout = () => {
       default:
         return false;
     }
-  }, [step, items, deliveryMethod, isGuest, selectedAddressId, customerData, paymentMethod, needsChange, changeAmount, total]);
+  }, [step, items, deliveryMethod, selectedAddressId, selectedNeighborhood, showAddressForm, newAddress, paymentMethod, needsChange, changeAmount, total]);
 
   const handleNext = () => {
     if (!isStepValid) {
@@ -427,15 +444,16 @@ const ExpressCheckout = () => {
     let addressId = selectedAddressId;
 
     // Create address if needed
-    if (deliveryMethod === 'delivery' && !selectedAddressId) {
+    if (deliveryMethod === 'delivery' && !selectedAddressId && showAddressForm) {
       const { data: addressData, error: addressError } = await supabase
         .from('addresses')
         .insert({
           user_id: user?.id,
-          street: customerData.street,
-          number: customerData.number,
-          neighborhood: customerData.neighborhood,
-          complement: customerData.complement,
+          street: newAddress.street,
+          number: newAddress.number,
+          neighborhood: newAddress.neighborhood,
+          complement: newAddress.complement,
+          reference_point: newAddress.reference_point,
           city: 'Sua Cidade',
           state: 'SP',
           zip_code: '00000-000'
@@ -696,9 +714,33 @@ const ExpressCheckout = () => {
                                 </p>
                               )}
                               
-                              {/* Price and Quantity */}
+                              {/* Price and Quantity Controls */}
                               <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                                <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => {
+                                      const newQuantity = Math.max(1, item.quantity - 1);
+                                      updateQuantity(item.id, newQuantity);
+                                    }}
+                                  >
+                                    -
+                                  </Button>
+                                  <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => {
+                                      const newQuantity = item.quantity + 1;
+                                      updateQuantity(item.id, newQuantity);
+                                    }}
+                                  >
+                                    +
+                                  </Button>
+                                </div>
                                 <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
                               </div>
                             </div>
@@ -731,6 +773,8 @@ const ExpressCheckout = () => {
                           setDeliveryMethod(value);
                           if (value === 'pickup') {
                             setSelectedNeighborhood('');
+                            setSelectedAddressId('');
+                            setShowAddressForm(false);
                           }
                         }}>
                           <div className="flex items-center space-x-2 p-4 border rounded-lg">
@@ -744,11 +788,6 @@ const ExpressCheckout = () => {
                                 </div>
                               </div>
                             </Label>
-                            {selectedNeighborhood && (
-                              <span className="text-sm font-medium">
-                                {formatPrice(getDeliveryFee(selectedNeighborhood))}
-                              </span>
-                            )}
                           </div>
                           
                           <div className="flex items-center space-x-2 p-4 border rounded-lg">
@@ -768,44 +807,185 @@ const ExpressCheckout = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Neighborhood Selector */}
+                    {/* Address Selection for Delivery */}
                     {deliveryMethod === 'delivery' && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Selecione seu Bairro</CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            A taxa de entrega varia conforme o bairro
-                          </p>
-                        </CardHeader>
-                        <CardContent>
-                          <NeighborhoodSelector
-                            selectedNeighborhood={selectedNeighborhood}
-                            onSelect={(neighborhood, fee) => {
-                              setSelectedNeighborhood(neighborhood);
-                              setCustomerData(prev => ({ ...prev, neighborhood }));
-                            }}
-                          />
-                          
-                          {selectedNeighborhood && (
-                            <div className="mt-4 p-4 bg-muted rounded-lg">
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <p className="font-medium">{selectedNeighborhood}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Entrega em ~{zones.find(z => z.neighborhood === selectedNeighborhood)?.estimated_time || 45} minutos
-                                  </p>
+                      <>
+                        {/* Saved Addresses */}
+                        {addresses.length > 0 && !showAddressForm && (
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Endereços Salvos</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                Selecione um endereço ou adicione um novo
+                              </p>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              {addresses.map((addr) => (
+                                <div
+                                  key={addr.id}
+                                  onClick={() => {
+                                    setSelectedAddressId(addr.id);
+                                    if (addr.neighborhood) {
+                                      setSelectedNeighborhood(addr.neighborhood);
+                                    }
+                                  }}
+                                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                                    selectedAddressId === addr.id
+                                      ? 'border-primary bg-primary/5'
+                                      : 'hover:border-primary/50'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <p className="font-medium">
+                                        {addr.street}, {addr.number}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {addr.neighborhood} - {addr.city}/{addr.state}
+                                      </p>
+                                      {addr.complement && (
+                                        <p className="text-sm text-muted-foreground">
+                                          {addr.complement}
+                                        </p>
+                                      )}
+                                      {addr.reference_point && (
+                                        <p className="text-sm text-muted-foreground">
+                                          Ref: {addr.reference_point}
+                                        </p>
+                                      )}
+                                      {!addr.neighborhood && (
+                                        <p className="text-sm text-amber-600 mt-2">
+                                          ⚠️ Bairro não definido - Clique para atualizar
+                                        </p>
+                                      )}
+                                    </div>
+                                    {selectedAddressId === addr.id && (
+                                      <Check className="h-5 w-5 text-primary shrink-0 ml-2" />
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-sm text-muted-foreground">Taxa de entrega</p>
-                                  <p className="font-medium text-primary">
-                                    {formatPrice(getDeliveryFee(selectedNeighborhood))}
-                                  </p>
+                              ))}
+                              
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                  setShowAddressForm(true);
+                                  setSelectedAddressId('');
+                                  setSelectedNeighborhood('');
+                                }}
+                              >
+                                + Adicionar Novo Endereço
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* New Address Form */}
+                        {(addresses.length === 0 || showAddressForm) && (
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Novo Endereço</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                Preencha os dados do endereço de entrega
+                              </p>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                  <Label htmlFor="street">Rua *</Label>
+                                  <Input
+                                    id="street"
+                                    value={newAddress.street}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, street: e.target.value }))}
+                                    placeholder="Nome da rua"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="number">Número *</Label>
+                                  <Input
+                                    id="number"
+                                    value={newAddress.number}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, number: e.target.value }))}
+                                    placeholder="123"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="neighborhood">Bairro *</Label>
+                                  <NeighborhoodSelector
+                                    selectedNeighborhood={newAddress.neighborhood}
+                                    onSelect={(neighborhood) => {
+                                      setNewAddress(prev => ({ ...prev, neighborhood }));
+                                      setSelectedNeighborhood(neighborhood);
+                                    }}
+                                  />
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                  <Label htmlFor="complement">Complemento</Label>
+                                  <Input
+                                    id="complement"
+                                    value={newAddress.complement}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, complement: e.target.value }))}
+                                    placeholder="Apto, bloco, etc."
+                                  />
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                  <Label htmlFor="reference">Ponto de Referência</Label>
+                                  <Input
+                                    id="reference"
+                                    value={newAddress.reference_point}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, reference_point: e.target.value }))}
+                                    placeholder="Próximo ao mercado..."
+                                  />
                                 </div>
                               </div>
+
+                              {addresses.length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  className="w-full"
+                                  onClick={() => {
+                                    setShowAddressForm(false);
+                                    setNewAddress({
+                                      street: '',
+                                      number: '',
+                                      neighborhood: '',
+                                      complement: '',
+                                      reference_point: ''
+                                    });
+                                  }}
+                                >
+                                  ← Voltar para endereços salvos
+                                </Button>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Selected Neighborhood Summary */}
+                        {selectedNeighborhood && (
+                          <div className="p-4 bg-muted rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">{selectedNeighborhood}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Entrega em ~{zones.find(z => z.neighborhood === selectedNeighborhood)?.estimated_time || 45} minutos
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm text-muted-foreground">Taxa de entrega</p>
+                                <p className="font-medium text-primary">
+                                  {formatPrice(getDeliveryFee(selectedNeighborhood))}
+                                </p>
+                              </div>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -1081,12 +1261,14 @@ const ExpressCheckout = () => {
                         <span>Subtotal</span>
                         <span>{formatPrice(subtotal)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Taxa de entrega</span>
-                        <span className={calculatedDeliveryFee > 0 ? '' : 'text-green-600'}>
-                          {calculatedDeliveryFee > 0 ? formatPrice(calculatedDeliveryFee) : 'Grátis'}
-                        </span>
-                      </div>
+                      {step !== 'review' && (
+                        <div className="flex justify-between">
+                          <span>Taxa de entrega</span>
+                          <span className={calculatedDeliveryFee > 0 ? '' : 'text-green-600'}>
+                            {calculatedDeliveryFee > 0 ? formatPrice(calculatedDeliveryFee) : 'Grátis'}
+                          </span>
+                        </div>
+                      )}
                       {discount > 0 && (
                         <div className="flex justify-between text-green-600">
                           <span>Desconto</span>
