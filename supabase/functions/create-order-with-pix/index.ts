@@ -294,12 +294,28 @@ serve(async (req) => {
       }
     }
 
-    // ETAPA 2: Obter perfil do usuário para dados do pagamento
-    const { data: profile } = await supabaseServiceClient
+    // ETAPA 2: Validar perfil do usuário
+    const { data: profile, error: profileError } = await supabaseServiceClient
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
+
+    if (profileError || !profile || !profile.full_name) {
+      console.error('[CREATE-ORDER-WITH-PIX] ❌ Profile validation failed');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Complete seu perfil antes de continuar' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (orderData.delivery_method === 'delivery' && !profile.phone) {
+      console.error('[CREATE-ORDER-WITH-PIX] ❌ Phone required for delivery');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Telefone obrigatório para entregas' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     logger.info('User profile retrieved', {
       email: profile?.email,

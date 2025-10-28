@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
+import { SecureStorage } from '@/utils/secureStorage';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { IntegratedCardPayment } from '@/components/IntegratedCardPayment';
@@ -59,21 +60,21 @@ const Payment = () => {
     setLoading(true);
     
     try {
-      // Verificar se há dados do pedido
+      // Verificar se há dados do pedido com SecureStorage
       const stateOrderData = location.state?.orderData;
-      const pendingOrderData = localStorage.getItem('pendingOrder');
+      const pendingOrderData = await SecureStorage.get('pendingOrder');
       
       if (stateOrderData) {
         setOrderData(stateOrderData);
       } else if (pendingOrderData) {
-        setOrderData(JSON.parse(pendingOrderData));
+        setOrderData(pendingOrderData);
       } else if (orderId) {
         // Buscar pedido existente (fluxo legacy)
         await fetchExistingOrder(orderId);
       } else {
         toast({
-          title: "Erro",
-          description: "Dados do pedido não encontrados",
+          title: "Sessão expirada",
+          description: "Refaça seu pedido",
           variant: "destructive"
         });
         navigate('/menu');
@@ -85,8 +86,9 @@ const Payment = () => {
         setPaymentStatus('form');
       } else if (paymentType === 'pix') {
         // Se é PIX, criar pedido + PIX automaticamente
-        if (orderData || pendingOrderData) {
-          await createOrderAndPixPayment(orderData || JSON.parse(pendingOrderData!));
+        const dataToUse = orderData || pendingOrderData;
+        if (dataToUse) {
+          await createOrderAndPixPayment(dataToUse);
         }
       }
     } catch (error: any) {
@@ -130,7 +132,7 @@ const Payment = () => {
 
       setOrder(data.order);
       setPixData(data.pixData);
-      localStorage.removeItem('pendingOrder');
+      await SecureStorage.remove('pendingOrder');
       
       // Limpar carrinho imediatamente
       clearCart();
@@ -215,12 +217,12 @@ const Payment = () => {
   };
 
   // Handlers para pagamento com cartão
-  const handleCardPaymentSuccess = (result: any) => {
+  const handleCardPaymentSuccess = async (result: any) => {
     setPaymentResult(result);
     setPaymentStatus('success');
     
     // Limpar dados pendentes e carrinho
-    localStorage.removeItem('pendingOrder');
+    await SecureStorage.remove('pendingOrder');
     clearCart();
     
     // Redirecionar após 3 segundos

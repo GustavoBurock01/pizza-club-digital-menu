@@ -151,7 +151,10 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     subscription: subscriptionStatus,
     signUp: auth.signUp,
     signIn: auth.signIn,
-    signOut: auth.signOut,
+    signOut: async () => {
+      await SecureStorage.clearAll();
+      await auth.signOut();
+    },
     updateProfile: auth.updateProfile,
     createCheckout,
     refreshSubscription: subscription.refresh,

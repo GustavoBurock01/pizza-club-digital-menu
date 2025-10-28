@@ -9,6 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useUnifiedProfile';
 import { CheckoutValidation } from '@/components/CheckoutValidation';
 import { CheckoutProfileAlert } from '@/components/CheckoutProfileAlert';
+import { ProfileValidationModal } from '@/components/ProfileValidationModal';
+import { CEPInput } from '@/components/CEPInput';
+import { SecureStorage } from '@/utils/secureStorage';
+import type { CEPData } from '@/utils/cepValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
@@ -65,12 +69,18 @@ const ExpressCheckout = () => {
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [validatedCEP, setValidatedCEP] = useState<CEPData | null>(null);
+  const [cepValue, setCepValue] = useState('');
   const [newAddress, setNewAddress] = useState({
     street: '',
     number: '',
     neighborhood: '',
     complement: '',
-    reference_point: ''
+    reference_point: '',
+    city: '',
+    state: '',
+    zip_code: ''
   });
 
   const [customerData, setCustomerData] = useState<CustomerData>({
@@ -254,27 +264,26 @@ const ExpressCheckout = () => {
     
     console.log('[CHECKOUT] ✅ Online payment eligibility validated');
 
-    // VALIDAÇÃO 2: Obter dados do perfil do usuário com fallback seguro
+    // VALIDAÇÃO 2: Verificar e validar perfil do usuário
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
       .maybeSingle();
 
-    // Se não houver perfil, criar um básico
+    // Validar se perfil existe e tem dados obrigatórios
     if (profileError || !userProfile) {
-      console.warn('[CHECKOUT] Profile not found, creating basic profile');
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user?.id,
-          email: user?.email || '',
-          full_name: user?.email?.split('@')[0] || 'Cliente'
-        })
-        .select()
-        .single();
-      
-      if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
+      throw new Error('Perfil não encontrado. Por favor, complete seu cadastro.');
+    }
+
+    if (!userProfile.full_name || userProfile.full_name.trim().length < 3) {
+      setShowProfileModal(true);
+      throw new Error('Complete seu nome completo no perfil para continuar');
+    }
+
+    if (deliveryMethod === 'delivery' && !userProfile.phone) {
+      setShowProfileModal(true);
+      throw new Error('Telefone é obrigatório para entregas. Complete seu perfil.');
     }
 
     // VALIDAÇÃO 3: Validar informações do cliente com Zod
@@ -328,15 +337,20 @@ const ExpressCheckout = () => {
       if (selectedAddressId) {
         orderData.addressData = { id: selectedAddressId };
       } else {
+        // Validar CEP foi preenchido corretamente
+        if (!validatedCEP) {
+          throw new Error('Informe um CEP válido para continuar');
+        }
+
         // Validar dados do novo endereço antes de criar
         const addressValidation = validateAddress({
-          street: customerData.street,
-          number: customerData.number,
-          neighborhood: customerData.neighborhood,
-          complement: customerData.complement,
-          city: 'Sua Cidade',
-          state: 'SP',
-          zip_code: '00000-000'
+          street: newAddress.street || validatedCEP.logradouro,
+          number: newAddress.number,
+          neighborhood: newAddress.neighborhood || validatedCEP.bairro,
+          complement: newAddress.complement,
+          city: validatedCEP.localidade,
+          state: validatedCEP.uf,
+          zip_code: validatedCEP.cep
         });
 
         if (!addressValidation.success) {
@@ -345,7 +359,7 @@ const ExpressCheckout = () => {
         }
 
         orderData.addressData = addressValidation.data;
-        console.log('[CHECKOUT] ✅ Address validated');
+        console.log('[CHECKOUT] ✅ Address validated with real CEP');
       }
     }
 
@@ -389,8 +403,10 @@ const ExpressCheckout = () => {
       customer_phone: orderData.customer_phone
     });
 
-    // Salvar no localStorage e navegar para pagamento
-    localStorage.setItem('pendingOrder', JSON.stringify(orderData));
+    // Salvar no SecureStorage com criptografia e navegar para pagamento
+    await SecureStorage.set('pendingOrder', orderData, {
+      expiresIn: 30 * 60 * 1000 // 30 minutos
+    });
     // NÃO limpar o carrinho até o pagamento ser aprovado
     // clearCart(); // Movido para depois da confirmação do pagamento
 
@@ -439,27 +455,25 @@ const ExpressCheckout = () => {
   };
 
   const handlePresencialPayment = async () => {
-    // Obter dados do perfil do usuário com fallback seguro
+    // Validar perfil existe e tem dados obrigatórios
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
       .maybeSingle();
 
-    // Se não houver perfil, criar um básico
     if (profileError || !userProfile) {
-      console.warn('[CHECKOUT] Profile not found, creating basic profile');
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user?.id,
-          email: user?.email || '',
-          full_name: user?.email?.split('@')[0] || 'Cliente'
-        })
-        .select()
-        .single();
-      
-      if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
+      throw new Error('Perfil não encontrado. Por favor, complete seu cadastro.');
+    }
+
+    if (!userProfile.full_name || userProfile.full_name.trim().length < 3) {
+      setShowProfileModal(true);
+      throw new Error('Complete seu nome completo no perfil para continuar');
+    }
+
+    if (deliveryMethod === 'delivery' && !userProfile.phone) {
+      setShowProfileModal(true);
+      throw new Error('Telefone é obrigatório para entregas. Complete seu perfil.');
     }
 
     const customerName = userProfile?.full_name || user?.email?.split('@')[0] || 'Cliente';
@@ -486,16 +500,21 @@ const ExpressCheckout = () => {
 
     // Validar e criar endereço se necessário
     if (deliveryMethod === 'delivery' && !selectedAddressId && showAddressForm) {
+      // Validar CEP foi preenchido
+      if (!validatedCEP) {
+        throw new Error('Informe um CEP válido para continuar');
+      }
+
       // Validar dados do endereço antes de inserir
       const addressValidation = validateAddress({
-        street: newAddress.street,
+        street: newAddress.street || validatedCEP.logradouro,
         number: newAddress.number,
-        neighborhood: newAddress.neighborhood,
+        neighborhood: newAddress.neighborhood || validatedCEP.bairro,
         complement: newAddress.complement,
         reference_point: newAddress.reference_point,
-        city: 'Sua Cidade',
-        state: 'SP',
-        zip_code: '00000-000'
+        city: validatedCEP.localidade,
+        state: validatedCEP.uf,
+        zip_code: validatedCEP.cep
       });
 
       if (!addressValidation.success) {
@@ -540,15 +559,15 @@ const ExpressCheckout = () => {
           };
         }
       } else {
-        deliveryAddressSnapshot = {
-          street: customerData.street,
-          number: customerData.number,
-          neighborhood: customerData.neighborhood,
-          complement: customerData.complement,
-          city: 'Sua Cidade',
-          state: 'SP',
-          zip_code: '00000-000'
-        };
+        deliveryAddressSnapshot = validatedCEP ? {
+          street: newAddress.street || validatedCEP.logradouro,
+          number: newAddress.number,
+          neighborhood: newAddress.neighborhood || validatedCEP.bairro,
+          complement: newAddress.complement,
+          city: validatedCEP.localidade,
+          state: validatedCEP.uf,
+          zip_code: validatedCEP.cep
+        } : null;
       }
     }
 
@@ -656,8 +675,8 @@ const ExpressCheckout = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+    <div className="min-h-screen bg-background">
+      <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -944,6 +963,31 @@ const ExpressCheckout = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* CEP Input com validação automática */}
+                                <div className="md:col-span-2">
+                                  <CEPInput
+                                    value={cepValue}
+                                    onChange={setCepValue}
+                                    onAddressFound={(address) => {
+                                      setValidatedCEP(address);
+                                      // Preencher automaticamente
+                                      setNewAddress(prev => ({
+                                        ...prev,
+                                        street: address.logradouro || '',
+                                        neighborhood: address.bairro || '',
+                                        city: address.localidade || '',
+                                        state: address.uf || '',
+                                        zip_code: address.cep || ''
+                                      }));
+                                      // Atualizar bairro selecionado se disponível
+                                      if (address.bairro) {
+                                        setSelectedNeighborhood(address.bairro);
+                                      }
+                                    }}
+                                    required
+                                  />
+                                </div>
+                                
                                 <div className="md:col-span-2">
                                   <Label htmlFor="street">Rua *</Label>
                                   <Input
@@ -951,7 +995,13 @@ const ExpressCheckout = () => {
                                     value={newAddress.street}
                                     onChange={(e) => setNewAddress(prev => ({ ...prev, street: e.target.value }))}
                                     placeholder="Nome da rua"
+                                    disabled={!validatedCEP}
                                   />
+                                  {!validatedCEP && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Preencha o CEP primeiro para autocompletar
+                                    </p>
+                                  )}
                                 </div>
                                 
                                 <div>
@@ -1007,7 +1057,10 @@ const ExpressCheckout = () => {
                                       number: '',
                                       neighborhood: '',
                                       complement: '',
-                                      reference_point: ''
+                                      reference_point: '',
+                                      city: '',
+                                      state: '',
+                                      zip_code: ''
                                     });
                                   }}
                                 >
@@ -1360,8 +1413,21 @@ const ExpressCheckout = () => {
             </div>
           </div>
         </SidebarInset>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+
+      {/* Profile Validation Modal */}
+      <ProfileValidationModal
+        open={showProfileModal}
+        onComplete={() => {
+          setShowProfileModal(false);
+          toast({
+            title: "✅ Perfil completo",
+            description: "Você pode prosseguir com seu pedido"
+          });
+        }}
+        deliveryMethod={deliveryMethod}
+      />
+    </div>
   );
 };
 
