@@ -551,7 +551,7 @@ const ExpressCheckout = () => {
     if (appliedCoupon) {
       await registerCouponUse(orderData.id);
       
-      // Update order with coupon info (columns exist but types not updated yet)
+      // Update order with coupon info (types will be updated after migration)
       await supabase
         .from('orders')
         .update({

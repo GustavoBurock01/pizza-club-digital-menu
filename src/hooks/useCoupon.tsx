@@ -163,14 +163,14 @@ export const useCoupon = (userId?: string) => {
     if (!appliedCoupon || !userId) return;
 
     try {
-      // Insert coupon use record
+      // Insert coupon use record (types will be updated after migration)
       await supabase.from('coupon_uses' as any).insert({
         coupon_id: appliedCoupon.id,
         user_id: userId,
         order_id: orderId
       });
 
-      // Increment coupon usage count
+      // Increment coupon usage count (types will be updated after migration)
       await supabase.rpc('increment_coupon_usage' as any, {
         p_coupon_id: appliedCoupon.id
       });
