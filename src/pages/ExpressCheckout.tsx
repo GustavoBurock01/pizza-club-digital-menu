@@ -16,6 +16,7 @@ import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
 import { idempotencyManager } from '@/utils/idempotency';
 import { validatePhone } from '@/utils/validation';
 import { validateOnlinePaymentEligibility } from '@/utils/paymentConfig';
+import { validateOrderData, validateAddress, validateCustomerInfo } from '@/utils/checkoutValidation';
 import { useCoupon } from '@/hooks/useCoupon';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { useCartProducts } from '@/hooks/useCartProducts';
@@ -254,14 +255,14 @@ const ExpressCheckout = () => {
     console.log('[CHECKOUT] ✅ Online payment eligibility validated');
 
     // VALIDAÇÃO 2: Obter dados do perfil do usuário com fallback seguro
-    const { data: profile, error: profileError } = await supabase
+    const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
       .maybeSingle();
 
     // Se não houver perfil, criar um básico
-    if (profileError || !profile) {
+    if (profileError || !userProfile) {
       console.warn('[CHECKOUT] Profile not found, creating basic profile');
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
@@ -276,24 +277,30 @@ const ExpressCheckout = () => {
       if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
     }
 
-    // Validar dados obrigatórios ANTES de enviar
-    const customerName = profile?.full_name || user?.email?.split('@')[0] || 'Cliente';
-    const customerPhone = profile?.phone || '';
+    // VALIDAÇÃO 3: Validar informações do cliente com Zod
+    const customerName = userProfile?.full_name || user?.email?.split('@')[0] || 'Cliente';
+    const customerPhone = userProfile?.phone || '';
 
-    console.log('[CHECKOUT] Customer data:', {
+    const customerValidation = validateCustomerInfo({
+      full_name: customerName,
+      phone: customerPhone,
+      email: user?.email
+    });
+
+    if (!customerValidation.success) {
+      console.error('[CHECKOUT] Customer validation failed:', customerValidation.errors);
+      throw new Error(customerValidation.errors?.[0] || 'Complete seu perfil antes de continuar. Vá para "Minha Conta".');
+    }
+
+    console.log('[CHECKOUT] ✅ Customer data validated:', {
       name: customerName,
       phone: customerPhone,
       delivery_method: deliveryMethod
     });
 
     // Validação crítica: telefone obrigatório para entrega
-    if (deliveryMethod === 'delivery') {
-      if (!customerPhone) {
-        throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
-      }
-      if (!validatePhone(customerPhone)) {
-        throw new Error('Telefone inválido. Use o formato: (DDD) 9XXXX-XXXX. Complete seu perfil em "Minha Conta".');
-      }
+    if (deliveryMethod === 'delivery' && !customerPhone) {
+      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
     }
 
     // Preparar dados do pedido para pagamento online
@@ -316,12 +323,13 @@ const ExpressCheckout = () => {
       addressData: null as any
     };
 
-    // Preparar endereço se necessário
+    // Preparar e validar endereço se necessário
     if (deliveryMethod === 'delivery') {
       if (selectedAddressId) {
         orderData.addressData = { id: selectedAddressId };
       } else {
-        orderData.addressData = {
+        // Validar dados do novo endereço antes de criar
+        const addressValidation = validateAddress({
           street: customerData.street,
           number: customerData.number,
           neighborhood: customerData.neighborhood,
@@ -329,7 +337,15 @@ const ExpressCheckout = () => {
           city: 'Sua Cidade',
           state: 'SP',
           zip_code: '00000-000'
-        };
+        });
+
+        if (!addressValidation.success) {
+          console.error('[CHECKOUT] Address validation failed:', addressValidation.errors);
+          throw new Error(addressValidation.errors?.[0] || 'Dados de endereço inválidos');
+        }
+
+        orderData.addressData = addressValidation.data;
+        console.log('[CHECKOUT] ✅ Address validated');
       }
     }
 
@@ -344,7 +360,25 @@ const ExpressCheckout = () => {
       orderData.notes = notes;
     }
 
-    console.log('[CHECKOUT] ✅ Order data prepared, saving to localStorage');
+    // VALIDAÇÃO 4: Validar dados completos do pedido
+    const orderValidation = validateOrderData({
+      user_id: orderData.user_id,
+      delivery_method: orderData.delivery_method,
+      total_amount: orderData.total_amount,
+      delivery_fee: orderData.delivery_fee,
+      payment_method: orderData.payment_method,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      notes: orderData.notes,
+      items: orderData.items
+    });
+
+    if (!orderValidation.success) {
+      console.error('[CHECKOUT] Order validation failed:', orderValidation.errors);
+      throw new Error(orderValidation.errors?.[0] || 'Dados do pedido inválidos');
+    }
+
+    console.log('[CHECKOUT] ✅ Order data validated and prepared');
     console.log('[CHECKOUT] Order data:', {
       user_id: orderData.user_id,
       total_amount: orderData.total_amount,
@@ -406,14 +440,14 @@ const ExpressCheckout = () => {
 
   const handlePresencialPayment = async () => {
     // Obter dados do perfil do usuário com fallback seguro
-    const { data: profile, error: profileError } = await supabase
+    const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user?.id)
       .maybeSingle();
 
     // Se não houver perfil, criar um básico
-    if (profileError || !profile) {
+    if (profileError || !userProfile) {
       console.warn('[CHECKOUT] Profile not found, creating basic profile');
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
@@ -428,41 +462,59 @@ const ExpressCheckout = () => {
       if (createError) throw new Error('Erro ao criar perfil. Tente novamente.');
     }
 
-    const customerName = profile?.full_name || user?.email?.split('@')[0] || 'Cliente';
-    const customerPhone = profile?.phone || '';
+    const customerName = userProfile?.full_name || user?.email?.split('@')[0] || 'Cliente';
+    const customerPhone = userProfile?.phone || '';
+
+    // Validar informações do cliente
+    const customerValidation = validateCustomerInfo({
+      full_name: customerName,
+      phone: customerPhone,
+      email: user?.email
+    });
+
+    if (!customerValidation.success) {
+      console.error('[CHECKOUT] Customer validation failed:', customerValidation.errors);
+      throw new Error(customerValidation.errors?.[0] || 'Complete seu perfil antes de continuar. Vá para "Minha Conta".');
+    }
 
     // Validação crítica: telefone obrigatório para entrega
-    if (deliveryMethod === 'delivery') {
-      if (!customerPhone) {
-        throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
-      }
-      if (!validatePhone(customerPhone)) {
-        throw new Error('Telefone inválido. Use o formato: (DDD) 9XXXX-XXXX. Complete seu perfil em "Minha Conta".');
-      }
+    if (deliveryMethod === 'delivery' && !customerPhone) {
+      throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
     }
 
     let addressId = selectedAddressId;
 
-    // Create address if needed
+    // Validar e criar endereço se necessário
     if (deliveryMethod === 'delivery' && !selectedAddressId && showAddressForm) {
+      // Validar dados do endereço antes de inserir
+      const addressValidation = validateAddress({
+        street: newAddress.street,
+        number: newAddress.number,
+        neighborhood: newAddress.neighborhood,
+        complement: newAddress.complement,
+        reference_point: newAddress.reference_point,
+        city: 'Sua Cidade',
+        state: 'SP',
+        zip_code: '00000-000'
+      });
+
+      if (!addressValidation.success) {
+        console.error('[CHECKOUT] Address validation failed:', addressValidation.errors);
+        throw new Error(addressValidation.errors?.[0] || 'Dados de endereço inválidos');
+      }
+
       const { data: addressData, error: addressError } = await supabase
         .from('addresses')
         .insert({
           user_id: user?.id,
-          street: newAddress.street,
-          number: newAddress.number,
-          neighborhood: newAddress.neighborhood,
-          complement: newAddress.complement,
-          reference_point: newAddress.reference_point,
-          city: 'Sua Cidade',
-          state: 'SP',
-          zip_code: '00000-000'
+          ...addressValidation.data
         })
         .select()
         .single();
 
       if (addressError) throw addressError;
       addressId = addressData.id;
+      console.log('[CHECKOUT] ✅ Address validated and created');
     }
 
     // Preparar snapshot do endereço
