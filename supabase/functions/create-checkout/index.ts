@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { RateLimiter, RATE_LIMIT_CONFIGS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +67,41 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
+
+    // Rate limiting persistente
+    const supabaseServiceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const rateLimiter = new RateLimiter(supabaseServiceClient);
+    const rateLimitResult = await rateLimiter.check(
+      user.id,
+      'create-checkout',
+      RATE_LIMIT_CONFIGS['create-checkout']
+    );
+
+    if (!rateLimitResult.allowed) {
+      logStep("Rate limit exceeded", { userId: user.id, remaining: rateLimitResult.remaining });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Limite de tentativas atingido. Tente novamente em alguns minutos.',
+          resetAt: rateLimitResult.resetAt
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': RATE_LIMIT_CONFIGS['create-checkout'].maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString()
+          } 
+        }
+      );
+    }
+
+    logStep("Rate limit check passed", { remaining: rateLimitResult.remaining });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     

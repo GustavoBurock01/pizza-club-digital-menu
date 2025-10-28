@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { RateLimiter, RATE_LIMIT_CONFIGS } from "../_shared/rate-limiter.ts";
 
 // ===== CORS HEADERS =====
 const corsHeaders = {
@@ -83,6 +84,47 @@ serve(async (req) => {
 
     console.log('[CREATE-ORDER-WITH-CARD] ✅ User authenticated:', user.id);
 
+    // Get service role client for rate limiting
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Verificar rate limiting persistente
+    const rateLimiter = new RateLimiter(supabaseServiceClient);
+    const rateLimitResult = await rateLimiter.check(
+      user.id,
+      'create-order-card',
+      RATE_LIMIT_CONFIGS['create-order-card']
+    );
+
+    if (!rateLimitResult.allowed) {
+      console.warn('[CREATE-ORDER-WITH-CARD] ⚠️ Rate limit exceeded for user:', user.id);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Limite de pedidos por hora excedido. Tente novamente mais tarde.',
+          rateLimited: true,
+          resetAt: rateLimitResult.resetAt
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': RATE_LIMIT_CONFIGS['create-order-card'].maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString()
+          } 
+        }
+      );
+    }
+
+    console.log('[CREATE-ORDER-WITH-CARD] ✅ Rate limit check passed:', {
+      remaining: rateLimitResult.remaining,
+      resetAt: rateLimitResult.resetAt
+    });
+
     // Parse request body
     const body = await req.text();
     if (!body.trim()) {
@@ -122,12 +164,6 @@ serve(async (req) => {
     }
 
     console.log('[CREATE-ORDER-WITH-CARD] ✅ Basic validation passed');
-
-    // Get service role client for database operations
-    const supabaseServiceClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
 
     // ETAPA 1: Preparar dados do endereço se necessário
     let addressId = null;

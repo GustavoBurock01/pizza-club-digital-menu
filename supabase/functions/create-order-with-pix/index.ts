@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { RateLimiter, RATE_LIMIT_CONFIGS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,32 +16,7 @@ const ORDER_LIMITS = {
   MAX_ORDERS_PER_HOUR: 5
 };
 
-// Rate limiting simples em memória
-const rateLimitStore = new Map();
-
-const checkRateLimit = (userId: string): boolean => {
-  const now = Date.now();
-  const hourAgo = now - (60 * 60 * 1000); // 1 hora
-  
-  if (!rateLimitStore.has(userId)) {
-    rateLimitStore.set(userId, []);
-  }
-  
-  const userRequests = rateLimitStore.get(userId);
-  
-  // Limpar requisições antigas
-  const recentRequests = userRequests.filter((timestamp: number) => timestamp > hourAgo);
-  rateLimitStore.set(userId, recentRequests);
-  
-  // Verificar limite
-  if (recentRequests.length >= ORDER_LIMITS.MAX_ORDERS_PER_HOUR) {
-    return false;
-  }
-  
-  // Adicionar nova requisição
-  recentRequests.push(now);
-  return true;
-};
+// Rate limiting removido - agora usa implementação persistente
 
 const validateOrderSecurity = (items: any[], totalValue: number) => {
   const errors: string[] = [];
@@ -193,21 +169,46 @@ serve(async (req) => {
 
     console.log('[CREATE-ORDER-PIX] ✅ User authenticated:', user.id);
 
-    // Verificar rate limiting
-    if (!checkRateLimit(user.id)) {
+    // Get service role client for rate limiting check
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Verificar rate limiting persistente
+    const rateLimiter = new RateLimiter(supabaseServiceClient);
+    const rateLimitResult = await rateLimiter.check(
+      user.id,
+      'create-order-pix',
+      RATE_LIMIT_CONFIGS['create-order-pix']
+    );
+
+    if (!rateLimitResult.allowed) {
       console.warn('[CREATE-ORDER-PIX] ⚠️ Rate limit exceeded for user:', user.id);
       return new Response(
         JSON.stringify({ 
           success: false,
           error: 'Limite de pedidos por hora excedido. Tente novamente mais tarde.',
-          rateLimited: true
+          rateLimited: true,
+          resetAt: rateLimitResult.resetAt
         }),
         { 
           status: 429, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': RATE_LIMIT_CONFIGS['create-order-pix'].maxRequests.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString()
+          } 
         }
       );
     }
+
+    console.log('[CREATE-ORDER-PIX] ✅ Rate limit check passed:', {
+      remaining: rateLimitResult.remaining,
+      resetAt: rateLimitResult.resetAt
+    });
 
     // Parse request body
     const body = await req.text();
@@ -266,12 +267,6 @@ serve(async (req) => {
       total_amount: orderData.total_amount,
       items_count: orderData.items?.length 
     });
-
-    // Get service role client for database operations
-    const supabaseServiceClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
 
     // ETAPA 1: Preparar dados do endereço se necessário
     let addressId = null;

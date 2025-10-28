@@ -110,12 +110,25 @@ export class RateLimiter {
       return 0;
     }
   }
+
+  /**
+   * Rate limiting baseado em IP (para endpoints públicos)
+   */
+  async checkByIP(
+    ip: string,
+    endpoint: string,
+    config: RateLimitConfig
+  ): Promise<RateLimitResult> {
+    return this.check(`ip:${ip}`, endpoint, config);
+  }
 }
 
 // Configurações padrão para diferentes endpoints
 export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   'create-checkout': { maxRequests: 3, windowSeconds: 60 },
   'check-subscription': { maxRequests: 10, windowSeconds: 60 },
-  'create-order': { maxRequests: 5, windowSeconds: 60 },
+  'create-order': { maxRequests: 5, windowSeconds: 3600 }, // 5 pedidos por hora
+  'create-order-pix': { maxRequests: 5, windowSeconds: 3600 },
+  'create-order-card': { maxRequests: 5, windowSeconds: 3600 },
   'default': { maxRequests: 30, windowSeconds: 60 },
 };
