@@ -16,6 +16,10 @@ import { checkCheckoutRateLimit } from '@/utils/rateLimiting';
 import { idempotencyManager } from '@/utils/idempotency';
 import { validatePhone } from '@/utils/validation';
 import { validateOnlinePaymentEligibility } from '@/utils/paymentConfig';
+import { useCoupon } from '@/hooks/useCoupon';
+import { useDeliveryZones } from '@/hooks/useDeliveryZones';
+import { useCartProducts } from '@/hooks/useCartProducts';
+import { NeighborhoodSelector } from '@/components/NeighborhoodSelector';
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -44,6 +48,9 @@ const ExpressCheckout = () => {
   const navigate = useNavigate();
   const { profile, isProfileComplete } = useProfile();
   const { protectOrderCreation } = useOrderProtection();
+  const { productsInfo, getProductInfo } = useCartProducts(items);
+  const { appliedCoupon, applyCoupon, removeCoupon, calculateDiscount, registerCouponUse, isApplying } = useCoupon(user?.id);
+  const { zones, getDeliveryFee, isNeighborhoodAvailable } = useDeliveryZones();
 
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
@@ -52,8 +59,10 @@ const ExpressCheckout = () => {
   const [needsChange, setNeedsChange] = useState(false);
   const [changeAmount, setChangeAmount] = useState('');
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
   const [isGuest, setIsGuest] = useState(!user);
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
 
   const [customerData, setCustomerData] = useState<CustomerData>({
     street: '',
@@ -64,14 +73,21 @@ const ExpressCheckout = () => {
 
   // ===== MEMOIZED CALCULATIONS =====
   const subtotal = useMemo(() => getSubtotal(), [items, getSubtotal]);
-  const deliveryFee = useMemo(() => deliveryMethod === 'delivery' ? 5 : 0, [deliveryMethod]);
+  const calculatedDeliveryFee = useMemo(() => {
+    if (deliveryMethod === 'pickup') return 0;
+    if (selectedNeighborhood) {
+      return getDeliveryFee(selectedNeighborhood);
+    }
+    return 0;
+  }, [deliveryMethod, selectedNeighborhood, getDeliveryFee]);
   
-  // Update delivery fee in store when delivery method changes
+  // Update delivery fee in store when it changes
   useEffect(() => {
-    setDeliveryFee(deliveryFee);
-  }, [deliveryFee, setDeliveryFee]);
+    setDeliveryFee(calculatedDeliveryFee);
+  }, [calculatedDeliveryFee, setDeliveryFee]);
   
-  const total = useMemo(() => subtotal + deliveryFee, [subtotal, deliveryFee]);
+  const discount = useMemo(() => calculateDiscount(subtotal), [appliedCoupon, subtotal, calculateDiscount]);
+  const total = useMemo(() => subtotal + calculatedDeliveryFee - discount, [subtotal, calculatedDeliveryFee, discount]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -92,6 +108,7 @@ const ExpressCheckout = () => {
         return items.length > 0;
       case 'address':
         if (deliveryMethod === 'pickup') return true;
+        if (deliveryMethod === 'delivery' && !selectedNeighborhood) return false;
         if (!isGuest && selectedAddressId) return true;
         return customerData.street && customerData.number && customerData.neighborhood;
       case 'payment':
@@ -267,7 +284,7 @@ const ExpressCheckout = () => {
       user_id: user?.id,
       delivery_method: deliveryMethod,
       total_amount: total,
-      delivery_fee: deliveryFee,
+      delivery_fee: calculatedDeliveryFee,
       payment_method: paymentMethod,
       customer_name: customerName,
       customer_phone: customerPhone,
@@ -473,7 +490,7 @@ const ExpressCheckout = () => {
         address_id: deliveryMethod === 'delivery' ? addressId : null,
         delivery_address_snapshot: deliveryAddressSnapshot,
         total_amount: total,
-        delivery_fee: deliveryFee,
+        delivery_fee: calculatedDeliveryFee,
         delivery_method: deliveryMethod,
         status: 'pending',
         payment_status: 'pending',
@@ -509,6 +526,21 @@ const ExpressCheckout = () => {
       await supabase
         .from('orders')
         .update({ notes: orderNotes })
+        .eq('id', orderData.id);
+    }
+
+    // Register coupon use if applicable
+    if (appliedCoupon) {
+      await registerCouponUse(orderData.id);
+      
+      // Update order with coupon info (columns exist but types not updated yet)
+      await supabase
+        .from('orders')
+        .update({
+          coupon_id: appliedCoupon.id,
+          coupon_code: appliedCoupon.code,
+          discount_amount: discount
+        } as any)
         .eq('id', orderData.id);
     }
 
@@ -608,34 +640,80 @@ const ExpressCheckout = () => {
                       <CardTitle>Seus Itens ({items.length})</CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-4">
-                      {items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                          <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                            ) : (
-                              <span className="text-2xl">🍕</span>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1">
-                            <h3 className="font-medium">{item.name}</h3>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
-                              <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                      {items.map((item) => {
+                        const productInfo = getProductInfo(item.productId);
+                        const categoryLabel = productInfo 
+                          ? `${productInfo.category_name}${productInfo.subcategory_name ? ' - ' + productInfo.subcategory_name : ''}`
+                          : '';
+                        
+                        return (
+                          <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                            <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+                              {item.image ? (
+                                <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                <span className="text-2xl">🍕</span>
+                              )}
                             </div>
+                            
+                            <div className="flex-1 space-y-2">
+                              {/* Category - Subcategory */}
+                              {categoryLabel && (
+                                <p className="text-xs text-muted-foreground uppercase font-medium">
+                                  {categoryLabel}
+                                </p>
+                              )}
+                              
+                              {/* Product Name */}
+                              <h3 className="font-medium">{item.name}</h3>
+                              
+                              {/* Customizations */}
+                              {item.customizations && (
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                  {item.customizations.crust && (
+                                    <p className="flex items-center gap-1">
+                                      <span className="font-medium">Borda:</span> {item.customizations.crust}
+                                    </p>
+                                  )}
+                                  {item.customizations.extras && item.customizations.extras.length > 0 && (
+                                    <p className="flex items-center gap-1">
+                                      <span className="font-medium">Extras:</span> {item.customizations.extras.join(', ')}
+                                    </p>
+                                  )}
+                                  {item.customizations.halfAndHalf && (
+                                    <p className="flex items-center gap-1">
+                                      <span className="font-medium">Meio a meio:</span> 
+                                      {item.customizations.halfAndHalf.firstHalf} / {item.customizations.halfAndHalf.secondHalf}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Notes */}
+                              {item.notes && (
+                                <p className="text-sm text-muted-foreground italic">
+                                  Obs: {item.notes}
+                                </p>
+                              )}
+                              
+                              {/* Price and Quantity */}
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
+                                <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeItem(item.id)}
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(item.id)}
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 )}
@@ -649,7 +727,12 @@ const ExpressCheckout = () => {
                         <CardTitle>Método de Entrega</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <RadioGroup value={deliveryMethod} onValueChange={(value: 'delivery' | 'pickup') => setDeliveryMethod(value)}>
+                        <RadioGroup value={deliveryMethod} onValueChange={(value: 'delivery' | 'pickup') => {
+                          setDeliveryMethod(value);
+                          if (value === 'pickup') {
+                            setSelectedNeighborhood('');
+                          }
+                        }}>
                           <div className="flex items-center space-x-2 p-4 border rounded-lg">
                             <RadioGroupItem value="delivery" id="delivery" />
                             <Label htmlFor="delivery" className="flex-1 cursor-pointer">
@@ -661,7 +744,11 @@ const ExpressCheckout = () => {
                                 </div>
                               </div>
                             </Label>
-                            <span className="text-sm font-medium">{formatPrice(5)}</span>
+                            {selectedNeighborhood && (
+                              <span className="text-sm font-medium">
+                                {formatPrice(getDeliveryFee(selectedNeighborhood))}
+                              </span>
+                            )}
                           </div>
                           
                           <div className="flex items-center space-x-2 p-4 border rounded-lg">
@@ -681,68 +768,39 @@ const ExpressCheckout = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Address Form */}
+                    {/* Neighborhood Selector */}
                     {deliveryMethod === 'delivery' && (
                       <Card>
                         <CardHeader>
-                          <CardTitle>Endereço de Entrega</CardTitle>
+                          <CardTitle>Selecione seu Bairro</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            A taxa de entrega varia conforme o bairro
+                          </p>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                          {!isGuest && addresses.length > 0 && (
-                            <div>
-                              <Label>Endereços Salvos</Label>
-                              <Select value={selectedAddressId} onValueChange={setSelectedAddressId}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione um endereço" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {addresses.map((address) => (
-                                    <SelectItem key={address.id} value={address.id}>
-                                      {address.street}, {address.number} - {address.neighborhood}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-
-                          {(isGuest || !selectedAddressId) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="street">Rua *</Label>
-                                <Input
-                                  id="street"
-                                  value={customerData.street}
-                                  onChange={(e) => setCustomerData(prev => ({ ...prev, street: e.target.value }))}
-                                  placeholder="Nome da rua"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="number">Número *</Label>
-                                <Input
-                                  id="number"
-                                  value={customerData.number}
-                                  onChange={(e) => setCustomerData(prev => ({ ...prev, number: e.target.value }))}
-                                  placeholder="123"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="neighborhood">Bairro *</Label>
-                                <Input
-                                  id="neighborhood"
-                                  value={customerData.neighborhood}
-                                  onChange={(e) => setCustomerData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                                  placeholder="Nome do bairro"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="complement">Complemento</Label>
-                                <Input
-                                  id="complement"
-                                  value={customerData.complement}
-                                  onChange={(e) => setCustomerData(prev => ({ ...prev, complement: e.target.value }))}
-                                  placeholder="Apto, bloco, etc."
-                                />
+                        <CardContent>
+                          <NeighborhoodSelector
+                            selectedNeighborhood={selectedNeighborhood}
+                            onSelect={(neighborhood, fee) => {
+                              setSelectedNeighborhood(neighborhood);
+                              setCustomerData(prev => ({ ...prev, neighborhood }));
+                            }}
+                          />
+                          
+                          {selectedNeighborhood && (
+                            <div className="mt-4 p-4 bg-muted rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{selectedNeighborhood}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Entrega em ~{zones.find(z => z.neighborhood === selectedNeighborhood)?.estimated_time || 45} minutos
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm text-muted-foreground">Taxa de entrega</p>
+                                  <p className="font-medium text-primary">
+                                    {formatPrice(getDeliveryFee(selectedNeighborhood))}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -755,10 +813,50 @@ const ExpressCheckout = () => {
                 {/* STEP: PAYMENT */}
                 {step === 'payment' && (
                   <div className="space-y-6">
-                    {/* Alerta de perfil incompleto - SEMPRE MOSTRAR */}
+                    {/* Alerta de perfil incompleto */}
                     {(!profile?.full_name || (deliveryMethod === 'delivery' && !profile?.phone)) && (
                       <CheckoutProfileAlert deliveryMethod={deliveryMethod} />
                     )}
+                    
+                    {/* Cupom de Desconto */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Cupom de Desconto</CardTitle>
+                        <p className="text-sm text-muted-foreground">Possui um cupom? Digite abaixo</p>
+                      </CardHeader>
+                      <CardContent>
+                        {appliedCoupon ? (
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div>
+                              <p className="font-medium text-green-700 dark:text-green-300">
+                                Cupom aplicado: {appliedCoupon.code}
+                              </p>
+                              <p className="text-sm text-green-600 dark:text-green-400">
+                                Desconto de {formatPrice(discount)}
+                              </p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={removeCoupon}>
+                              Remover
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Digite o código do cupom"
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                              className="flex-1"
+                            />
+                            <Button
+                              onClick={() => applyCoupon(couponCode, subtotal)}
+                              disabled={isApplying || !couponCode}
+                            >
+                              {isApplying ? 'Aplicando...' : 'Aplicar'}
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                     
                     {/* Payment Category Selection */}
                     <Card>
@@ -985,10 +1083,16 @@ const ExpressCheckout = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Taxa de entrega</span>
-                        <span className={deliveryFee > 0 ? '' : 'text-green-600'}>
-                          {deliveryFee > 0 ? formatPrice(deliveryFee) : 'Grátis'}
+                        <span className={calculatedDeliveryFee > 0 ? '' : 'text-green-600'}>
+                          {calculatedDeliveryFee > 0 ? formatPrice(calculatedDeliveryFee) : 'Grátis'}
                         </span>
                       </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Desconto</span>
+                          <span>-{formatPrice(discount)}</span>
+                        </div>
+                      )}
                       <Separator />
                       <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
