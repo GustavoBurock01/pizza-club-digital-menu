@@ -301,10 +301,10 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    console.log('[CREATE-ORDER-PIX] 👤 User profile:', {
+    logger.info('User profile retrieved', {
       email: profile?.email,
       full_name: profile?.full_name,
-      cpf: profile?.cpf ? profile.cpf.substring(0, 3) + '***' : 'not_provided'
+      cpf: profile?.cpf
     });
 
     // ETAPA 3: 🎯 CRIAR PIX REAL COM CHAVE REAL - FASE 1 IMPLEMENTATION
