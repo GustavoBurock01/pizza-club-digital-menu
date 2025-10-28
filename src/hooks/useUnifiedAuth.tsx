@@ -4,6 +4,7 @@ import { createContext, useContext, ReactNode, useCallback, useEffect } from 're
 import { User, Session } from '@supabase/supabase-js';
 import { useAuth as useAuthCore } from '@/hooks/auth/useAuth';
 import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
+import { SecureStorage } from '@/utils/secureStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
