@@ -23,7 +23,6 @@ import { AnalyticsDebugger } from './components/AnalyticsDebugger';
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Menu from "./pages/Menu";
-import ExpressCheckout from "./pages/ExpressCheckout";
 import NotFound from "./pages/NotFound";
 
 // Lazy load attendant unified
@@ -37,6 +36,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const Payment = lazy(() => import("./pages/Payment"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // NEW ADMIN STRUCTURE - FASE 1 & FASE 3
@@ -134,7 +134,14 @@ const App = () => {
                   </Suspense>
                 </ProtectedRoute>
               } />
-               {/* Payment Routes */}
+               {/* Checkout & Payment Routes */}
+              <Route path="/checkout" element={
+                <ProtectedRoute requireAuth={true} requireRole="customer">
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <Checkout />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
                 <Route path="/payment/pix" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
@@ -168,18 +175,13 @@ const App = () => {
                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                    <Phase2PremiumExperience />
                  </Suspense>
-               } />
-               <Route path="/menu" element={
-                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <Menu />
-                </ProtectedRoute>
-               } />
-              <Route path="/checkout" element={
-                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <ExpressCheckout />
-                </ProtectedRoute>
-              } />
-               <Route path="/orders" element={
+                } />
+                <Route path="/menu" element={
+                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                   <Menu />
+                 </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <Orders />
