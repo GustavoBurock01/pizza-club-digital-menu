@@ -54,7 +54,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { profile, isProfileComplete } = useProfile();
   const { protectOrderCreation } = useOrderProtection();
-  const { productsInfo, getProductInfo } = useCartProducts(items);
+  const { productsInfo, getProductInfo, isLoading: productsLoading, error: productsError } = useCartProducts(items);
   const { appliedCoupon, applyCoupon, removeCoupon, calculateDiscount, registerCouponUse, isApplying } = useCoupon(user?.id);
   const { zones, getDeliveryFee, isNeighborhoodAvailable } = useDeliveryZones();
 
@@ -730,11 +730,22 @@ const Checkout = () => {
                       <CardTitle>Seus Itens ({items.length})</CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-4">
-                      {items.map((item) => {
+                      {productsLoading && (
+                        <div className="flex items-center justify-center p-8 text-muted-foreground">
+                          Carregando produtos...
+                        </div>
+                      )}
+                      {productsError && (
+                        <div className="flex items-center justify-center p-8 text-destructive">
+                          Erro ao carregar informações dos produtos
+                        </div>
+                      )}
+                      {!productsLoading && !productsError && items.map((item) => {
                         const productInfo = getProductInfo(item.productId);
+                        // Fallback para dados do carrinho se produto não foi encontrado
                         const categoryLabel = productInfo 
                           ? `${productInfo.category_name}${productInfo.subcategory_name ? ' - ' + productInfo.subcategory_name : ''}`
-                          : '';
+                          : 'Produto';
                         
                         return (
                           <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg">

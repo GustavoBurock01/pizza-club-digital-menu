@@ -2000,6 +2000,7 @@ export type Database = {
           quantity: number
           reserved_at: string
           status: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -2011,6 +2012,7 @@ export type Database = {
           quantity: number
           reserved_at?: string
           status?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -2022,6 +2024,7 @@ export type Database = {
           quantity?: number
           reserved_at?: string
           status?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [

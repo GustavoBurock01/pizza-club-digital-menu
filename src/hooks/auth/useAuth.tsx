@@ -4,12 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // ===== AUTH STATE MANAGEMENT =====
   useEffect(() => {
@@ -75,28 +78,45 @@ export const useAuth = () => {
 
       // Redirect based on role
       if (data.user) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .limit(1)
-          .maybeSingle();
-
-        const role = roleData?.role || 'customer';
+        setRedirecting(true);
         
-        setTimeout(() => {
-          switch (role) {
-            case 'admin':
-              window.location.href = '/admin';
-              break;
-            case 'attendant':
-              window.location.href = '/attendant';
-              break;
-            default:
-              window.location.href = '/dashboard';
-              break;
+        try {
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.user.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (roleError) {
+            console.warn('[AUTH] Error fetching role, defaulting to customer:', roleError);
           }
-        }, 300);
+
+          const role = roleData?.role || 'customer';
+          
+          console.log('[AUTH] User role detected:', role, '- Navigating...');
+          
+          // Use navigate instead of window.location to avoid crash
+          setTimeout(() => {
+            switch (role) {
+              case 'admin':
+                navigate('/admin');
+                break;
+              case 'attendant':
+                navigate('/attendant');
+                break;
+              default:
+                navigate('/dashboard');
+                break;
+            }
+            setRedirecting(false);
+          }, 300);
+        } catch (roleError) {
+          console.error('[AUTH] Error in role redirect:', roleError);
+          // Fallback to customer dashboard
+          navigate('/dashboard');
+          setRedirecting(false);
+        }
       }
 
       toast({
@@ -263,7 +283,7 @@ export const useAuth = () => {
   return {
     user,
     session,
-    loading,
+    loading: loading || redirecting,
     signIn,
     signUp,
     signOut,

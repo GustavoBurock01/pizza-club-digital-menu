@@ -12,7 +12,7 @@ interface ProductInfo {
 export const useCartProducts = (items: CartItem[]) => {
   const productIds = items.map(item => item.productId);
 
-  const { data: productsInfo = [] } = useQuery({
+  const { data: productsInfo = [], isLoading, error } = useQuery({
     queryKey: ['cart-products', productIds.join(',')],
     queryFn: async () => {
       if (productIds.length === 0) return [];
@@ -27,7 +27,10 @@ export const useCartProducts = (items: CartItem[]) => {
         `)
         .in('id', productIds);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[CART-PRODUCTS] Error fetching products:', error);
+        throw error;
+      }
 
       return (data || []).map((p: any) => ({
         id: p.id,
@@ -38,6 +41,7 @@ export const useCartProducts = (items: CartItem[]) => {
     },
     enabled: productIds.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry failed queries
   });
 
   const getProductInfo = (productId: string): ProductInfo | undefined => {
@@ -46,6 +50,8 @@ export const useCartProducts = (items: CartItem[]) => {
 
   return {
     productsInfo,
-    getProductInfo
+    getProductInfo,
+    isLoading,
+    error
   };
 };
