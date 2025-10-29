@@ -1,4 +1,9 @@
 // ===== HOOK ÚNICO DE ASSINATURA - OTIMIZADO =====
+// ⚠️ DEPRECATED (FASE 2.3) - Use useSubscriptionContext() instead
+//
+// Este hook será removido em versão futura.
+// Migre para: import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
+//
 // Verificação: 1x por dia via cache
 // Sincronização: Automática via webhooks + realtime
 
@@ -111,8 +116,24 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
 };
 
 // ===== HOOK PRINCIPAL =====
+/**
+ * @deprecated Use useSubscriptionContext() instead
+ * This hook will be removed in the next major version.
+ * 
+ * Migration guide:
+ * - Old: const { isActive, status } = useSubscription(user?.id);
+ * - New: const { isActive, status } = useSubscriptionContext();
+ */
 export const useSubscription = (userId?: string) => {
   const queryClient = useQueryClient();
+  
+  // Log deprecation warning in development
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(
+      '[DEPRECATED] useSubscription is deprecated. Use useSubscriptionContext() instead.',
+      '\nSee docs/MIGRATION_SUBSCRIPTION.md for migration guide.'
+    );
+  }
 
   // React Query com staleTime de 24h
   const query = useQuery({

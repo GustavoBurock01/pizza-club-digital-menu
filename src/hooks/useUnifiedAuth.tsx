@@ -111,6 +111,8 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth.user, auth.session, toast]);
 
   // ===== SUBSCRIPTION STATUS (formato antigo para compatibilidade) =====
+  // ⚠️ DEPRECATED (FASE 2.3) - Use useSubscriptionContext() directly instead
+  // Este wrapper será removido em versão futura
   const subscriptionStatus: SubscriptionStatus = {
     subscribed: subscription.isActive,
     status: subscription.status,
@@ -120,6 +122,15 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     loading: subscription.isLoading,
     hasSubscriptionHistory: subscription.isActive,
   };
+  
+  // Log deprecation warning when accessing subscription via UnifiedAuth
+  if (process.env.NODE_ENV === 'development' && subscription.isActive !== undefined) {
+    console.warn(
+      '[DEPRECATED] useUnifiedAuth().subscription is deprecated.',
+      '\nUse useSubscriptionContext() directly instead.',
+      '\nSee docs/MIGRATION_SUBSCRIPTION.md for migration guide.'
+    );
+  }
 
   // ===== UTILITY FUNCTIONS =====
   const isAuthenticated = useCallback(() => {

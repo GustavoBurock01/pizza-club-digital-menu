@@ -1,4 +1,18 @@
 // ===== PROVIDER GLOBAL DE ASSINATURA =====
+// ✅ PONTO ÚNICO DE ACESSO À SUBSCRIPTION (FASE 2.3)
+//
+// Use apenas via:
+//   const { isActive, status, planName, ... } = useSubscriptionContext()
+//
+// ❌ NÃO use diretamente:
+//   - useSubscription(userId) (DEPRECATED - será removido)
+//   - useUnifiedAuth().subscription (DEPRECATED - use useSubscriptionContext)
+//
+// Benefícios:
+//   - Cache compartilhado entre todos os componentes
+//   - Zero requests duplicados ao Supabase
+//   - Um único canal realtime para sincronização
+//   - Facilidade de debugging
 
 import { createContext, useContext, ReactNode } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
