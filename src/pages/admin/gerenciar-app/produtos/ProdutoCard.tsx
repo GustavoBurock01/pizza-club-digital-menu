@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 interface Product {
   id: string;
@@ -24,10 +25,11 @@ export function ProdutoCard({ product, onEdit }: Props) {
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       {/* Imagem */}
       <div className="aspect-video bg-muted relative">
-        <img
+        <OptimizedImage
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full"
+          lazy={true}
         />
         <Badge
           variant={product.isActive ? 'default' : 'secondary'}

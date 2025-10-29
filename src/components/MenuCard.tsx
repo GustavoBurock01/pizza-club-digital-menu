@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Info, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, memo, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { ProductCustomizer } from './ProductCustomizer';
 import { supabase } from '@/services/supabase';
+import { OptimizedImage } from './OptimizedImage';
 
 interface MenuItemProps {
   id: string;
@@ -19,7 +20,7 @@ interface MenuItemProps {
   ingredients?: string[];
 }
 
-export const MenuCard = ({ 
+export const MenuCard = memo(({ 
   id, 
   name, 
   description, 
@@ -54,45 +55,46 @@ export const MenuCard = ({
     enabled: showCustomizer // Só busca quando o modal for aberto
   });
 
-  const formatPrice = (price: number) => {
+  const formatPrice = useCallback((price: number) => {
     return price.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     });
-  };
+  }, []);
 
-  const handleQuickAdd = () => {
+  const handleQuickAdd = useCallback(() => {
     addItem({
       id,
       name,
       price,
       image_url: image
     });
-  };
+  }, [id, name, price, image, addItem]);
 
-  const isDrinksCategory = () => {
+  const isDrinksCategory = useMemo(() => {
     const drinksKeywords = ['bebida', 'água', 'suco', 'refrigerante', 'drink', 'agua'];
     return drinksKeywords.some(keyword => 
       category.toLowerCase().includes(keyword.toLowerCase())
     );
-  };
+  }, [category]);
 
-  const isPizzaCategory = () => {
+  const isPizzaCategory = useMemo(() => {
     const pizzaKeywords = ['Pizzas Grandes', 'Pizzas Broto'];
     return pizzaKeywords.some(keyword => 
       category.includes(keyword)
     );
-  };
+  }, [category]);
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       <div className="relative">
         <div className="aspect-square bg-gradient-to-br from-pizza-cream to-pizza-orange/20 flex items-center justify-center">
           {image ? (
-            <img 
+            <OptimizedImage 
               src={image} 
               alt={name}
               className="w-full h-full object-cover"
+              lazy={true}
             />
           ) : (
             <div className="text-6xl">🍕</div>
@@ -108,7 +110,7 @@ export const MenuCard = ({
           <CardTitle className="text-lg group-hover:text-pizza-red transition-colors">
             {name}
           </CardTitle>
-          {!isDrinksCategory() && (
+          {!isDrinksCategory && (
             <Button
               variant="ghost"
               size="sm"
@@ -120,7 +122,7 @@ export const MenuCard = ({
           )}
         </div>
         <CardDescription className="text-sm">
-          {isPizzaCategory() && ingredients.length > 0 ? (
+          {isPizzaCategory && ingredients.length > 0 ? (
             <span className="text-muted-foreground">
               {ingredients.join(', ')}
             </span>
@@ -130,7 +132,7 @@ export const MenuCard = ({
         </CardDescription>
       </CardHeader>
 
-      {showIngredients && ingredients.length > 0 && !isDrinksCategory() && (
+      {showIngredients && ingredients.length > 0 && !isDrinksCategory && (
         <CardContent className="pt-0 pb-2">
           <div className="p-3 bg-pizza-cream rounded-lg">
             <p className="text-sm font-medium text-pizza-dark mb-2">Ingredientes:</p>
@@ -177,4 +179,4 @@ export const MenuCard = ({
       )}
     </Card>
   );
-};
+});

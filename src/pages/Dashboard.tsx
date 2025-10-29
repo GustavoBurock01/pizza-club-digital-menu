@@ -14,7 +14,7 @@ import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { SubscriptionReconciling } from '@/components/SubscriptionReconciling';
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/services/supabase";
 import { RecentOrder } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils/formatting";
@@ -69,7 +69,7 @@ const Dashboard = () => {
     }
   };
 
-  const repeatLastOrder = async () => {
+  const repeatLastOrder = useCallback(async () => {
     if (recentOrders.length === 0) {
       toast({
         title: "Nenhum pedido anterior",
@@ -118,9 +118,9 @@ const Dashboard = () => {
     } finally {
       setLoadingRepeat(false);
     }
-  };
+  }, [recentOrders, addItem, navigate, toast]);
 
-  const handleRefreshSubscription = async () => {
+  const handleRefreshSubscription = useCallback(async () => {
     setRefreshing(true);
     try {
       // Primeiro tenta reconciliar com Stripe
@@ -143,9 +143,12 @@ const Dashboard = () => {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [reconcileSubscription, refreshSubscription, toast]);
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário';
+  const userName = useMemo(
+    () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário',
+    [user]
+  );
 
   if (subscriptionLoading) {
     return (

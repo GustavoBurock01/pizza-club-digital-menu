@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { VirtualizedList } from './VirtualizedList';
 // Definindo o tipo AdminOrder diretamente
 interface AdminOrder {
   id: string;
@@ -47,58 +48,73 @@ const getStatusLabel = (status: string) => {
 };
 
 export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTableProps) => {
+  const renderOrder = (order: AdminOrder) => (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="flex-1">
+        <div className="flex items-center gap-4">
+          <div>
+            <p className="font-medium">#{order.id.slice(-8)}</p>
+            <p className="text-sm text-muted-foreground">
+              {order.profiles?.full_name || 'Cliente'} • {formatDateTime(order.created_at)}
+            </p>
+          </div>
+          <Badge className={getStatusColor(order.status)}>
+            {getStatusLabel(order.status)}
+          </Badge>
+          <div className="text-right">
+            <p className="font-medium">{formatCurrency(order.total_amount)}</p>
+            <p className="text-sm text-muted-foreground">{order.payment_method}</p>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Select
+          value={order.status}
+          onValueChange={(value) => onUpdateStatus(order.id, value)}
+        >
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pendente</SelectItem>
+            <SelectItem value="confirmed">Confirmado</SelectItem>
+            <SelectItem value="preparing">Preparando</SelectItem>
+            <SelectItem value="ready">Pronto</SelectItem>
+            <SelectItem value="delivering">Entregando</SelectItem>
+            <SelectItem value="delivered">Entregue</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Pedidos Recentes</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {orders.length === 0 ? (
-            <p className="text-center text-muted-foreground">Nenhum pedido encontrado</p>
-          ) : (
-            orders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="font-medium">#{order.id.slice(-8)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.profiles?.full_name || 'Cliente'} • {formatDateTime(order.created_at)}
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(order.status)}>
-                      {getStatusLabel(order.status)}
-                    </Badge>
-                    <div className="text-right">
-                      <p className="font-medium">{formatCurrency(order.total_amount)}</p>
-                      <p className="text-sm text-muted-foreground">{order.payment_method}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={order.status}
-                    onValueChange={(value) => onUpdateStatus(order.id, value)}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="confirmed">Confirmado</SelectItem>
-                      <SelectItem value="preparing">Preparando</SelectItem>
-                      <SelectItem value="ready">Pronto</SelectItem>
-                      <SelectItem value="delivering">Entregando</SelectItem>
-                      <SelectItem value="delivered">Entregue</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        {orders.length === 0 ? (
+          <p className="text-center text-muted-foreground">Nenhum pedido encontrado</p>
+        ) : orders.length > 15 ? (
+          <div style={{ height: '600px' }}>
+            <VirtualizedList
+              items={orders}
+              estimateSize={100}
+              renderItem={renderOrder}
+              containerClassName="space-y-4"
+            />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div key={order.id}>
+                {renderOrder(order)}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

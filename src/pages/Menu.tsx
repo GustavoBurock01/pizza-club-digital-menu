@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { OptimizedMenuContent } from "@/components/OptimizedMenuContent";
@@ -9,6 +9,10 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from "react-router-dom";
 import { MenuSkeleton, CategorySkeleton } from "@/components/MenuSkeleton";
 import { FixedCartFooter } from "@/components/FixedCartFooter";
+
+// Memoized skeleton components
+const MemoizedMenuSkeleton = memo(MenuSkeleton);
+const MemoizedCategorySkeleton = memo(CategorySkeleton);
 
 // Componente principal otimizado
 
@@ -45,7 +49,7 @@ const Menu = () => {
               </div>
             </header>
             <div className="flex-1 p-6 space-y-6 pb-20">
-              {currentView === 'products' ? <MenuSkeleton /> : <CategorySkeleton />}
+              {currentView === 'products' ? <MemoizedMenuSkeleton /> : <MemoizedCategorySkeleton />}
             </div>
           </SidebarInset>
         </div>

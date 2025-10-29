@@ -28,6 +28,7 @@ import {
 import { Search, Filter, Download, Eye, Mail, Phone, MapPin, Star } from 'lucide-react';
 import { useUnifiedAdminData } from '@/hooks/useUnifiedAdminData';
 import { formatCurrency } from '@/utils/formatting';
+import { VirtualizedList } from '@/components/VirtualizedList';
 
 export default function Clientes() {
   const { stats } = useUnifiedAdminData();
@@ -106,32 +107,20 @@ export default function Clientes() {
           </h3>
         </div>
         
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Pedidos</TableHead>
-                <TableHead>Total Gasto</TableHead>
-                <TableHead>Ticket Médio</TableHead>
-                <TableHead>Último Pedido</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell>
+        {filteredCustomers.length > 20 ? (
+          <div style={{ height: '600px' }}>
+            <VirtualizedList
+              items={filteredCustomers}
+              estimateSize={80}
+              renderItem={(customer) => (
+                <div className="flex items-center justify-between p-4 border-b">
+                  <div className="flex-1 grid grid-cols-8 gap-4 items-center">
                     <div>
                       <div className="font-medium">{customer.name}</div>
                       <div className="text-sm text-muted-foreground">
                         Cliente desde {customer.registeredAt}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-3 w-3" />
@@ -142,39 +131,109 @@ export default function Clientes() {
                         {customer.phone}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{customer.orders}</Badge>
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {formatCurrency(customer.totalSpent)}
-                  </TableCell>
-                  <TableCell>
-                    {formatCurrency(customer.avgTicket)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {customer.lastOrder}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getTierColor(customer.tier)}>
-                      {customer.tier === 'VIP' && <Star className="h-3 w-3 mr-1" />}
-                      {customer.tier}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedCustomer(customer)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                    <div>
+                      <Badge variant="outline">{customer.orders}</Badge>
+                    </div>
+                    <div className="font-bold">
+                      {formatCurrency(customer.totalSpent)}
+                    </div>
+                    <div>
+                      {formatCurrency(customer.avgTicket)}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {customer.lastOrder}
+                    </div>
+                    <div>
+                      <Badge variant={getTierColor(customer.tier)}>
+                        {customer.tier === 'VIP' && <Star className="h-3 w-3 mr-1" />}
+                        {customer.tier}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCustomer(customer)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Pedidos</TableHead>
+                  <TableHead>Total Gasto</TableHead>
+                  <TableHead>Ticket Médio</TableHead>
+                  <TableHead>Último Pedido</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Cliente desde {customer.registeredAt}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3 w-3" />
+                          {customer.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3 w-3" />
+                          {customer.phone}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{customer.orders}</Badge>
+                    </TableCell>
+                    <TableCell className="font-bold">
+                      {formatCurrency(customer.totalSpent)}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(customer.avgTicket)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {customer.lastOrder}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getTierColor(customer.tier)}>
+                        {customer.tier === 'VIP' && <Star className="h-3 w-3 mr-1" />}
+                        {customer.tier}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCustomer(customer)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
 
       {/* Dialog de Detalhes do Cliente */}
