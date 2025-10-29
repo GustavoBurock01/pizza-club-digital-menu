@@ -1,4 +1,5 @@
-// ===== CHECKOUT EXPRESS - UMA PÁGINA =====
+// ===== CHECKOUT - UMA PÁGINA =====
+// (Renomeado de ExpressCheckout - Fase 2.5)
 
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +46,7 @@ interface CustomerData {
   complement: string;
 }
 
-const ExpressCheckout = () => {
+const Checkout = () => {
   const { items, getSubtotal, getTotal, clearCart, removeItem, setDeliveryFee, updateQuantity } = useUnifiedStore();
   const { user } = useUnifiedAuth();
   const { addresses } = useAddresses();
@@ -1431,4 +1432,4 @@ const ExpressCheckout = () => {
   );
 };
 
-export default ExpressCheckout;
+export default Checkout;

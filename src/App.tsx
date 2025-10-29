@@ -23,7 +23,7 @@ import { AnalyticsDebugger } from './components/AnalyticsDebugger';
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Menu from "./pages/Menu";
-import ExpressCheckout from "./pages/ExpressCheckout";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
 // Lazy load attendant unified
@@ -174,11 +174,11 @@ const App = () => {
                   <Menu />
                 </ProtectedRoute>
                } />
-              <Route path="/checkout" element={
-                <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
-                  <ExpressCheckout />
-                </ProtectedRoute>
-              } />
+               <Route path="/checkout" element={
+                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
+                   <Checkout />
+                 </ProtectedRoute>
+               } />
                <Route path="/orders" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>

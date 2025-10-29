@@ -28,7 +28,7 @@ export const preloadRoute = async (routePath: string) => {
         component = await import('../pages/Dashboard');
         break;
       case '/checkout':
-        component = await import('../pages/ExpressCheckout');
+        component = await import('../pages/Checkout');
         break;
       default:
         return null;
