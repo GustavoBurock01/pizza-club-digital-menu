@@ -71,8 +71,8 @@ export default defineConfig(({ mode }) => ({
           // Form & Validation (40KB)
           'forms-vendor': ['react-hook-form', 'zod', '@hookform/resolvers'],
           
-          // Payment & PIX (30KB)
-          'payment-vendor': ['mercadopago', '@mercadopago/sdk-js', 'pix-utils', 'qrcode'],
+          // Payment & PIX (30KB) - removido pois gera chunk vazio
+          // 'payment-vendor': ['mercadopago', '@mercadopago/sdk-js', 'pix-utils', 'qrcode'],
           
           // Utilities (20KB)
           'utils-vendor': [
