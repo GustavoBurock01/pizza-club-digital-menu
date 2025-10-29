@@ -48,8 +48,10 @@ const Payment = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [paymentResult, setPaymentResult] = useState<any>(null);
 
-  // Determinar tipo de pagamento pela URL ou query params
-  const paymentType = searchParams.get('type') || 'pix'; // default PIX
+  // Detectar tipo de pagamento pela rota: /payment/pix ou /payment/card
+  const paymentType = location.pathname.includes('/pix') ? 'pix' : 
+                      location.pathname.includes('/card') ? 'card' :
+                      searchParams.get('type') || 'pix'; // Fallback para query param
   const orderId = searchParams.get('order');
 
   useEffect(() => {
@@ -86,9 +88,18 @@ const Payment = () => {
         setPaymentStatus('form');
       } else if (paymentType === 'pix') {
         // Se é PIX, criar pedido + PIX automaticamente
-        const dataToUse = orderData || pendingOrderData;
+        const dataToUse = stateOrderData || pendingOrderData;
+        
         if (dataToUse) {
           await createOrderAndPixPayment(dataToUse);
+        } else {
+          console.error('[PAYMENT] No order data available for PIX payment');
+          toast({
+            title: "Erro",
+            description: "Dados do pedido não encontrados",
+            variant: "destructive"
+          });
+          navigate('/menu');
         }
       }
     } catch (error: any) {
@@ -137,11 +148,18 @@ const Payment = () => {
       // Limpar carrinho imediatamente
       clearCart();
       
-      // Calculate time left until expiration
+      // Iniciar contagem regressiva do PIX (5 minutos = 300 segundos)
       const expiresAt = new Date(data.pixData.expiresAt);
       const now = new Date();
-      const secondsLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      const timeLeftMs = expiresAt.getTime() - now.getTime();
+      const secondsLeft = Math.max(0, Math.floor(timeLeftMs / 1000));
       setTimeLeft(secondsLeft);
+      
+      console.log('[PAYMENT] PIX timer initialized:', {
+        expiresAt: expiresAt.toISOString(),
+        timeLeftSeconds: secondsLeft,
+        timeLeftMinutes: Math.floor(secondsLeft / 60)
+      });
       
       // Iniciar verificação de status
       startPaymentStatusCheck(data.pixData.transactionId);

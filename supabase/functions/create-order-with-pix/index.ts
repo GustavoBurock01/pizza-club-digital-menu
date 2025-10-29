@@ -464,8 +464,9 @@ serve(async (req) => {
 
     // ETAPA 7: Armazenar transação PIX no banco COM MERCADOPAGO ID (FASE 1)
     const transactionId = `MP-${mercadoPagoResult.id}`;
+    // Timer de 5 minutos para expiração do PIX
     const expiresAt = mercadoPagoResult.date_of_expiration || 
-                    new Date(Date.now() + 30 * 60 * 1000).toISOString();
+                    new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
     const { error: insertError } = await supabaseServiceClient
       .from('pix_transactions')

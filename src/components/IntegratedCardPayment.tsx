@@ -51,6 +51,7 @@ export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentEr
   });
 
   const [loading, setLoading] = useState(false);
+  const [sdkLoading, setSdkLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [mp, setMp] = useState<any>(null);
@@ -88,6 +89,8 @@ export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentEr
 
   const initializeMPInstance = async () => {
     try {
+      setSdkLoading(true);
+      
       // Obter chave pública do MercadoPago
       const { data, error } = await supabase.functions.invoke('get-payment-config');
       
@@ -106,6 +109,8 @@ export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentEr
         description: "Erro ao inicializar sistema de pagamento",
         variant: "destructive"
       });
+    } finally {
+      setSdkLoading(false);
     }
   };
 
@@ -376,6 +381,18 @@ export const IntegratedCardPayment = ({ orderData, onPaymentSuccess, onPaymentEr
           <p className="text-muted-foreground">
             Seu pedido foi processado com sucesso e será preparado em breve.
           </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Loading state enquanto SDK carrega
+  if (sdkLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <RefreshCw className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
+          <p className="text-muted-foreground">Carregando sistema de pagamento...</p>
         </CardContent>
       </Card>
     );
