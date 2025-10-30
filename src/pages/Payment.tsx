@@ -62,18 +62,24 @@ const Payment = () => {
     setLoading(true);
     
     try {
+      console.log('[PAYMENT] Initializing payment...', { paymentType, orderId });
+      
       // Verificar se há dados do pedido com SecureStorage
       const stateOrderData = location.state?.orderData;
       const pendingOrderData = await SecureStorage.get('pendingOrder');
       
-      if (stateOrderData) {
-        setOrderData(stateOrderData);
-      } else if (pendingOrderData) {
-        setOrderData(pendingOrderData);
-      } else if (orderId) {
-        // Buscar pedido existente (fluxo legacy)
-        await fetchExistingOrder(orderId);
-      } else {
+      console.log('[PAYMENT] Data sources:', {
+        hasStateData: !!stateOrderData,
+        hasPendingData: !!pendingOrderData,
+        hasOrderId: !!orderId
+      });
+      
+      // Determinar qual dado usar
+      const dataToUse = stateOrderData || pendingOrderData;
+      
+      // Verificar se tem dados
+      if (!dataToUse && !orderId) {
+        console.error('[PAYMENT] No order data available');
         toast({
           title: "Sessão expirada",
           description: "Refaça seu pedido",
@@ -82,31 +88,39 @@ const Payment = () => {
         navigate('/menu');
         return;
       }
+      
+      // Setar orderData no state
+      if (dataToUse) {
+        setOrderData(dataToUse);
+        console.log('[PAYMENT] Order data loaded:', {
+          items: dataToUse.items?.length,
+          total: dataToUse.total
+        });
+      } else if (orderId) {
+        // Buscar pedido existente (fluxo legacy)
+        console.log('[PAYMENT] Fetching existing order:', orderId);
+        await fetchExistingOrder(orderId);
+        return; // fetchExistingOrder já trata o resto
+      }
 
-      // Se é cartão, manter na tela de form
+      // Processar pagamento de acordo com o tipo
       if (paymentType === 'card') {
+        console.log('[PAYMENT] Setting up card payment form');
         setPaymentStatus('form');
       } else if (paymentType === 'pix') {
-        // Se é PIX, criar pedido + PIX automaticamente
-        const dataToUse = stateOrderData || pendingOrderData;
+        console.log('[PAYMENT] Creating PIX payment');
         
-        if (dataToUse) {
-          await createOrderAndPixPayment(dataToUse);
-        } else {
-          console.error('[PAYMENT] No order data available for PIX payment');
-          toast({
-            title: "Erro",
-            description: "Dados do pedido não encontrados",
-            variant: "destructive"
-          });
-          navigate('/menu');
+        if (!dataToUse) {
+          throw new Error('Dados do pedido não disponíveis para PIX');
         }
+        
+        await createOrderAndPixPayment(dataToUse);
       }
     } catch (error: any) {
-      console.error('Error initializing payment:', error);
+      console.error('[PAYMENT] Error initializing payment:', error);
       toast({
         title: "Erro",
-        description: "Erro ao inicializar pagamento",
+        description: error.message || "Erro ao inicializar pagamento",
         variant: "destructive"
       });
       navigate('/menu');
@@ -133,13 +147,33 @@ const Payment = () => {
 
   const createOrderAndPixPayment = async (orderData: any) => {
     try {
+      console.log('[PAYMENT] Creating PIX order...', {
+        itemsCount: orderData.items?.length,
+        total: orderData.total,
+        deliveryMethod: orderData.delivery_method
+      });
+      
       setPaymentStatus('pending');
       
       const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
         body: orderData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[PAYMENT] Edge function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.order || !data.pixData) {
+        console.error('[PAYMENT] Invalid response from edge function:', data);
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      console.log('[PAYMENT] PIX order created successfully:', {
+        orderId: data.order.id,
+        pixCode: data.pixData.pixCode?.substring(0, 20) + '...',
+        transactionId: data.pixData.transactionId
+      });
 
       setOrder(data.order);
       setPixData(data.pixData);
@@ -163,9 +197,22 @@ const Payment = () => {
       
       // Iniciar verificação de status
       startPaymentStatusCheck(data.pixData.transactionId);
-    } catch (error) {
-      console.error('Error creating order and PIX:', error);
+    } catch (error: any) {
+      console.error('[PAYMENT] Error creating order and PIX:', {
+        message: error.message,
+        details: error,
+        stack: error.stack
+      });
       setPaymentStatus('error');
+      
+      // Mostrar erro específico ao usuário
+      toast({
+        title: "Erro ao criar pagamento",
+        description: error.message || "Não foi possível processar seu pagamento PIX. Tente novamente.",
+        variant: "destructive",
+        duration: 6000
+      });
+      
       throw error;
     }
   };
