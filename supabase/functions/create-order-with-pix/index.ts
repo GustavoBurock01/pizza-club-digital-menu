@@ -317,10 +317,10 @@ serve(async (req) => {
       );
     }
 
-    logger.info('User profile retrieved', {
+    console.log('[CREATE-ORDER-PIX] ✅ User profile retrieved:', {
       email: profile?.email,
       full_name: profile?.full_name,
-      cpf: profile?.cpf
+      cpf: profile?.cpf ? profile.cpf.substring(0, 3) + '***' : 'NOT_PROVIDED'
     });
 
     // ETAPA 3: 🎯 CRIAR PIX REAL COM CHAVE REAL - FASE 1 IMPLEMENTATION
