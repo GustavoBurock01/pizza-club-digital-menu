@@ -11,9 +11,8 @@ import { useProfile } from '@/hooks/useUnifiedProfile';
 import { CheckoutValidation } from '@/components/CheckoutValidation';
 import { CheckoutProfileAlert } from '@/components/CheckoutProfileAlert';
 import { ProfileValidationModal } from '@/components/ProfileValidationModal';
-import { CEPInput } from '@/components/CEPInput';
+import { AddressSelector } from '@/components/AddressSelector';
 import { SecureStorage } from '@/utils/secureStorage';
-import type { CEPData } from '@/utils/cepValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
@@ -71,16 +70,14 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState('');
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [validatedCEP, setValidatedCEP] = useState<CEPData | null>(null);
-  const [cepValue, setCepValue] = useState('');
   const [newAddress, setNewAddress] = useState({
     street: '',
     number: '',
     neighborhood: '',
     complement: '',
     reference_point: '',
-    city: '',
-    state: '',
+    city: 'Sua Cidade',
+    state: 'SP',
     zip_code: ''
   });
 
@@ -337,21 +334,16 @@ const Checkout = () => {
     if (deliveryMethod === 'delivery') {
       if (selectedAddressId) {
         orderData.addressData = { id: selectedAddressId };
-      } else {
-        // Validar CEP foi preenchido corretamente
-        if (!validatedCEP) {
-          throw new Error('Informe um CEP válido para continuar');
-        }
-
+    } else {
         // Validar dados do novo endereço antes de criar
         const addressValidation = validateAddress({
-          street: newAddress.street || validatedCEP.logradouro,
+          street: newAddress.street,
           number: newAddress.number,
-          neighborhood: newAddress.neighborhood || validatedCEP.bairro,
+          neighborhood: newAddress.neighborhood,
           complement: newAddress.complement,
-          city: validatedCEP.localidade,
-          state: validatedCEP.uf,
-          zip_code: validatedCEP.cep
+          city: newAddress.city,
+          state: newAddress.state,
+          zip_code: newAddress.zip_code || undefined
         });
 
         if (!addressValidation.success) {
@@ -360,7 +352,7 @@ const Checkout = () => {
         }
 
         orderData.addressData = addressValidation.data;
-        console.log('[CHECKOUT] ✅ Address validated with real CEP');
+        console.log('[CHECKOUT] ✅ Address validated without CEP');
       }
     }
 
@@ -501,21 +493,16 @@ const Checkout = () => {
 
     // Validar e criar endereço se necessário
     if (deliveryMethod === 'delivery' && !selectedAddressId && showAddressForm) {
-      // Validar CEP foi preenchido
-      if (!validatedCEP) {
-        throw new Error('Informe um CEP válido para continuar');
-      }
-
-      // Validar dados do endereço antes de inserir
+      // Validar dados do endereço antes de inserir (sem CEP obrigatório)
       const addressValidation = validateAddress({
-        street: newAddress.street || validatedCEP.logradouro,
+        street: newAddress.street,
         number: newAddress.number,
-        neighborhood: newAddress.neighborhood || validatedCEP.bairro,
+        neighborhood: newAddress.neighborhood,
         complement: newAddress.complement,
         reference_point: newAddress.reference_point,
-        city: validatedCEP.localidade,
-        state: validatedCEP.uf,
-        zip_code: validatedCEP.cep
+        city: newAddress.city,
+        state: newAddress.state,
+        zip_code: newAddress.zip_code || undefined
       });
 
       if (!addressValidation.success) {
@@ -527,14 +514,15 @@ const Checkout = () => {
         .from('addresses')
         .insert({
           user_id: user?.id,
-          ...addressValidation.data
+          ...addressValidation.data,
+          zip_code: newAddress.zip_code || ''
         })
         .select()
         .single();
 
       if (addressError) throw addressError;
       addressId = addressData.id;
-      console.log('[CHECKOUT] ✅ Address validated and created');
+      console.log('[CHECKOUT] ✅ Address validated and created without CEP requirement');
     }
 
     // Preparar snapshot do endereço
@@ -560,15 +548,15 @@ const Checkout = () => {
           };
         }
       } else {
-        deliveryAddressSnapshot = validatedCEP ? {
-          street: newAddress.street || validatedCEP.logradouro,
+        deliveryAddressSnapshot = {
+          street: newAddress.street,
           number: newAddress.number,
-          neighborhood: newAddress.neighborhood || validatedCEP.bairro,
+          neighborhood: newAddress.neighborhood,
           complement: newAddress.complement,
-          city: validatedCEP.localidade,
-          state: validatedCEP.uf,
-          zip_code: validatedCEP.cep
-        } : null;
+          city: newAddress.city,
+          state: newAddress.state,
+          zip_code: newAddress.zip_code || ''
+        };
       }
     }
 
@@ -892,79 +880,40 @@ const Checkout = () => {
 
                     {/* Address Selection for Delivery */}
                     {deliveryMethod === 'delivery' && (
-                      <>
-                        {/* Saved Addresses */}
+                      <div className="space-y-4">
+                        {/* Endereço Selecionado - Compacto */}
                         {addresses.length > 0 && !showAddressForm && (
                           <Card>
-                            <CardHeader>
-                              <CardTitle>Endereços Salvos</CardTitle>
-                              <p className="text-sm text-muted-foreground">
-                                Selecione um endereço ou adicione um novo
-                              </p>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {addresses.map((addr) => (
-                                <div
-                                  key={addr.id}
-                                  onClick={() => {
-                                    setSelectedAddressId(addr.id);
-                                    if (addr.neighborhood) {
-                                      setSelectedNeighborhood(addr.neighborhood);
-                                    }
-                                  }}
-                                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                                    selectedAddressId === addr.id
-                                      ? 'border-primary bg-primary/5'
-                                      : 'hover:border-primary/50'
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <p className="font-medium">
-                                        {addr.street}, {addr.number}
-                                      </p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {addr.neighborhood} - {addr.city}/{addr.state}
-                                      </p>
-                                      {addr.complement && (
-                                        <p className="text-sm text-muted-foreground">
-                                          {addr.complement}
-                                        </p>
-                                      )}
-                                      {addr.reference_point && (
-                                        <p className="text-sm text-muted-foreground">
-                                          Ref: {addr.reference_point}
-                                        </p>
-                                      )}
-                                      {!addr.neighborhood && (
-                                        <p className="text-sm text-amber-600 mt-2">
-                                          ⚠️ Bairro não definido - Clique para atualizar
-                                        </p>
-                                      )}
-                                    </div>
-                                    {selectedAddressId === addr.id && (
-                                      <Check className="h-5 w-5 text-primary shrink-0 ml-2" />
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => {
-                                  setShowAddressForm(true);
-                                  setSelectedAddressId('');
-                                  setSelectedNeighborhood('');
+                            <CardContent className="p-4">
+                              <AddressSelector
+                                addresses={addresses}
+                                selectedAddressId={selectedAddressId || addresses.find(a => a.is_default)?.id || addresses[0]?.id || ''}
+                                onSelect={(addressId, neighborhood) => {
+                                  console.debug('Checkout: Endereço selecionado', { addressId, neighborhood });
+                                  setSelectedAddressId(addressId);
+                                  setSelectedNeighborhood(neighborhood);
                                 }}
-                              >
-                                + Adicionar Novo Endereço
-                              </Button>
+                              />
                             </CardContent>
                           </Card>
                         )}
 
-                        {/* New Address Form */}
+                        {/* Botão: Adicionar Novo Endereço */}
+                        {addresses.length > 0 && !showAddressForm && (
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setShowAddressForm(true);
+                              setSelectedAddressId('');
+                              setSelectedNeighborhood('');
+                            }}
+                          >
+                            + Adicionar Novo Endereço
+                          </Button>
+                        )}
+
+                        {/* Formulário de Novo Endereço (sem CEP) */}
                         {(addresses.length === 0 || showAddressForm) && (
                           <Card>
                             <CardHeader>
@@ -975,31 +924,6 @@ const Checkout = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* CEP Input com validação automática */}
-                                <div className="md:col-span-2">
-                                  <CEPInput
-                                    value={cepValue}
-                                    onChange={setCepValue}
-                                    onAddressFound={(address) => {
-                                      setValidatedCEP(address);
-                                      // Preencher automaticamente
-                                      setNewAddress(prev => ({
-                                        ...prev,
-                                        street: address.logradouro || '',
-                                        neighborhood: address.bairro || '',
-                                        city: address.localidade || '',
-                                        state: address.uf || '',
-                                        zip_code: address.cep || ''
-                                      }));
-                                      // Atualizar bairro selecionado se disponível
-                                      if (address.bairro) {
-                                        setSelectedNeighborhood(address.bairro);
-                                      }
-                                    }}
-                                    required
-                                  />
-                                </div>
-                                
                                 <div className="md:col-span-2">
                                   <Label htmlFor="street">Rua *</Label>
                                   <Input
@@ -1007,13 +931,7 @@ const Checkout = () => {
                                     value={newAddress.street}
                                     onChange={(e) => setNewAddress(prev => ({ ...prev, street: e.target.value }))}
                                     placeholder="Nome da rua"
-                                    disabled={!validatedCEP}
                                   />
-                                  {!validatedCEP && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      Preencha o CEP primeiro para autocompletar
-                                    </p>
-                                  )}
                                 </div>
                                 
                                 <div>
@@ -1070,8 +988,8 @@ const Checkout = () => {
                                       neighborhood: '',
                                       complement: '',
                                       reference_point: '',
-                                      city: '',
-                                      state: '',
+                                      city: 'Sua Cidade',
+                                      state: 'SP',
                                       zip_code: ''
                                     });
                                   }}
@@ -1102,7 +1020,7 @@ const Checkout = () => {
                             </div>
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                 )}

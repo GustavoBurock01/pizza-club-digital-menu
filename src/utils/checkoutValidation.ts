@@ -79,9 +79,8 @@ export const addressSchema = z.object({
   
   zip_code: z
     .string()
-    .regex(/^\d{5}-?\d{3}$/, 'CEP inválido (use formato: 00000-000)')
-    .refine(cep => cep !== '00000-000' && cep !== '00000000', { message: 'CEP não pode ser 00000-000' })
     .optional()
+    .transform(val => val || undefined)
 });
 
 // Schema para informações do cliente

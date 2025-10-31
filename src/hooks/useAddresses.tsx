@@ -11,7 +11,7 @@ interface Address {
   neighborhood: string;
   city: string;
   state: string;
-  zip_code: string;
+  zip_code?: string;
   complement?: string;
   reference_point?: string;
   is_default: boolean;
@@ -68,6 +68,11 @@ export const useAddresses = () => {
 
   const addAddress = async (addressData: Omit<Address, 'id'>) => {
     try {
+      console.debug('useAddresses: Adicionando endereço:', {
+        ...addressData,
+        has_zip_code: !!addressData.zip_code
+      });
+
       // If this is the first address or marked as default, update others
       if (addressData.is_default || addresses.length === 0) {
         await supabase
@@ -76,13 +81,22 @@ export const useAddresses = () => {
           .eq('user_id', user?.id);
       }
 
+      // Garantir que zip_code seja string vazia se não fornecido
+      const dataToInsert = {
+        ...addressData,
+        zip_code: addressData.zip_code || '',
+        user_id: user?.id
+      };
+
       const { data, error } = await supabase
         .from('addresses')
-        .insert([{ ...addressData, user_id: user?.id }])
+        .insert([dataToInsert])
         .select()
         .single();
 
       if (error) throw error;
+      
+      console.debug('useAddresses: Endereço salvo:', data.id);
       
       setAddresses(prev => [...prev, data]);
       toast({
