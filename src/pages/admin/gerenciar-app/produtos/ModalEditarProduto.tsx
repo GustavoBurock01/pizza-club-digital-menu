@@ -13,21 +13,41 @@ import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/services/supabase';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   product: any;
   categoryId: string | null;
+  subcategoryId: string | null;
 }
 
-export function ModalEditarProduto({ open, onClose, product, categoryId }: Props) {
+export function ModalEditarProduto({ open, onClose, product, categoryId, subcategoryId }: Props) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Buscar nome da categoria para exibir
+  const { data: category } = useQuery({
+    queryKey: ['category', categoryId],
+    queryFn: async () => {
+      if (!categoryId) return null;
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name')
+        .eq('id', categoryId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId && open,
+  });
 
   useEffect(() => {
     if (product) {
@@ -66,7 +86,15 @@ export function ModalEditarProduto({ open, onClose, product, categoryId }: Props
         image_url: imageUrl,
         is_available: isActive,
         category_id: product?.category_id || categoryId,
+        subcategory_id: product?.subcategory_id || subcategoryId,
       };
+
+      console.debug('Salvando produto:', { 
+        productData, 
+        isEdit: !!product?.id,
+        categoryId,
+        subcategoryId 
+      });
 
       if (product?.id) {
         // Atualizar produto existente
@@ -75,15 +103,28 @@ export function ModalEditarProduto({ open, onClose, product, categoryId }: Props
           .update(productData)
           .eq('id', product.id);
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('permission')) {
+            throw new Error('Sem permissão. Verifique se você tem papel de admin.');
+          }
+          throw error;
+        }
+        console.debug('Produto atualizado:', product.id);
         toast.success('Produto atualizado com sucesso!');
       } else {
         // Criar novo produto
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([productData])
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('permission')) {
+            throw new Error('Sem permissão. Verifique se você tem papel de admin.');
+          }
+          throw error;
+        }
+        console.debug('Produto criado:', data);
         toast.success('Produto criado com sucesso!');
       }
 
@@ -107,6 +148,16 @@ export function ModalEditarProduto({ open, onClose, product, categoryId }: Props
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Indicador de localização */}
+          {(categoryId || subcategoryId) && (
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Local: </span>
+                {category?.name || 'Categoria'}
+                {subcategoryId && ' > Subcategoria selecionada'}
+              </p>
+            </div>
+          )}
           {/* Status */}
           <div className="flex items-center space-x-2">
             <Switch id="active" checked={isActive} onCheckedChange={setIsActive} />

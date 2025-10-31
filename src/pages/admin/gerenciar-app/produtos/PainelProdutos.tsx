@@ -23,6 +23,8 @@ export function PainelProdutos({ categoryId, subcategoryId }: Props) {
     queryFn: async () => {
       if (!categoryId) return [];
       
+      console.debug('Buscando produtos:', { categoryId, subcategoryId });
+      
       let query = supabase
         .from('products')
         .select('*');
@@ -36,6 +38,8 @@ export function PainelProdutos({ categoryId, subcategoryId }: Props) {
       const { data, error } = await query.order('name', { ascending: true });
       
       if (error) throw error;
+      
+      console.debug('Produtos encontrados:', data?.length);
       return data;
     },
     enabled: !!categoryId,
@@ -146,6 +150,7 @@ export function PainelProdutos({ categoryId, subcategoryId }: Props) {
         onClose={handleCloseModal}
         product={selectedProduct}
         categoryId={categoryId}
+        subcategoryId={subcategoryId}
       />
     </div>
   );
