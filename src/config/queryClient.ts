@@ -1,18 +1,91 @@
-// ===== CONFIGURAÇÃO OTIMIZADA DO REACT QUERY PARA PERFORMANCE =====
+// ===== CONFIGURAÇÃO UNIFICADA DO REACT QUERY =====
+// Consolidação de query.ts + queryClient.ts
 
 import { QueryClient } from '@tanstack/react-query';
 
+// ===== CACHE STRATEGIES BY DOMAIN =====
+export const CACHE_STRATEGIES = {
+  // Static data: categories, product templates (24h cache)
+  STATIC: {
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 days
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  },
+  
+  // Semi-static data: user profiles, settings (1h cache)
+  SEMI_STATIC: {
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 6 * 60 * 60 * 1000, // 6 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: true,
+  },
+  
+  // Dynamic data: products, menu items (5min cache) 
+  DYNAMIC: {
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: true,
+  },
+  
+  // Critical data: stock, prices (30s cache)
+  CRITICAL: {
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnReconnect: true,
+  },
+  
+  // Real-time data: orders, payments, admin stats (30s cache)
+  REALTIME: {
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+  },
+} as const;
+
+// ===== STANDARDIZED QUERY KEYS =====
+export const QUERY_KEYS = {
+  // Menu system
+  CATEGORIES: ['menu', 'categories'] as const,
+  PRODUCTS: (subcategoryId?: string) => ['menu', 'products', subcategoryId] as const,
+  PRODUCT_DETAIL: (productId: string) => ['menu', 'product', productId] as const,
+  
+  // Orders system  
+  ORDERS: ['orders'] as const,
+  ORDER_DETAIL: (orderId: string) => ['orders', orderId] as const,
+  RECENT_ORDERS: ['orders', 'recent'] as const,
+  
+  // Admin system
+  ADMIN_STATS: ['admin', 'stats'] as const,
+  ADMIN_ORDERS: ['admin', 'orders'] as const,
+  ADMIN_CUSTOMERS: ['admin', 'customers'] as const,
+  ADMIN_PRODUCTS: ['admin', 'products'] as const,
+  
+  // User system
+  USER_PROFILE: ['user', 'profile'] as const,
+  USER_ADDRESSES: ['user', 'addresses'] as const,
+  USER_SUBSCRIPTION: ['user', 'subscription'] as const,
+} as const;
+
+// ===== QUERY CLIENT INSTANCE =====
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
-      gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+      staleTime: 10 * 60 * 1000, // 10 minutos
+      gcTime: 30 * 60 * 1000, // 30 minutos
       networkMode: 'offlineFirst',
-      // Configurações de performance
-      refetchOnMount: false, // Evitar refetch desnecessário
-      refetchOnReconnect: 'always', // Apenas quando reconectar
+      refetchOnMount: false,
+      refetchOnReconnect: 'always',
     },
     mutations: {
       retry: false,
@@ -21,49 +94,35 @@ export const queryClient = new QueryClient({
   },
 });
 
-// ===== CACHE LAYERS ESTRATÉGICOS =====
-export const CACHE_STRATEGIES = {
-  // Cache ultra-longo para dados estáticos (24h)
-  STATIC: {
-    staleTime: 24 * 60 * 60 * 1000, // 24 horas
-    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 dias
-  },
-  // Cache longo para dados semi-estáticos (1h)
-  SEMI_STATIC: {
-    staleTime: 60 * 60 * 1000, // 1 hora
-    gcTime: 6 * 60 * 60 * 1000, // 6 horas
-  },
-  // Cache médio para dados dinâmicos (5min)
-  DYNAMIC: {
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 30 * 60 * 1000, // 30 minutos
-  },
-  // Cache curto para dados críticos (30s)
-  CRITICAL: {
-    staleTime: 30 * 1000, // 30 segundos
-    gcTime: 2 * 60 * 1000, // 2 minutos
-  },
-};
-
-// ===== FUNÇÕES DE INVALIDAÇÃO OTIMIZADAS =====
+// ===== TARGETED INVALIDATION FUNCTIONS =====
 export const invalidateQueries = {
-  all: () => queryClient.invalidateQueries(),
-  
-  // Invalidação granular para performance
+  // Specific invalidation by domain
   menu: () => {
-    queryClient.invalidateQueries({ queryKey: ['categories'] });
-    queryClient.removeQueries({ queryKey: ['products'], exact: false });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CATEGORIES });
+    queryClient.removeQueries({ queryKey: ['menu', 'products'], exact: false });
   },
   
   orders: () => {
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-    queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RECENT_ORDERS });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_STATS });
+  },
+  
+  adminStats: () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_STATS });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ADMIN_ORDERS });
+  },
+  
+  user: () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER_PROFILE });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER_ADDRESSES });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER_SUBSCRIPTION });
   },
   
   // Pré-loading estratégico
   preloadMenu: async () => {
     await queryClient.prefetchQuery({
-      queryKey: ['categories'],
+      queryKey: QUERY_KEYS.CATEGORIES,
       staleTime: CACHE_STRATEGIES.STATIC.staleTime,
     });
   },
@@ -71,18 +130,23 @@ export const invalidateQueries = {
   // Background refresh
   backgroundRefresh: () => {
     queryClient.refetchQueries({ 
-      queryKey: ['orders'],
+      queryKey: QUERY_KEYS.ORDERS,
       type: 'active',
     });
   },
-};
+  
+  // Emergency invalidation
+  all: () => {
+    queryClient.invalidateQueries();
+  },
+} as const;
 
 // ===== PERFORMANCE MONITORING =====
 export const performanceMonitor = {
   startTime: Date.now(),
   
   logQueryPerformance: (queryKey: any[], duration: number) => {
-    if (duration > 1000) { // Log se demorar mais que 1s
+    if (duration > 1000) {
       console.warn(`🐌 Slow query detected: ${JSON.stringify(queryKey)} took ${duration}ms`);
     }
   },

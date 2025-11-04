@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUnifiedAuth } from './useUnifiedAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface GroupOrder {
   id: string;

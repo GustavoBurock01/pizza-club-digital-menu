@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useLiveGroupOrders } from '@/hooks/useLiveGroupOrders';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 interface LiveGroupOrderManagerProps {

@@ -15,7 +15,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const Phase2PremiumExperience: React.FC = () => {
   const navigate = useNavigate();

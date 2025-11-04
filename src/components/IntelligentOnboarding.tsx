@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useNeuralPersonalization } from '@/hooks/useNeuralPersonalization';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingStep {
   id: string;

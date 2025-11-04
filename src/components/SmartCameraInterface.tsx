@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useSmartCamera } from '@/hooks/useSmartCamera';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface SmartCameraInterfaceProps {
   onFoodDetected?: (analysis: any) => void;
