@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { toast } from 'sonner';
 
 interface Coupon {
@@ -87,6 +88,7 @@ export function useMarketingData() {
       if (error) throw error;
       return data as Coupon[];
     },
+    ...applyStrategy('coupons'),
   });
 
   const createCoupon = useMutation({
@@ -154,6 +156,7 @@ export function useMarketingData() {
       if (error) throw error;
       return data as Promotion[];
     },
+    ...applyStrategy('promotions'),
   });
 
   const createPromotion = useMutation({
@@ -215,6 +218,7 @@ export function useMarketingData() {
       if (error) throw error;
       return data as Banner[];
     },
+    ...applyStrategy('banners'),
   });
 
   const createBanner = useMutation({
@@ -276,6 +280,7 @@ export function useMarketingData() {
       if (error) throw error;
       return data as MarketingCampaign[];
     },
+    ...applyStrategy('campaigns'),
   });
 
   const createCampaign = useMutation({

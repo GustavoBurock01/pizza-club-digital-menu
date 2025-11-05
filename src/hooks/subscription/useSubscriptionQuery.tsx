@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { applyStrategy } from '@/config/queryCacheMapping';
 
 export interface SubscriptionData {
   isActive: boolean;
@@ -115,16 +116,13 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
 
 // ===== HOOK PRINCIPAL =====
 export const useSubscriptionQuery = (userId?: string) => {
-  // React Query com staleTime de 24h
+  // React Query com cache strategy de subscription
   const query = useQuery({
     queryKey: ['subscription', userId],
     queryFn: () => fetchSubscription(userId!),
     enabled: !!userId,
-    staleTime: CACHE_DURATION_MS, // 24 horas
-    gcTime: CACHE_DURATION_MS,
+    ...applyStrategy('subscription'),
     retry: 2,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
     // Usar cache local como initialData
     initialData: () => {
       if (!userId) return undefined;

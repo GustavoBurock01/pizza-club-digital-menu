@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
+import { applyStrategy } from '@/config/queryCacheMapping';
 
 export interface DeliveryZone {
   id: string;
@@ -22,7 +23,7 @@ export const useDeliveryZones = () => {
       if (error) throw error;
       return data as DeliveryZone[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...applyStrategy('deliveryZones'),
   });
 
   const getDeliveryFee = (neighborhood: string) => {

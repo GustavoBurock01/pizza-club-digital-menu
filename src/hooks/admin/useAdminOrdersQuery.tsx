@@ -7,7 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CACHE_STRATEGIES } from '@/config/queryClient';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { memoryCache } from '@/utils/performance';
 
 export interface AdminOrder {
@@ -165,8 +165,7 @@ export const useAdminOrdersQuery = (options: QueryOptions = {}) => {
       }
     },
     enabled: !!userId,
-    ...CACHE_STRATEGIES.CRITICAL, // 30 segundos de cache
-    refetchOnWindowFocus: false,
+    ...applyStrategy('adminOrders'),
   });
 
   const refreshOrders = () => {

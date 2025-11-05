@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { CartItem } from '@/types';
 
 interface ProductInfo {
@@ -40,8 +41,8 @@ export const useCartProducts = (items: CartItem[]) => {
       })) as ProductInfo[];
     },
     enabled: productIds.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2, // Retry failed queries
+    ...applyStrategy('cartProducts'),
+    retry: 2,
   });
 
   const getProductInfo = (productId: string): ProductInfo | undefined => {

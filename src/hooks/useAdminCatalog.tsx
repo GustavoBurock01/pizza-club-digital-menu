@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { toast } from 'sonner';
 
 interface Category {
@@ -64,6 +65,7 @@ export const useAdminCatalog = () => {
         subcategories: subs.filter(sub => sub.category_id === cat.id)
       })) as Category[];
     },
+    ...applyStrategy('categories'),
   });
 
   // Buscar produtos filtrados
@@ -83,6 +85,7 @@ export const useAdminCatalog = () => {
       if (error) throw error;
       return data as Product[];
     },
+    ...applyStrategy('products'),
   });
 
   const selectCategory = (categoryId: string) => {

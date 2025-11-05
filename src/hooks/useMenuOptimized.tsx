@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/services/supabase';
 import { QUERY_KEYS } from '@/services/supabase';
-import { CACHE_STRATEGIES } from '@/config/queryClient';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Category, Subcategory, CurrentView } from '@/types';
 
@@ -92,9 +92,7 @@ export const useMenuOptimized = () => {
       console.log('✅ Categories cached successfully');
       return result;
     },
-    ...CACHE_STRATEGIES.STATIC, // Cache de 24h
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    ...applyStrategy('categories'), // Cache de 24h
   });
 
   // Query para produtos com cache inteligente
@@ -118,8 +116,7 @@ export const useMenuOptimized = () => {
       return data || [];
     },
     enabled: !!selectedSubcategoryId && currentView === 'products',
-    ...CACHE_STRATEGIES.SEMI_STATIC, // Cache de 1h
-    refetchOnWindowFocus: false,
+    ...applyStrategy('products'), // Cache dinâmico (5min)
   });
 
   // Handlers otimizados com useCallback e cache
@@ -128,7 +125,7 @@ export const useMenuOptimized = () => {
     if (subcategoryId) {
       queryClient.prefetchQuery({
         queryKey: [...QUERY_KEYS.PRODUCTS, subcategoryId],
-        staleTime: CACHE_STRATEGIES.SEMI_STATIC.staleTime,
+        ...applyStrategy('products'),
       });
     }
 
@@ -206,7 +203,7 @@ export const useMenuOptimized = () => {
       const firstSubcategory = category.subcategories[0];
       queryClient.prefetchQuery({
         queryKey: [...QUERY_KEYS.PRODUCTS, firstSubcategory.id],
-        staleTime: CACHE_STRATEGIES.SEMI_STATIC.staleTime,
+        ...applyStrategy('products'),
       });
     }
   }, [categories, queryClient]);

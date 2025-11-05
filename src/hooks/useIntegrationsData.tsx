@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { applyStrategy } from '@/config/queryCacheMapping';
 
 interface IntegrationsOverview {
   active_integrations: number;
@@ -71,6 +72,7 @@ export function useIntegrationsData() {
         erp_configurations: erpConfigurations || [],
       };
     },
+    ...applyStrategy('integrations'),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 

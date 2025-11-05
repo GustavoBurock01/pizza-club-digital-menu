@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { applyStrategy } from '@/config/queryCacheMapping';
 import { toast } from 'sonner';
 
 interface CustomerSegment {
@@ -65,6 +66,7 @@ export function useCRMData() {
       if (error) throw error;
       return data as CustomerSegment[];
     },
+    ...applyStrategy('customerSegments'),
   });
 
   const createSegment = useMutation({
@@ -96,6 +98,7 @@ export function useCRMData() {
       if (error) throw error;
       return data as LoyaltyTier[];
     },
+    ...applyStrategy('loyaltyTiers'),
   });
 
   // Loyalty Rewards
@@ -110,6 +113,7 @@ export function useCRMData() {
       if (error) throw error;
       return data as LoyaltyReward[];
     },
+    ...applyStrategy('loyaltyRewards'),
   });
 
   const createReward = useMutation({
@@ -164,6 +168,7 @@ export function useCRMData() {
       if (error) throw error;
       return data;
     },
+    ...applyStrategy('customers'),
   });
 
   // Recent Loyalty Activity (Redemptions)
@@ -183,6 +188,7 @@ export function useCRMData() {
       if (error) throw error;
       return data;
     },
+    ...applyStrategy('loyaltyRedemptions'),
   });
 
   // Stats
