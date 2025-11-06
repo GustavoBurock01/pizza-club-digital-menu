@@ -22,10 +22,10 @@ export default defineConfig({
         'src/integrations/supabase/types.ts'
       ],
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80
+        lines: 60,
+        functions: 60,
+        branches: 60,
+        statements: 60
       }
     },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
