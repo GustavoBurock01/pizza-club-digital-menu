@@ -208,8 +208,17 @@ serve(async (req) => {
     const orderData: OrderData = await req.json();
     console.log('Processing order for user:', user.id);
 
-    // VALIDAÇÃO 0: Verificar se loja está aberta
-    const storeStatus = await validateStoreIsOpen(supabaseClient);
+    // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
+    const storeStatus = await validateStoreIsOpen(
+      supabaseClient,
+      user.id,
+      user.email,
+      {
+        items: orderData.items || [],
+        total: orderData.total_amount || 0
+      }
+    );
+    
     if (!storeStatus.isOpen) {
       console.warn('[CREATE-ORDER-OPTIMIZED] Store closed - rejecting order');
       return new Response(

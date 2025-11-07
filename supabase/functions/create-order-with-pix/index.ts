@@ -213,8 +213,26 @@ serve(async (req) => {
       resetAt: rateLimitResult.resetAt
     });
 
-    // VALIDAÇÃO 0: Verificar se loja está aberta
-    const storeStatus = await validateStoreIsOpen(supabaseServiceClient);
+    // Parse request body
+    const body = await req.text();
+    if (!body.trim()) {
+      throw new Error('Empty request body');
+    }
+    
+    const requestData = JSON.parse(body);
+    const { orderData } = requestData;
+
+    // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
+    const storeStatus = await validateStoreIsOpen(
+      supabaseServiceClient,
+      user.id,
+      user.email,
+      {
+        items: orderData?.items || [],
+        total: orderData?.total_amount || 0
+      }
+    );
+    
     if (!storeStatus.isOpen) {
       console.warn('[CREATE-ORDER-PIX] Store closed - rejecting order');
       return new Response(

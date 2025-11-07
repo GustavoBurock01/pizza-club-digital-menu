@@ -51,10 +51,36 @@ function getNextOpeningTime(schedules: DaySchedule[]): string | null {
 }
 
 /**
+ * Loga tentativa de pedido fora do horário
+ */
+async function logClosedAttempt(
+  supabaseClient: any,
+  userId: string,
+  userEmail: string | null,
+  cartData: { items: any[]; total: number }
+) {
+  try {
+    await supabaseClient.from('store_closed_attempts').insert({
+      user_id: userId,
+      user_email: userEmail,
+      cart_value: cartData.total,
+      cart_items_count: cartData.items.length,
+      source: 'web',
+    });
+  } catch (error) {
+    console.error('[SCHEDULE_VALIDATOR] Error logging attempt:', error);
+    // Não falhar se logging falhar
+  }
+}
+
+/**
  * Valida se a loja está aberta no momento
  */
 export async function validateStoreIsOpen(
-  supabaseClient: any
+  supabaseClient: any,
+  userId?: string,
+  userEmail?: string | null,
+  cartData?: { items: any[]; total: number }
 ): Promise<{ isOpen: boolean; error?: string; nextOpening?: string }> {
   try {
     // Buscar configurações de horário
@@ -85,6 +111,12 @@ export async function validateStoreIsOpen(
 
     if (!todaySchedule || !todaySchedule.isOpen) {
       const nextOpening = getNextOpeningTime(schedules);
+      
+      // Logar tentativa
+      if (userId && cartData) {
+        await logClosedAttempt(supabaseClient, userId, userEmail || null, cartData);
+      }
+      
       return {
         isOpen: false,
         error: 'Loja fechada no momento',
@@ -101,6 +133,12 @@ export async function validateStoreIsOpen(
 
     if (!isInPeriod) {
       const nextOpening = getNextOpeningTime(schedules);
+      
+      // Logar tentativa
+      if (userId && cartData) {
+        await logClosedAttempt(supabaseClient, userId, userEmail || null, cartData);
+      }
+      
       return {
         isOpen: false,
         error: 'Fora do horário de funcionamento',

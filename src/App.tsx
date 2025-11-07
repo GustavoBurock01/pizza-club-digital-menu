@@ -50,6 +50,7 @@ const GerenciarAppProdutos = lazy(() => import("@/pages/admin/gerenciar-app/prod
 const GerenciarAppDelivery = lazy(() => import("@/pages/admin/gerenciar-app/Delivery"));
 const GerenciarAppRegrasPagamento = lazy(() => import("@/pages/admin/gerenciar-app/RegrasPagamento"));
 const GerenciarAppHorarios = lazy(() => import("@/pages/admin/gerenciar-app/Horarios"));
+const GerenciarAppNotificacoes = lazy(() => import("@/pages/admin/gerenciar-app/Notificacoes"));
 const GerenciarAppInformacoes = lazy(() => import("@/pages/admin/gerenciar-app/Informacoes"));
 const GerenciarAppFidelidade = lazy(() => import("@/pages/admin/gerenciar-app/fidelidade/index"));
 const GerenciarAppIntegracoes = lazy(() => import("@/pages/admin/gerenciar-app/Integracoes"));
@@ -236,6 +237,7 @@ const App = () => {
                 <Route path="delivery" element={<GerenciarAppDelivery />} />
                 <Route path="regras-pagamento" element={<GerenciarAppRegrasPagamento />} />
                 <Route path="horarios" element={<GerenciarAppHorarios />} />
+                <Route path="notificacoes" element={<GerenciarAppNotificacoes />} />
                 <Route path="informacoes" element={<GerenciarAppInformacoes />} />
                 <Route path="fidelidade" element={<GerenciarAppFidelidade />} />
                 <Route path="integracoes" element={<GerenciarAppIntegracoes />} />

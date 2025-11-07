@@ -166,8 +166,17 @@ serve(async (req) => {
 
     console.log('[CREATE-ORDER-WITH-CARD] ✅ Basic validation passed');
 
-    // VALIDAÇÃO 0: Verificar se loja está aberta
-    const storeStatus = await validateStoreIsOpen(supabaseServiceClient);
+    // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
+    const storeStatus = await validateStoreIsOpen(
+      supabaseServiceClient,
+      user.id,
+      user.email,
+      {
+        items: orderData.items || [],
+        total: orderData.total_amount || 0
+      }
+    );
+    
     if (!storeStatus.isOpen) {
       console.warn('[CREATE-ORDER-WITH-CARD] Store closed - rejecting order');
       return new Response(

@@ -1202,6 +1202,48 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          enabled: boolean
+          id: string
+          in_app_notifications: boolean
+          last_notification_sent_at: string | null
+          min_attempts_threshold: number
+          notification_email: string | null
+          notification_frequency: string
+          time_window_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          enabled?: boolean
+          id?: string
+          in_app_notifications?: boolean
+          last_notification_sent_at?: string | null
+          min_attempts_threshold?: number
+          notification_email?: string | null
+          notification_frequency?: string
+          time_window_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          enabled?: boolean
+          id?: string
+          in_app_notifications?: boolean
+          last_notification_sent_at?: string | null
+          min_attempts_threshold?: number
+          notification_email?: string | null
+          notification_frequency?: string
+          time_window_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -2073,6 +2115,60 @@ export type Database = {
           },
         ]
       }
+      store_closed_attempts: {
+        Row: {
+          attempted_at: string
+          cart_items_count: number | null
+          cart_value: number | null
+          created_at: string
+          id: string
+          ip_address: unknown
+          next_opening: string | null
+          page_url: string | null
+          source: string
+          store_schedule: Json | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          user_phone: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          cart_items_count?: number | null
+          cart_value?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          next_opening?: string | null
+          page_url?: string | null
+          source: string
+          store_schedule?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          cart_items_count?: number | null
+          cart_value?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          next_opening?: string | null
+          page_url?: string | null
+          source?: string
+          store_schedule?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           additional_schedule_info: string | null
@@ -2586,6 +2682,7 @@ export type Database = {
       }
       cleanup_expired_stock_reservations: { Args: never; Returns: number }
       cleanup_monitoring_data: { Args: never; Returns: number }
+      cleanup_old_closed_attempts: { Args: never; Returns: number }
       cleanup_old_queue_items: { Args: never; Returns: number }
       cleanup_rate_limits: { Args: never; Returns: number }
       complete_queue_item: {
@@ -2656,6 +2753,17 @@ export type Database = {
           total_products: number
           total_revenue: number
           total_users: number
+        }[]
+      }
+      get_closed_attempts_stats: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          attempts_by_hour: Json
+          avg_cart_value: number
+          most_common_hour: number
+          total_attempts: number
+          total_lost_revenue: number
+          unique_users: number
         }[]
       }
       get_current_user_role: { Args: never; Returns: string }
