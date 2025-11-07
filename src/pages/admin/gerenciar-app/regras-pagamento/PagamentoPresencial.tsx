@@ -4,19 +4,50 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { usePaymentSettings } from '@/hooks/usePaymentSettings';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PagamentoPresencial() {
+  const { settings, isLoading, saveSettings, isSaving } = usePaymentSettings();
+  
   const [cash, setCash] = useState(true);
-  const [changeFor, setChangeFor] = useState('100.00');
-  const [deliveryFee, setDeliveryFee] = useState('5.00');
-  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState('50.00');
+  const [changeFor, setChangeFor] = useState('0');
+  const [deliveryFee, setDeliveryFee] = useState('5');
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState('50');
+
+  useEffect(() => {
+    if (settings) {
+      setCash(settings.inPerson.cash);
+      setChangeFor(settings.inPerson.changeFor.toString());
+      setDeliveryFee(settings.inPerson.deliveryFee.toString());
+      setFreeDeliveryAbove(settings.inPerson.freeDeliveryAbove.toString());
+    }
+  }, [settings]);
 
   const handleSave = () => {
-    console.log('Salvando pagamento presencial:', { cash, changeFor, deliveryFee, freeDeliveryAbove });
-    toast.success('Configurações de pagamento presencial salvas!');
+    if (!settings) return;
+    
+    saveSettings({
+      online: settings.online,
+      inPerson: {
+        cash,
+        changeFor: parseFloat(changeFor) || 0,
+        deliveryFee: parseFloat(deliveryFee) || 0,
+        freeDeliveryAbove: parseFloat(freeDeliveryAbove) || 0,
+      },
+      general: settings.general,
+    });
   };
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 space-y-6">
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-64 w-full" />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 space-y-6">
@@ -94,7 +125,9 @@ export default function PagamentoPresencial() {
       </div>
 
       <div className="pt-4">
-        <Button onClick={handleSave}>Salvar Configurações</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
       </div>
     </Card>
   );

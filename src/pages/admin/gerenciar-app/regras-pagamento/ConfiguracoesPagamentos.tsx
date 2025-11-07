@@ -4,26 +4,59 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { usePaymentSettings } from '@/hooks/usePaymentSettings';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ConfiguracoesPagamentos() {
-  const [minOrder, setMinOrder] = useState('15.00');
-  const [maxOrder, setMaxOrder] = useState('500.00');
+  const { settings, isLoading, saveSettings, isSaving } = usePaymentSettings();
+  
+  const [minOrder, setMinOrder] = useState('15');
+  const [maxOrder, setMaxOrder] = useState('500');
   const [autoDiscount, setAutoDiscount] = useState(false);
-  const [discountThreshold, setDiscountThreshold] = useState('100.00');
+  const [discountThreshold, setDiscountThreshold] = useState('100');
   const [discountPercent, setDiscountPercent] = useState('10');
+  const [allowCoupons, setAllowCoupons] = useState(true);
+  const [requireLogin, setRequireLogin] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setMinOrder(settings.general.minOrder.toString());
+      setMaxOrder(settings.general.maxOrder.toString());
+      setAutoDiscount(settings.general.autoDiscount);
+      setDiscountThreshold(settings.general.discountThreshold.toString());
+      setDiscountPercent(settings.general.discountPercent.toString());
+      setAllowCoupons(settings.general.allowCoupons);
+      setRequireLogin(settings.general.requireLogin);
+    }
+  }, [settings]);
 
   const handleSave = () => {
-    console.log('Salvando configurações:', { 
-      minOrder, 
-      maxOrder, 
-      autoDiscount, 
-      discountThreshold, 
-      discountPercent 
+    if (!settings) return;
+    
+    saveSettings({
+      online: settings.online,
+      inPerson: settings.inPerson,
+      general: {
+        minOrder: parseFloat(minOrder) || 0,
+        maxOrder: parseFloat(maxOrder) || 0,
+        autoDiscount,
+        discountThreshold: parseFloat(discountThreshold) || 0,
+        discountPercent: parseFloat(discountPercent) || 0,
+        allowCoupons,
+        requireLogin,
+      },
     });
-    toast.success('Configurações gerais salvas!');
   };
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 space-y-6">
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-64 w-full" />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 space-y-6">
@@ -121,7 +154,11 @@ export default function ConfiguracoesPagamentos() {
             <Label htmlFor="allow-coupon">Permitir cupons de desconto</Label>
             <p className="text-sm text-muted-foreground">Clientes podem usar cupons</p>
           </div>
-          <Switch id="allow-coupon" defaultChecked />
+          <Switch 
+            id="allow-coupon" 
+            checked={allowCoupons}
+            onCheckedChange={setAllowCoupons}
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -129,12 +166,18 @@ export default function ConfiguracoesPagamentos() {
             <Label htmlFor="require-auth">Exigir login para pedidos</Label>
             <p className="text-sm text-muted-foreground">Cliente deve estar logado</p>
           </div>
-          <Switch id="require-auth" defaultChecked />
+          <Switch 
+            id="require-auth" 
+            checked={requireLogin}
+            onCheckedChange={setRequireLogin}
+          />
         </div>
       </div>
 
       <div className="pt-4">
-        <Button onClick={handleSave}>Salvar Configurações</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
       </div>
     </Card>
   );

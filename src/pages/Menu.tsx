@@ -9,6 +9,7 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { useNavigate } from "react-router-dom";
 import { MenuSkeleton, CategorySkeleton } from "@/components/MenuSkeleton";
 import { FixedCartFooter } from "@/components/FixedCartFooter";
+import { StoreStatusBanner } from "@/components/StoreStatusBanner";
 
 // Memoized skeleton components
 const MemoizedMenuSkeleton = memo(MenuSkeleton);
@@ -69,6 +70,8 @@ const Menu = () => {
             </div>
           </header>
           <div className="flex-1 p-6 space-y-6 pb-20">
+            <StoreStatusBanner />
+            
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-pizza-dark mb-2">

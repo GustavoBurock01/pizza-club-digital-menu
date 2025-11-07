@@ -4,20 +4,53 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { usePaymentSettings } from '@/hooks/usePaymentSettings';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PagamentoOnline() {
+  const { settings, isLoading, saveSettings, isSaving } = usePaymentSettings();
+  
   const [pix, setPix] = useState(true);
   const [credit, setCredit] = useState(true);
   const [debit, setDebit] = useState(true);
-  const [creditFee, setCreditFee] = useState('2.5');
-  const [debitFee, setDebitFee] = useState('1.5');
+  const [creditFee, setCreditFee] = useState('0');
+  const [debitFee, setDebitFee] = useState('0');
+
+  useEffect(() => {
+    if (settings) {
+      setPix(settings.online.pix);
+      setCredit(settings.online.creditCard);
+      setDebit(settings.online.debitCard);
+      setCreditFee(settings.online.creditFee.toString());
+      setDebitFee(settings.online.debitFee.toString());
+    }
+  }, [settings]);
 
   const handleSave = () => {
-    console.log('Salvando pagamento online:', { pix, credit, debit, creditFee, debitFee });
-    toast.success('Configurações de pagamento online salvas!');
+    if (!settings) return;
+    
+    saveSettings({
+      online: {
+        pix,
+        creditCard: credit,
+        creditFee: parseFloat(creditFee) || 0,
+        debitCard: debit,
+        debitFee: parseFloat(debitFee) || 0,
+      },
+      inPerson: settings.inPerson,
+      general: settings.general,
+    });
   };
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 space-y-6">
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-64 w-full" />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 space-y-6">
@@ -96,7 +129,9 @@ export default function PagamentoOnline() {
       </div>
 
       <div className="pt-4">
-        <Button onClick={handleSave}>Salvar Configurações</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
       </div>
     </Card>
   );

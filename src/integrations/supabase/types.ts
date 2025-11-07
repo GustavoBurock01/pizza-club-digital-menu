@@ -2075,36 +2075,54 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          additional_schedule_info: string | null
           auto_accept_orders: boolean
+          auto_schedule: boolean | null
           closed_message: string | null
           created_at: string
           estimated_prep_time: number
+          general_payment_config: Json | null
           id: string
+          in_person_payment_config: Json | null
           is_open: boolean
           max_order_value: number
           min_order_value: number
+          online_payment_config: Json | null
+          schedules: Json | null
           updated_at: string
         }
         Insert: {
+          additional_schedule_info?: string | null
           auto_accept_orders?: boolean
+          auto_schedule?: boolean | null
           closed_message?: string | null
           created_at?: string
           estimated_prep_time?: number
+          general_payment_config?: Json | null
           id?: string
+          in_person_payment_config?: Json | null
           is_open?: boolean
           max_order_value?: number
           min_order_value?: number
+          online_payment_config?: Json | null
+          schedules?: Json | null
           updated_at?: string
         }
         Update: {
+          additional_schedule_info?: string | null
           auto_accept_orders?: boolean
+          auto_schedule?: boolean | null
           closed_message?: string | null
           created_at?: string
           estimated_prep_time?: number
+          general_payment_config?: Json | null
           id?: string
+          in_person_payment_config?: Json | null
           is_open?: boolean
           max_order_value?: number
           min_order_value?: number
+          online_payment_config?: Json | null
+          schedules?: Json | null
           updated_at?: string
         }
         Relationships: []

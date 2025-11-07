@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -6,20 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Minus } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Period {
-  start: string;
-  end: string;
-}
-
-interface DaySchedule {
-  dayId: number;
-  dayName: string;
-  isOpen: boolean;
-  periods: Period[];
-}
+import { useStoreSchedule } from '@/hooks/useStoreSchedule';
+import { validatePeriod, type DaySchedule } from '@/utils/scheduleValidation';
 
 const initialSchedules: DaySchedule[] = [
   { dayId: 0, dayName: 'Domingo', isOpen: false, periods: [{ start: '00:00', end: '01:00' }] },
@@ -32,9 +23,20 @@ const initialSchedules: DaySchedule[] = [
 ];
 
 export default function Horarios() {
+  const { scheduleData, isLoading, saveSchedule, isSaving } = useStoreSchedule();
+  
   const [autoSchedule, setAutoSchedule] = useState(true);
   const [schedules, setSchedules] = useState<DaySchedule[]>(initialSchedules);
   const [additionalInfo, setAdditionalInfo] = useState('');
+
+  // Carregar dados do banco quando disponíveis
+  useEffect(() => {
+    if (scheduleData) {
+      setAutoSchedule(scheduleData.autoSchedule);
+      setSchedules(scheduleData.schedules);
+      setAdditionalInfo(scheduleData.additionalInfo);
+    }
+  }, [scheduleData]);
 
   const toggleDayOpen = (dayId: number) => {
     setSchedules(prev => prev.map(schedule => 
@@ -61,22 +63,41 @@ export default function Horarios() {
   };
 
   const updatePeriod = (dayId: number, periodIndex: number, field: 'start' | 'end', value: string) => {
-    setSchedules(prev => prev.map(schedule => 
-      schedule.dayId === dayId 
-        ? {
-            ...schedule,
-            periods: schedule.periods.map((period, i) => 
-              i === periodIndex ? { ...period, [field]: value } : period
-            )
-          }
-        : schedule
-    ));
+    setSchedules(prev => prev.map(schedule => {
+      if (schedule.dayId !== dayId) return schedule;
+      
+      const newPeriods = schedule.periods.map((period, i) => 
+        i === periodIndex ? { ...period, [field]: value } : period
+      );
+      
+      // Validar período atualizado
+      const validation = validatePeriod(newPeriods[periodIndex]);
+      if (!validation.valid) {
+        toast.error(validation.error);
+      }
+      
+      return { ...schedule, periods: newPeriods };
+    }));
   };
 
   const handleSave = () => {
-    console.log('Salvando configurações:', { autoSchedule, schedules, additionalInfo });
-    toast.success('Configurações de horário salvas com sucesso!');
+    saveSchedule({ autoSchedule, schedules, additionalInfo });
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <Card className="p-6 space-y-6">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -207,8 +228,12 @@ export default function Horarios() {
 
         {/* Botão de salvar */}
         <div className="pt-6">
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-            Salvar e Publicar
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {isSaving ? 'Salvando...' : 'Salvar e Publicar'}
           </Button>
         </div>
       </Card>
