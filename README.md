@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+# 🍕 Pizza Prime - Cardápio Digital com Assinatura
 
-## Project info
+Sistema completo de pedidos online com assinatura mensal via Stripe/Mercado Pago.
 
-**URL**: https://lovable.dev/projects/048805a3-fc90-49cc-9d16-75619e7cc491
+## 🚀 Tecnologias
 
-## How can I edit this code?
+- **Frontend:** React 18 + TypeScript + Vite
+- **UI:** Shadcn/UI + TailwindCSS + Radix UI
+- **Backend:** Supabase (Postgres + Realtime + Edge Functions)
+- **State Management:** TanStack Query + Zustand
+- **Pagamentos:** Stripe + Mercado Pago + PIX
+- **Testes:** Vitest + Playwright + Testing Library
 
-There are several ways of editing your application.
+## 📦 Instalação
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/048805a3-fc90-49cc-9d16-75619e7cc491) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
+cp .env.example .env
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🧪 Testes
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run test              # Unit tests
+npm run test:ui           # UI mode
+npm run test:e2e          # E2E tests
+npm run test:coverage     # Coverage report
+```
 
-**Use GitHub Codespaces**
+## 🏗️ Arquitetura
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Estrutura Principal
+- `src/components/` - 110+ componentes React
+- `src/hooks/` - 42 custom hooks
+- `src/pages/` - 33 páginas
+- `supabase/functions/` - 30 Edge Functions
 
-## What technologies are used for this project?
+### Fluxos Principais
+1. **Autenticação** → `useUnifiedAuth` + `useRole`
+2. **Assinatura** → `useSubscription` (3-layer cache)
+3. **Pedidos** → `create-order-optimized` + atomic stock
+4. **Realtime** → `UnifiedRealtimeService` (singleton)
 
-This project is built with:
+## 📚 Documentação
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- [Guia de Desenvolvimento](docs/DEVELOPER_GUIDE.md)
+- [Arquitetura do Sistema](docs/ARCHITECTURE.md)
+- [Edge Functions](docs/EDGE_FUNCTIONS.md)
+- [Testes - Fase 4](docs/FASE4_TESTES.md)
 
-## How can I deploy this project?
+## 🔒 Segurança
 
-Simply open [Lovable](https://lovable.dev/projects/048805a3-fc90-49cc-9d16-75619e7cc491) and click on Share -> Publish.
+- ✅ Roles via `user_roles` (security definer)
+- ✅ Rate limiting em Edge Functions
+- ✅ Criptografia AES-256-GCM
+- ✅ RLS policies em todas as tabelas
 
-## Can I connect a custom domain to my Lovable project?
+## ⚡ Performance
 
-Yes, you can!
+- Bundle: ~520KB gzipped
+- Cache strategies por domínio
+- Lazy loading de rotas
+- Virtualization em listas
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🎯 Roadmap
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- [x] Fase 1 - Correções Críticas
+- [x] Fase 2 - Refatoração Estrutural
+- [x] Fase 3 - Performance
+- [x] Fase 4 - Testes (60%+ coverage)
+- [x] Fase 5 - Documentação
+
+## 🚀 Deploy
+
+```bash
+npm run test:coverage && npm run test:e2e
+npm run build
+# Publicar via Lovable
+```
+
+## 📄 Licença
+
+MIT
+
+---
+
+**Desenvolvido com ❤️ usando [Lovable](https://lovable.dev)**
