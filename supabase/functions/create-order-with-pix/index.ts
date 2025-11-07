@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { RateLimiter, RATE_LIMIT_CONFIGS } from "../_shared/rate-limiter.ts";
+import { validateStoreIsOpen } from '../_shared/store-schedule-validator.ts';
 
 const logger = console;
 
@@ -211,6 +212,21 @@ serve(async (req) => {
       remaining: rateLimitResult.remaining,
       resetAt: rateLimitResult.resetAt
     });
+
+    // VALIDAÇÃO 0: Verificar se loja está aberta
+    const storeStatus = await validateStoreIsOpen(supabaseServiceClient);
+    if (!storeStatus.isOpen) {
+      console.warn('[CREATE-ORDER-PIX] Store closed - rejecting order');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: storeStatus.error,
+          nextOpening: storeStatus.nextOpening,
+          message: `Não é possível criar pedidos no momento. ${storeStatus.nextOpening ? `Abriremos ${storeStatus.nextOpening}` : ''}`
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Parse request body
     const body = await req.text();

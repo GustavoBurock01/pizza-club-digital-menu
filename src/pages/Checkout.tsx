@@ -13,6 +13,8 @@ import { CheckoutProfileAlert } from '@/components/CheckoutProfileAlert';
 import { ProfileValidationModal } from '@/components/ProfileValidationModal';
 import { AddressSelector } from '@/components/AddressSelector';
 import { SecureStorage } from '@/utils/secureStorage';
+import { useStoreSchedule } from '@/hooks/useStoreSchedule';
+import { StoreClosedAlert } from '@/components/StoreClosedAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutButton } from '@/components/ProtectedButton';
 import { useOrderProtection } from '@/hooks/useOrderProtection';
@@ -56,6 +58,7 @@ const Checkout = () => {
   const { productsInfo, getProductInfo, isLoading: productsLoading, error: productsError } = useCartProducts(items);
   const { appliedCoupon, applyCoupon, removeCoupon, calculateDiscount, registerCouponUse, isApplying } = useCoupon(user?.id);
   const { zones, getDeliveryFee, isNeighborhoodAvailable } = useDeliveryZones();
+  const { isOpen, nextOpening, scheduleData } = useStoreSchedule();
 
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
@@ -149,6 +152,8 @@ const Checkout = () => {
     }
   }, [step, items, deliveryMethod, selectedAddressId, selectedNeighborhood, showAddressForm, newAddress, paymentMethod, needsChange, changeAmount, total]);
 
+  const canProceed = isStepValid && !(scheduleData?.autoSchedule && !isOpen);
+
   const handleNext = () => {
     if (!isStepValid) {
       console.warn('[CHECKOUT] Cannot proceed - step validation failed', {
@@ -212,6 +217,19 @@ const Checkout = () => {
 
   const handleCreateOrder = async () => {
     if (loading) return;
+    
+    // VALIDAÇÃO 0: Verificar se loja está aberta
+    if (scheduleData?.autoSchedule && !isOpen) {
+      toast({
+        title: "Loja fechada",
+        description: `Não é possível finalizar pedidos fora do horário. ${nextOpening ? `Abriremos ${nextOpening}` : ''}`,
+        variant: "destructive"
+      });
+      
+      // Voltar para o menu
+      navigate('/menu');
+      return;
+    }
     
     // Verificar rate limiting
     if (!user?.id || !checkCheckoutRateLimit(user.id)) {
@@ -713,12 +731,18 @@ const Checkout = () => {
 
                 {/* STEP: REVIEW */}
                 {step === 'review' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Seus Itens ({items.length})</CardTitle>
-                    </CardHeader>
-                     <CardContent className="space-y-4">
-                      {productsLoading && (
+                  <>
+                    {/* Store Closed Alert */}
+                    {scheduleData?.autoSchedule && !isOpen && (
+                      <StoreClosedAlert variant="inline" showBackButton={false} />
+                    )}
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Seus Itens ({items.length})</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                       {productsLoading && (
                         <div className="flex items-center justify-center p-8 text-muted-foreground">
                           Carregando produtos...
                         </div>
@@ -829,6 +853,7 @@ const Checkout = () => {
                       })}
                     </CardContent>
                   </Card>
+                  </>
                 )}
 
                 {/* STEP: ADDRESS */}
@@ -1320,7 +1345,7 @@ const Checkout = () => {
                     {step !== 'processing' && step !== 'payment' && (
                       <Button 
                         onClick={handleNext}
-                        disabled={!isStepValid || loading}
+                        disabled={!canProceed || loading}
                         className="w-full gradient-pizza text-white h-12"
                       >
                         {step === 'review' && 'Continuar'}
@@ -1331,7 +1356,7 @@ const Checkout = () => {
                     {step === 'payment' && (
                       <CheckoutButton 
                         onClick={async () => await handleCreateOrder()}
-                        disabled={!isStepValid}
+                        disabled={!canProceed}
                         className="text-white h-12"
                       >
                         Finalizar • {formatPrice(total)}

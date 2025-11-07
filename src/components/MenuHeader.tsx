@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
-import UnifiedCartSystem from "./UnifiedCartSystem";
+import { UnifiedCartSystem } from "./UnifiedCartSystem";
 import { CurrentView } from "@/types";
 
 interface MenuHeaderProps {

@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { messageSystem, showMessage } from '@/utils/messageSystem';
 import { performanceOptimizer } from '@/utils/performanceOptimizer';
+import { useStoreSchedule } from '@/hooks/useStoreSchedule';
 
 interface UnifiedCartSystemProps {
   variant?: 'drawer' | 'footer' | 'inline';
@@ -42,6 +43,7 @@ export const UnifiedCartSystem = ({
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isOpen: isStoreOpen, nextOpening, scheduleData } = useStoreSchedule();
 
   const itemCount = getItemCount();
   const subtotal = getSubtotal();
@@ -80,12 +82,22 @@ export const UnifiedCartSystem = ({
       return;
     }
 
+    // Verificar se loja está aberta
+    if (scheduleData?.autoSchedule && !isStoreOpen) {
+      toast({
+        title: "Loja fechada",
+        description: `Não é possível fazer pedidos no momento. ${nextOpening ? `Abriremos ${nextOpening}` : ''}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsRateLimited(true);
     setTimeout(() => setIsRateLimited(false), 2000);
 
     setIsOpen(false);
     navigate('/checkout');
-  }, [isRateLimited, navigate, toast]);
+  }, [isRateLimited, isStoreOpen, nextOpening, scheduleData, navigate, toast]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
@@ -151,83 +163,65 @@ export const UnifiedCartSystem = ({
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
+              size="icon"
+              className="h-6 w-6"
               onClick={() => handleQuantityUpdate(item.id, item.quantity - 1)}
+              disabled={item.quantity <= 1}
             >
-              <Minus className="w-3 h-3" />
+              <Minus className="h-3 w-3" />
             </Button>
-            
-            <span className="text-sm font-medium w-8 text-center">
-              {item.quantity}
-            </span>
-            
+            <span className="text-sm font-medium min-w-[24px] text-center">{item.quantity}</span>
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
+              size="icon"
+              className="h-6 w-6"
               onClick={() => handleQuantityUpdate(item.id, item.quantity + 1)}
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
-            onClick={() => handleRemoveItem(item.id, item.name)}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
+          <span className="font-semibold text-sm">{formatPrice(item.price * item.quantity)}</span>
         </div>
       </div>
       
-      <div className="flex-shrink-0 text-right">
-        <p className="font-medium text-sm">
-          {formatPrice(item.price * item.quantity)}
-        </p>
-        {item.customizations?.extras && item.customizations.extras.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            + {formatPrice(item.customizations.extras.length * 3 * item.quantity)}
-          </p>
-        )}
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+        onClick={() => handleRemoveItem(item.id, item.name)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 
   // ===== CART SUMMARY COMPONENT =====
   const CartSummary = () => (
-    <div className="space-y-4 border-t pt-4">
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'itens'})</span>
-          <span>{formatPrice(subtotal)}</span>
-        </div>
-        
-        {deliveryMethod === 'delivery' && deliveryFee > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="flex items-center">
-              <MapPin className="w-3 h-3 mr-1" />
-              Taxa de entrega
-            </span>
-            <span>{formatPrice(deliveryFee)}</span>
-          </div>
-        )}
-        
-        {deliveryMethod === 'pickup' && (
-          <div className="flex justify-between text-sm text-green-600">
-            <span>Retirada no local</span>
-            <span>Grátis</span>
-          </div>
-        )}
+    <div className="space-y-2 pt-4 border-t">
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Subtotal</span>
+        <span className="font-medium">{formatPrice(subtotal)}</span>
       </div>
+      
+      {deliveryFee > 0 && (
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Taxa de entrega</span>
+          <span className="font-medium">{formatPrice(deliveryFee)}</span>
+        </div>
+      )}
+      
+      {deliveryMethod === 'pickup' && (
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Retirada</span>
+          <span className="text-green-600 font-medium">Grátis</span>
+        </div>
+      )}
       
       <Separator />
       
-      <div className="flex justify-between font-semibold">
+      <div className="flex justify-between font-bold text-base">
         <span>Total</span>
-        <span>{formatPrice(total)}</span>
+        <span className="text-primary">{formatPrice(total)}</span>
       </div>
     </div>
   );
@@ -306,7 +300,7 @@ export const UnifiedCartSystem = ({
                   <Button 
                     onClick={handleCheckout}
                     className="flex-1 gradient-pizza text-white"
-                    disabled={isRateLimited}
+                    disabled={isRateLimited || (scheduleData?.autoSchedule && !isStoreOpen)}
                   >
                     Finalizar Pedido
                   </Button>
@@ -327,7 +321,7 @@ export const UnifiedCartSystem = ({
           <Button 
             className="w-full gradient-pizza text-white h-12 flex items-center justify-between"
             onClick={handleCheckout}
-            disabled={isRateLimited}
+            disabled={isRateLimited || (scheduleData?.autoSchedule && !isStoreOpen)}
           >
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -345,39 +339,38 @@ export const UnifiedCartSystem = ({
     );
   }
 
-  // ===== INLINE VARIANT =====
+  // ===== INLINE VARIANT (sem sheet, só resumo) =====
   if (variant === 'inline') {
     return (
-      <div className={`bg-white rounded-lg border p-4 ${className}`}>
-        <h3 className="font-semibold mb-4 flex items-center">
-          <ShoppingCart className="h-5 w-5 mr-2" />
-          Resumo do Pedido
-        </h3>
-        
-        {itemCount === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
-            Nenhum item no carrinho
-          </p>
+      <div className={`space-y-4 ${className}`}>
+        {items.length === 0 ? (
+          <div className="text-center py-8">
+            <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">Seu carrinho está vazio</p>
+          </div>
         ) : (
           <>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-2 border-b">
-                  <div className="flex-1 min-w-0 mr-2">
-                    <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Qtd: {item.quantity}
-                    </p>
-                  </div>
-                  <p className="text-sm font-medium">
-                    {formatPrice(item.price * item.quantity)}
-                  </p>
-                </div>
+                <CartItem key={item.id} item={item} />
               ))}
             </div>
-            
-            <div className="mt-4">
-              <CartSummary />
+            <CartSummary />
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={handleClearCart}
+                className="flex-1"
+              >
+                Limpar
+              </Button>
+              <Button 
+                onClick={handleCheckout}
+                className="flex-1 gradient-pizza text-white"
+                disabled={isRateLimited || (scheduleData?.autoSchedule && !isStoreOpen)}
+              >
+                Finalizar
+              </Button>
             </div>
           </>
         )}
@@ -387,6 +380,3 @@ export const UnifiedCartSystem = ({
 
   return null;
 };
-
-// Default exports
-export default UnifiedCartSystem;

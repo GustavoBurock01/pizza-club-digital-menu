@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { validateStoreIsOpen } from '../_shared/store-schedule-validator.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -206,6 +207,20 @@ serve(async (req) => {
 
     const orderData: OrderData = await req.json();
     console.log('Processing order for user:', user.id);
+
+    // VALIDAÇÃO 0: Verificar se loja está aberta
+    const storeStatus = await validateStoreIsOpen(supabaseClient);
+    if (!storeStatus.isOpen) {
+      console.warn('[CREATE-ORDER-OPTIMIZED] Store closed - rejecting order');
+      return new Response(
+        JSON.stringify({
+          error: storeStatus.error,
+          nextOpening: storeStatus.nextOpening,
+          message: `Não é possível criar pedidos no momento. ${storeStatus.nextOpening ? `Abriremos ${storeStatus.nextOpening}` : ''}`
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validar dados básicos
     if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
