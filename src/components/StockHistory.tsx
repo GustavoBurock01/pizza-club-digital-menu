@@ -73,8 +73,47 @@ export function StockHistory() {
   };
 
   const exportHistory = () => {
-    // TODO: Implementar exportação para CSV/Excel
-    console.log('Exportar histórico');
+    // Preparar dados para exportação
+    const csvData = auditLogs.map(log => {
+      const product = products.find(p => p.id === log.product_id);
+      return {
+        'Data/Hora': format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+        'Produto': product?.name || 'N/A',
+        'Ação': getActionLabel(log.action),
+        'Quantidade Anterior': log.quantity_before,
+        'Quantidade Posterior': log.quantity_after,
+        'Alteração': log.quantity_change,
+        'Motivo': log.reason || '-',
+        'ID Pedido': log.order_id || '-',
+        'ID Reserva': log.reservation_id || '-',
+      };
+    });
+
+    // Converter para CSV
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => 
+        headers.map(header => {
+          const value = row[header as keyof typeof row];
+          // Escapar valores que contém vírgulas
+          return typeof value === 'string' && value.includes(',') 
+            ? `"${value}"` 
+            : value;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Criar e baixar arquivo
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `historico-estoque-${format(new Date(), 'dd-MM-yyyy')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (

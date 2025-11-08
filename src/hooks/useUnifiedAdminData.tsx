@@ -137,6 +137,22 @@ const fetchUnifiedStats = async (): Promise<UnifiedAdminStats> => {
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
     const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
 
+    // Calculate revenue growth (comparing current month vs last month)
+    const thisMonthRevenue = orders
+      .filter(o => new Date(o.created_at) >= thisMonth)
+      .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+    
+    const lastMonthRevenue = orders
+      .filter(o => {
+        const date = new Date(o.created_at);
+        return date >= lastMonth && date < thisMonth;
+      })
+      .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+
+    const revenueGrowth = lastMonthRevenue > 0 
+      ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+      : thisMonthRevenue > 0 ? 100 : 0;
+
     // Products stats
     const availableProducts = products.filter(p => p.is_available).length;
     const outOfStockProducts = products.filter(p => !p.is_available).length;
@@ -222,7 +238,7 @@ const fetchUnifiedStats = async (): Promise<UnifiedAdminStats> => {
       totalRevenue,
       todayRevenue,
       averageOrderValue,
-      revenueGrowth: 0, // TODO: Calculate based on previous period
+      revenueGrowth,
 
       totalProducts: products.length,
       availableProducts,
