@@ -53,7 +53,6 @@ const GerenciarAppHorarios = lazy(() => import("@/pages/admin/gerenciar-app/Hora
 const GerenciarAppNotificacoes = lazy(() => import("@/pages/admin/gerenciar-app/Notificacoes"));
 const GerenciarAppInformacoes = lazy(() => import("@/pages/admin/gerenciar-app/Informacoes"));
 const GerenciarAppFidelidade = lazy(() => import("@/pages/admin/gerenciar-app/fidelidade/index"));
-const GerenciarAppIntegracoes = lazy(() => import("@/pages/admin/gerenciar-app/Integracoes"));
 
 // FASE 4 - Configurações
 const Configuracoes = lazy(() => import("@/pages/admin/configuracoes/index"));
@@ -240,7 +239,6 @@ const App = () => {
                 <Route path="notificacoes" element={<GerenciarAppNotificacoes />} />
                 <Route path="informacoes" element={<GerenciarAppInformacoes />} />
                 <Route path="fidelidade" element={<GerenciarAppFidelidade />} />
-                <Route path="integracoes" element={<GerenciarAppIntegracoes />} />
               </Route>
               
               {/* ===== FASE 4 - CONFIGURAÇÕES ===== */}
