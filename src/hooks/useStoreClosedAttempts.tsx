@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 interface StoreClosedAttempt {
   id: string;
@@ -70,6 +71,36 @@ export const useStoreClosedAttempts = (startDate?: string, endDate?: string) => 
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
+
+  // Verificar e enviar notificação automática
+  useEffect(() => {
+    const checkAndSendNotification = async () => {
+      if (!stats) return;
+
+      try {
+        // Chamar edge function para processar notificação
+        const { error } = await supabase.functions.invoke('send-notification-email', {
+          body: {
+            attemptsCount: stats.total_attempts,
+            timeWindow: '60 minutos',
+            totalRevenue: stats.total_lost_revenue,
+            uniqueUsers: stats.unique_users,
+          }
+        });
+
+        if (error) {
+          console.error('[STORE_CLOSED_ATTEMPTS] Error sending notification:', error);
+        }
+      } catch (error) {
+        console.error('[STORE_CLOSED_ATTEMPTS] Error invoking notification function:', error);
+      }
+    };
+
+    // Verificar a cada vez que as stats são atualizadas
+    if (stats && stats.total_attempts > 0) {
+      checkAndSendNotification();
+    }
+  }, [stats]);
 
   return {
     attempts,

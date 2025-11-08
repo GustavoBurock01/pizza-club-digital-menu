@@ -1107,6 +1107,45 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_settings: {
+        Row: {
+          birthday_bonus: number
+          created_at: string
+          enabled: boolean
+          first_purchase_bonus: number
+          id: string
+          max_discount_percent: number
+          min_purchase: number
+          points_per_real: number
+          points_to_discount: number
+          updated_at: string
+        }
+        Insert: {
+          birthday_bonus?: number
+          created_at?: string
+          enabled?: boolean
+          first_purchase_bonus?: number
+          id?: string
+          max_discount_percent?: number
+          min_purchase?: number
+          points_per_real?: number
+          points_to_discount?: number
+          updated_at?: string
+        }
+        Update: {
+          birthday_bonus?: number
+          created_at?: string
+          enabled?: boolean
+          first_purchase_bonus?: number
+          id?: string
+          max_discount_percent?: number
+          min_purchase?: number
+          points_per_real?: number
+          points_to_discount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loyalty_tiers: {
         Row: {
           benefits: Json | null
@@ -1716,6 +1755,36 @@ export type Database = {
           },
         ]
       }
+      product_settings: {
+        Row: {
+          auto_disable_out_of_stock: boolean
+          created_at: string
+          id: string
+          low_stock_threshold: number
+          show_old_price_on_sale: boolean
+          stock_control_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          auto_disable_out_of_stock?: boolean
+          created_at?: string
+          id?: string
+          low_stock_threshold?: number
+          show_old_price_on_sale?: boolean
+          stock_control_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          auto_disable_out_of_stock?: boolean
+          created_at?: string
+          id?: string
+          low_stock_threshold?: number
+          show_old_price_on_sale?: boolean
+          stock_control_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_stock: {
         Row: {
           available_quantity: number
@@ -2166,6 +2235,51 @@ export type Database = {
           user_id?: string | null
           user_name?: string | null
           user_phone?: string | null
+        }
+        Relationships: []
+      }
+      store_info: {
+        Row: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string
+          facebook: string | null
+          id: string
+          instagram: string | null
+          logo_url: string | null
+          name: string
+          phone: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

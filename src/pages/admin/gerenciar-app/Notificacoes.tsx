@@ -8,15 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, Mail, Clock, TrendingUp, Users, DollarSign, BarChart3, AlertCircle } from 'lucide-react';
+import { Bell, Mail, Clock, TrendingUp, Users, DollarSign, BarChart3, AlertCircle, Send } from 'lucide-react';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { useStoreClosedAttempts } from '@/hooks/useStoreClosedAttempts';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Notificacoes() {
   const { settings, isLoading, updateSettings, isUpdating } = useNotificationSettings();
   const [email, setEmail] = useState('');
+  const [isSendingTest, setIsSendingTest] = useState(false);
   
   // Últimos 30 dias
   const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -39,6 +42,34 @@ export default function Notificacoes() {
 
     if (Object.keys(updates).length > 0) {
       updateSettings(updates);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!settings?.notification_email) {
+      toast.error('Configure um email antes de testar a notificação');
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-notification-email', {
+        body: {
+          attemptsCount: stats?.total_attempts || 10,
+          timeWindow: '60 minutos',
+          totalRevenue: stats?.total_lost_revenue || 500,
+          uniqueUsers: stats?.unique_users || 5,
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Notificação de teste enviada! Verifique seu email.');
+    } catch (error: any) {
+      console.error('[TEST_NOTIFICATION] Error:', error);
+      toast.error(`Erro ao enviar: ${error.message}`);
+    } finally {
+      setIsSendingTest(false);
     }
   };
 

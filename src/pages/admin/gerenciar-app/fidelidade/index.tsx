@@ -4,8 +4,35 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 export default function Fidelidade() {
+  const { settings, isLoading, updateSettings, isUpdating } = useLoyaltySettings();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <Card className="p-6">
+          <div className="space-y-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!settings) return null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,7 +51,11 @@ export default function Fidelidade() {
               Clientes ganham pontos a cada compra
             </p>
           </div>
-          <Switch id="loyalty-active" />
+          <Switch 
+            id="loyalty-active"
+            checked={settings.enabled}
+            onCheckedChange={(checked) => updateSettings({ enabled: checked })}
+          />
         </div>
 
         <Separator />
@@ -40,7 +71,9 @@ export default function Fidelidade() {
                 id="points-per-real"
                 type="number"
                 step="0.1"
-                defaultValue="1"
+                min="0"
+                value={settings.points_per_real}
+                onChange={(e) => updateSettings({ points_per_real: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -49,7 +82,9 @@ export default function Fidelidade() {
                 id="min-purchase"
                 type="number"
                 step="0.01"
-                defaultValue="15.00"
+                min="0"
+                value={settings.min_purchase}
+                onChange={(e) => updateSettings({ min_purchase: parseFloat(e.target.value) })}
               />
             </div>
           </div>
@@ -67,7 +102,9 @@ export default function Fidelidade() {
               <Input
                 id="points-to-discount"
                 type="number"
-                defaultValue="100"
+                min="1"
+                value={settings.points_to_discount}
+                onChange={(e) => updateSettings({ points_to_discount: parseInt(e.target.value) })}
               />
               <p className="text-xs text-muted-foreground">
                 Quantos pontos equivalem a R$ 1,00 de desconto
@@ -78,7 +115,10 @@ export default function Fidelidade() {
               <Input
                 id="max-discount"
                 type="number"
-                defaultValue="50"
+                min="0"
+                max="100"
+                value={settings.max_discount_percent}
+                onChange={(e) => updateSettings({ max_discount_percent: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -100,7 +140,9 @@ export default function Fidelidade() {
             <Input
               id="birthday-bonus"
               type="number"
-              defaultValue="100"
+              min="0"
+              value={settings.birthday_bonus}
+              onChange={(e) => updateSettings({ birthday_bonus: parseInt(e.target.value) })}
               className="w-24"
             />
           </div>
@@ -115,14 +157,18 @@ export default function Fidelidade() {
             <Input
               id="first-purchase-bonus"
               type="number"
-              defaultValue="50"
+              min="0"
+              value={settings.first_purchase_bonus}
+              onChange={(e) => updateSettings({ first_purchase_bonus: parseInt(e.target.value) })}
               className="w-24"
             />
           </div>
         </div>
 
         <div className="pt-4">
-          <Button>Salvar Configurações</Button>
+          <Button disabled={isUpdating}>
+            {isUpdating ? 'Salvando...' : 'Configurações salvas automaticamente'}
+          </Button>
         </div>
       </Card>
     </div>
