@@ -37,6 +37,13 @@ interface AttendantOrder {
   notes?: string;
 }
 
+// ✅ FASE 2: Connection state tracking
+interface ConnectionState {
+  isConnected: boolean;
+  reconnectAttempts: number;
+  lastError?: string;
+}
+
 interface AttendantContextType {
   // Data
   stats: AttendantStats | undefined;
@@ -45,6 +52,9 @@ interface AttendantContextType {
   // Loading states
   loading: boolean;
   isUpdating: boolean;
+  
+  // ✅ FASE 2: Connection status
+  connectionState: ConnectionState;
   
   // Actions
   updateOrderStatus: (orderId: string, status: string) => Promise<void>;
@@ -63,6 +73,13 @@ const AttendantContext = createContext<AttendantContextType | undefined>(undefin
 // ===== PROVIDER COMPONENT =====
 export const AttendantProvider = ({ children }: { children: ReactNode }) => {
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // ✅ FASE 2: Connection state management
+  const [connectionState, setConnectionState] = useState<ConnectionState>({
+    isConnected: false,
+    reconnectAttempts: 0,
+  });
+  
   const queryClient = useQueryClient();
   const { printOrder } = useThermalPrint();
 
@@ -74,7 +91,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
       const last24Hours = new Date();
       last24Hours.setHours(last24Hours.getHours() - 24);
 
-      // Single optimized query para todos os dados necessários
+      // ✅ FASE 2: Paginação com limit(100)
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -107,7 +124,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         `)
         .gte('created_at', last24Hours.toISOString())
         .neq('status', 'cancelled')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // ✅ FASE 2: Limitar a 100 pedidos
 
       if (ordersError) throw ordersError;
 
@@ -155,69 +173,144 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     retry: 2,
   });
 
-  // ===== REAL-TIME SUBSCRIPTION UNIFICADO =====
+  // ✅ FASE 2: REAL-TIME COM AUTO-RECONNECT E CONNECTION STATE
   useEffect(() => {
     console.log('🔴 [ATTENDANT] Configurando realtime subscription');
     
-    const channel = supabase
-      .channel('attendant-realtime', {
-        config: {
-          broadcast: { self: false },
-          presence: { key: 'attendant' }
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders'
-        },
-        (payload) => {
-          console.log('🔴 [ATTENDANT] Pedido atualizado via realtime:', payload.eventType, payload.new);
-          
-          // Invalidate e refetch imediatamente
-          queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
-          queryClient.refetchQueries({ queryKey: ['attendant-data'] });
-          
-          // Toast para novo pedido
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as any;
-            toast.info(`🔔 Novo pedido #${newOrder.id.substring(0, 8)}`, {
-              description: `Cliente: ${newOrder.customer_name || 'N/A'}`
-            });
+    let reconnectTimeout: NodeJS.Timeout;
+    let channelRef: any = null;
+    
+    const setupChannel = () => {
+      // Limpar canal anterior se existir
+      if (channelRef) {
+        console.log('🔴 [ATTENDANT] Limpando canal anterior');
+        supabase.removeChannel(channelRef);
+      }
+      
+      channelRef = supabase
+        .channel('attendant-realtime', {
+          config: {
+            broadcast: { self: false },
+            presence: { key: 'attendant' }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_items'
-        },
-        (payload) => {
-          console.log('🔴 [ATTENDANT] Item do pedido atualizado via realtime:', payload.eventType);
-          queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('🔴 [ATTENDANT] Realtime status:', status);
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          (payload) => {
+            console.log('🔴 [ATTENDANT] Pedido atualizado via realtime:', payload.eventType, payload.new);
+            
+            // Invalidate e refetch imediatamente
+            queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
+            queryClient.refetchQueries({ queryKey: ['attendant-data'] });
+            
+            // Toast para novo pedido
+            if (payload.eventType === 'INSERT') {
+              const newOrder = payload.new as any;
+              toast.info(`🔔 Novo pedido #${newOrder.id.substring(0, 8)}`, {
+                description: `Cliente: ${newOrder.customer_name || 'N/A'}`
+              });
+              
+              // Tocar som de notificação
+              const audio = new Audio('/bell.mp3');
+              audio.play().catch(() => console.log('Não foi possível tocar o som de notificação'));
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'order_items'
+          },
+          (payload) => {
+            console.log('🔴 [ATTENDANT] Item do pedido atualizado via realtime:', payload.eventType);
+            queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
+          }
+        )
+        .subscribe((status) => {
+          console.log('🔴 [ATTENDANT] Realtime status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ [ATTENDANT] Realtime CONECTADO com sucesso!');
+            setConnectionState({
+              isConnected: true,
+              reconnectAttempts: 0,
+            });
+            toast.success('Conexão estabelecida!', {
+              description: 'Recebendo atualizações em tempo real',
+              duration: 2000,
+            });
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ [ATTENDANT] Erro no canal realtime');
+            handleConnectionError('Erro no canal realtime');
+          } else if (status === 'TIMED_OUT') {
+            console.error('⏰ [ATTENDANT] Timeout na conexão realtime');
+            handleConnectionError('Timeout na conexão');
+          } else if (status === 'CLOSED') {
+            console.warn('⚠️ [ATTENDANT] Conexão realtime fechada');
+            setConnectionState(prev => ({
+              ...prev,
+              isConnected: false,
+            }));
+          }
+        });
+    };
+    
+    // ✅ FASE 2: Auto-reconnect com backoff exponencial
+    const handleConnectionError = (error: string) => {
+      setConnectionState(prev => {
+        const newAttempts = prev.reconnectAttempts + 1;
         
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [ATTENDANT] Realtime CONECTADO com sucesso!');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [ATTENDANT] Erro no canal realtime');
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏰ [ATTENDANT] Timeout na conexão realtime');
-        } else if (status === 'CLOSED') {
-          console.warn('⚠️ [ATTENDANT] Conexão realtime fechada');
+        // Máximo de 5 tentativas
+        if (newAttempts > 5) {
+          toast.error('Falha na reconexão', {
+            description: 'Recarregue a página para tentar novamente',
+          });
+          return {
+            isConnected: false,
+            reconnectAttempts: newAttempts,
+            lastError: error,
+          };
         }
+        
+        // Calcular delay com backoff exponencial (1s, 2s, 4s, 8s, 16s)
+        const delay = Math.min(1000 * Math.pow(2, newAttempts - 1), 16000);
+        
+        toast.warning(`Reconectando em ${delay / 1000}s...`, {
+          description: `Tentativa ${newAttempts} de 5`,
+          duration: delay,
+        });
+        
+        // Tentar reconectar após o delay
+        reconnectTimeout = setTimeout(() => {
+          console.log(`🔄 [ATTENDANT] Tentando reconectar (tentativa ${newAttempts})`);
+          setupChannel();
+        }, delay);
+        
+        return {
+          isConnected: false,
+          reconnectAttempts: newAttempts,
+          lastError: error,
+        };
       });
+    };
+    
+    // Configurar canal inicial
+    setupChannel();
 
+    // ✅ FASE 2: Cleanup robusto
     return () => {
       console.log('🔴 [ATTENDANT] Removendo canal realtime');
-      supabase.removeChannel(channel);
+      clearTimeout(reconnectTimeout);
+      if (channelRef) {
+        supabase.removeChannel(channelRef);
+      }
     };
   }, [queryClient]);
 
@@ -344,6 +437,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     orders: combinedData?.orders,
     loading,
     isUpdating,
+    connectionState, // ✅ FASE 2: Expor connection state
     updateOrderStatus,
     refreshData,
     confirmOrder,

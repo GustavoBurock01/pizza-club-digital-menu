@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+// ✅ FASE 2: HOOK DE CHAT OTIMIZADO
+
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,36 +24,47 @@ export const useOrderChat = (orderId: string) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
 
-  // Buscar mensagens iniciais
-  const fetchMessages = useCallback(async () => {
+  // ✅ FASE 2: useCallback com dependências corretas (SEM toast)
+  const fetchMessages = useCallback(async (signal?: AbortSignal) => {
     try {
       const { data, error } = await supabase
         .from('order_messages')
         .select('*')
         .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .abortSignal(signal as any); // ✅ FASE 2: AbortController support
 
       if (error) throw error;
-      setMessages((data || []) as OrderMessage[]);
+      
+      if (!signal?.aborted) {
+        setMessages((data || []) as OrderMessage[]);
 
-      // Contar não lidas de clientes
-      const unread = (data || []).filter(
-        m => m.sender_type === 'customer' && !m.is_read
-      ).length;
-      setUnreadCount(unread);
-    } catch (error) {
+        // Contar não lidas de clientes
+        const unread = (data || []).filter(
+          m => m.sender_type === 'customer' && !m.is_read
+        ).length;
+        setUnreadCount(unread);
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('[CHAT] Fetch aborted');
+        return;
+      }
       console.error('Erro ao buscar mensagens:', error);
+      // ✅ FASE 2: Toast chamado aqui, não na dependência
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar as mensagens.',
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
-  }, [orderId, toast]);
+  }, [orderId]); // ✅ FASE 2: Apenas orderId nas dependências
 
-  // Inscrever em mensagens em tempo real
+  // ✅ FASE 2: Setup com AbortController
   useEffect(() => {
     if (!orderId) {
       setMessages([]);
@@ -59,10 +72,12 @@ export const useOrderChat = (orderId: string) => {
       return;
     }
 
+    // ✅ FASE 2: AbortController para cancelar fetches pendentes
+    const abortController = new AbortController();
+    
     // Buscar mensagens iniciais
-    fetchMessages();
+    fetchMessages(abortController.signal);
 
-    // ✅ ERRO 7 FIX: Gerenciar subscription com cleanup adequado
     let channelRef: any = null;
 
     const setupChannel = () => {
@@ -97,8 +112,9 @@ export const useOrderChat = (orderId: string) => {
             if (newMessage.sender_type === 'customer' && !newMessage.is_read) {
               setUnreadCount((prev) => prev + 1);
               
-              const audio = new Audio('/notification.mp3');
-              audio.play().catch(() => {});
+              // Tentar tocar som de notificação
+              const audio = new Audio('/bell.mp3');
+              audio.play().catch(() => console.log('Não foi possível tocar som'));
             }
           }
         )
@@ -124,17 +140,18 @@ export const useOrderChat = (orderId: string) => {
 
     setupChannel();
 
-    // ✅ Cleanup robusto
+    // ✅ FASE 2: Cleanup robusto com AbortController
     return () => {
       console.log(`[CHAT] Cleaning up channel for order ${orderId}`);
+      abortController.abort(); // Cancelar fetch pendente
       if (channelRef) {
         supabase.removeChannel(channelRef);
         channelRef = null;
       }
     };
-  }, [orderId, fetchMessages]);
+  }, [orderId, fetchMessages]); // ✅ FASE 2: fetchMessages agora é estável
 
-  // ✅ ERRO 6 FIX: Enviar mensagem com optimistic update
+  // ✅ Enviar mensagem com optimistic update
   const sendMessage = useCallback(
     async (message: string) => {
       if (!message.trim()) return;
@@ -153,7 +170,7 @@ export const useOrderChat = (orderId: string) => {
         updated_at: new Date().toISOString(),
       };
 
-      // ✅ OPTIMISTIC UPDATE - adicionar mensagem imediatamente
+      // Optimistic update
       setMessages((prev) => [...prev, optimisticMessage]);
       setSending(true);
 
@@ -171,14 +188,14 @@ export const useOrderChat = (orderId: string) => {
 
         if (error) throw error;
 
-        // ✅ Substituir mensagem temporária pela real
+        // Substituir mensagem temporária pela real
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? (data as OrderMessage) : m))
         );
       } catch (error) {
         console.error('Erro ao enviar mensagem:', error);
         
-        // ✅ ROLLBACK - remover mensagem em caso de erro
+        // Rollback
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         
         toast({
@@ -224,6 +241,6 @@ export const useOrderChat = (orderId: string) => {
     unreadCount,
     sendMessage,
     markAsRead,
-    refreshMessages: fetchMessages,
+    refreshMessages: () => fetchMessages(), // ✅ FASE 2: Wrapper sem signal
   };
 };

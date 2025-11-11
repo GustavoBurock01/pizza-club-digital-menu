@@ -70,8 +70,8 @@ export const WABizOrderDetails = ({
   const { printOrder, isPrinting } = useThermalPrint();
   const { unreadCount } = useOrderChat(order?.id || '');
   
-  // ✅ ERRO 5 FIX: Usar hook com retry automático
-  const { items: orderItems, loading: loadingItems } = useOrderItems(order?.id, isOpen);
+  // ✅ ERRO 5 FIX: Usar hook com retry automático + tipagem explícita
+  const { items: orderItems = [], loading: loadingItems } = useOrderItems(order?.id, isOpen);
 
   if (!order) return null;
 
