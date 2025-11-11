@@ -2924,12 +2924,9 @@ export type Database = {
           total_revenue: number
         }[]
       }
-      get_user_primary_role: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["user_role"]
-      }
-      has_any_role: { Args: { required_roles: string[] }; Returns: boolean }
-      has_role: { Args: { required_role: string }; Returns: boolean }
+      get_user_primary_role: { Args: { _user_id: string }; Returns: string }
+      has_any_role: { Args: { _roles: string[] }; Returns: boolean }
+      has_role: { Args: { _role: string }; Returns: boolean }
       increment_coupon_usage: {
         Args: { p_coupon_id: string }
         Returns: undefined
