@@ -5,7 +5,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { useRole } from '@/hooks/useRole';
+import { useRole } from '@/hooks/useUnifiedProfile';
 
 interface BreadcrumbItem {
   label: string;

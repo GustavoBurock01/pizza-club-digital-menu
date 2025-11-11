@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useRole } from "@/hooks/useRole";
+import { useRole } from "@/hooks/useUnifiedProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Menu items for customers

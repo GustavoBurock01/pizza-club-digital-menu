@@ -2,7 +2,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { useRole } from '@/hooks/useRole';
+import { useRole } from '@/hooks/useUnifiedProfile';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { AttendantProvider } from '@/providers/AttendantProvider';
 
