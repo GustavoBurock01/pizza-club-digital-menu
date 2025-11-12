@@ -27,7 +27,6 @@ import { useCoupon } from '@/hooks/useCoupon';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { useCartProducts } from '@/hooks/useCartProducts';
 import { NeighborhoodSelector } from '@/components/NeighborhoodSelector';
-
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from '@/components/ui/button';
@@ -39,27 +38,63 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2, Plus, Minus } from 'lucide-react';
 import { PaymentCategory, PaymentMethod } from '@/types';
-
 interface CustomerData {
   street: string;
   number: string;
   neighborhood: string;
   complement: string;
 }
-
 const Checkout = () => {
-  const { items, getSubtotal, getTotal, clearCart, removeItem, setDeliveryFee, updateQuantity } = useUnifiedStore();
-  const { user } = useUnifiedAuth();
-  const { addresses } = useAddresses();
-  const { toast } = useToast();
+  const {
+    items,
+    getSubtotal,
+    getTotal,
+    clearCart,
+    removeItem,
+    setDeliveryFee,
+    updateQuantity
+  } = useUnifiedStore();
+  const {
+    user
+  } = useUnifiedAuth();
+  const {
+    addresses
+  } = useAddresses();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-  const { profile, isProfileComplete } = useProfile();
-  const { protectOrderCreation } = useOrderProtection();
-  const { productsInfo, getProductInfo, isLoading: productsLoading, error: productsError } = useCartProducts(items);
-  const { appliedCoupon, applyCoupon, removeCoupon, calculateDiscount, registerCouponUse, isApplying } = useCoupon(user?.id);
-  const { zones, getDeliveryFee, isNeighborhoodAvailable } = useDeliveryZones();
-  const { isOpen, nextOpening, scheduleData } = useStoreSchedule();
-
+  const {
+    profile,
+    isProfileComplete
+  } = useProfile();
+  const {
+    protectOrderCreation
+  } = useOrderProtection();
+  const {
+    productsInfo,
+    getProductInfo,
+    isLoading: productsLoading,
+    error: productsError
+  } = useCartProducts(items);
+  const {
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
+    calculateDiscount,
+    registerCouponUse,
+    isApplying
+  } = useCoupon(user?.id);
+  const {
+    zones,
+    getDeliveryFee,
+    isNeighborhoodAvailable
+  } = useDeliveryZones();
+  const {
+    isOpen,
+    nextOpening,
+    scheduleData
+  } = useStoreSchedule();
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'processing'>('review');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [paymentCategory, setPaymentCategory] = useState<PaymentCategory>('online');
@@ -83,7 +118,6 @@ const Checkout = () => {
     state: 'SP',
     zip_code: ''
   });
-
   const [customerData, setCustomerData] = useState<CustomerData>({
     street: '',
     number: '',
@@ -102,15 +136,13 @@ const Checkout = () => {
     }
     return 0;
   }, [step, deliveryMethod, selectedNeighborhood, getDeliveryFee]);
-  
+
   // Update delivery fee in store when it changes
   useEffect(() => {
     setDeliveryFee(calculatedDeliveryFee);
   }, [calculatedDeliveryFee, setDeliveryFee]);
-  
   const discount = useMemo(() => calculateDiscount(subtotal), [appliedCoupon, subtotal, calculateDiscount]);
   const total = useMemo(() => subtotal + calculatedDeliveryFee - discount, [subtotal, calculatedDeliveryFee, discount]);
-
   const formatPrice = (price: number) => {
     return price.toLocaleString('pt-BR', {
       style: 'currency',
@@ -151,9 +183,7 @@ const Checkout = () => {
         return false;
     }
   }, [step, items, deliveryMethod, selectedAddressId, selectedNeighborhood, showAddressForm, newAddress, paymentMethod, needsChange, changeAmount, total]);
-
   const canProceed = isStepValid && !(scheduleData?.autoSchedule && !isOpen);
-
   const handleNext = () => {
     if (!isStepValid) {
       console.warn('[CHECKOUT] Cannot proceed - step validation failed', {
@@ -164,7 +194,6 @@ const Checkout = () => {
         selectedAddressId,
         customerData
       });
-      
       toast({
         title: "Dados incompletos",
         description: "Preencha todos os campos obrigatórios para continuar",
@@ -172,9 +201,7 @@ const Checkout = () => {
       });
       return;
     }
-
     console.log('[CHECKOUT] Proceeding to next step from:', step);
-
     switch (step) {
       case 'review':
         setStep('address');
@@ -187,7 +214,6 @@ const Checkout = () => {
         break;
     }
   };
-
   const handleBack = () => {
     switch (step) {
       case 'address':
@@ -202,7 +228,6 @@ const Checkout = () => {
         break;
     }
   };
-
   const getBackButtonText = () => {
     switch (step) {
       case 'address':
@@ -214,10 +239,9 @@ const Checkout = () => {
         return 'Menu';
     }
   };
-
   const handleCreateOrder = async () => {
     if (loading) return;
-    
+
     // VALIDAÇÃO 0: Verificar se loja está aberta
     if (scheduleData?.autoSchedule && !isOpen) {
       toast({
@@ -225,12 +249,12 @@ const Checkout = () => {
         description: `Não é possível finalizar pedidos fora do horário. ${nextOpening ? `Abriremos ${nextOpening}` : ''}`,
         variant: "destructive"
       });
-      
+
       // Voltar para o menu
       navigate('/menu');
       return;
     }
-    
+
     // Verificar rate limiting
     if (!user?.id || !checkCheckoutRateLimit(user.id)) {
       toast({
@@ -240,14 +264,11 @@ const Checkout = () => {
       });
       return;
     }
-    
     setStep('processing');
     setLoading(true);
-
     try {
       console.log('[CHECKOUT] Payment method:', paymentMethod, 'Category:', paymentCategory);
       console.log('[CHECKOUT] Is online payment:', isOnlinePayment());
-      
       if (isOnlinePayment()) {
         console.log('[CHECKOUT] Redirecting to online payment flow');
         await handleOnlinePayment();
@@ -261,42 +282,36 @@ const Checkout = () => {
       toast({
         title: "Erro ao processar pedido",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleOnlinePayment = async () => {
     // VALIDAÇÃO 1: Verificar se o sistema de pagamento está configurado
     console.log('[CHECKOUT] Validating online payment eligibility');
     const eligibility = await validateOnlinePaymentEligibility();
-    
     if (!eligibility.canProceed) {
       console.error('[CHECKOUT] Online payment not available:', eligibility.errors);
       throw new Error(eligibility.errors[0] || 'Pagamento online indisponível');
     }
-    
     console.log('[CHECKOUT] ✅ Online payment eligibility validated');
 
     // VALIDAÇÃO 2: Verificar e validar perfil do usuário
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user?.id)
-      .maybeSingle();
+    const {
+      data: userProfile,
+      error: profileError
+    } = await supabase.from('profiles').select('*').eq('id', user?.id).maybeSingle();
 
     // Validar se perfil existe e tem dados obrigatórios
     if (profileError || !userProfile) {
       throw new Error('Perfil não encontrado. Por favor, complete seu cadastro.');
     }
-
     if (!userProfile.full_name || userProfile.full_name.trim().length < 3) {
       setShowProfileModal(true);
       throw new Error('Complete seu nome completo no perfil para continuar');
     }
-
     if (deliveryMethod === 'delivery' && !userProfile.phone) {
       setShowProfileModal(true);
       throw new Error('Telefone é obrigatório para entregas. Complete seu perfil.');
@@ -305,18 +320,15 @@ const Checkout = () => {
     // VALIDAÇÃO 3: Validar informações do cliente com Zod
     const customerName = userProfile?.full_name || user?.email?.split('@')[0] || 'Cliente';
     const customerPhone = userProfile?.phone || '';
-
     const customerValidation = validateCustomerInfo({
       full_name: customerName,
       phone: customerPhone,
       email: user?.email
     });
-
     if (!customerValidation.success) {
       console.error('[CHECKOUT] Customer validation failed:', customerValidation.errors);
       throw new Error(customerValidation.errors?.[0] || 'Complete seu perfil antes de continuar. Vá para "Minha Conta".');
     }
-
     console.log('[CHECKOUT] ✅ Customer data validated:', {
       name: customerName,
       phone: customerPhone,
@@ -351,8 +363,10 @@ const Checkout = () => {
     // Preparar e validar endereço se necessário
     if (deliveryMethod === 'delivery') {
       if (selectedAddressId) {
-        orderData.addressData = { id: selectedAddressId };
-    } else {
+        orderData.addressData = {
+          id: selectedAddressId
+        };
+      } else {
         // Validar dados do novo endereço antes de criar
         const addressValidation = validateAddress({
           street: newAddress.street,
@@ -363,12 +377,10 @@ const Checkout = () => {
           state: newAddress.state,
           zip_code: newAddress.zip_code || undefined
         });
-
         if (!addressValidation.success) {
           console.error('[CHECKOUT] Address validation failed:', addressValidation.errors);
           throw new Error(addressValidation.errors?.[0] || 'Dados de endereço inválidos');
         }
-
         orderData.addressData = addressValidation.data;
         console.log('[CHECKOUT] ✅ Address validated without CEP');
       }
@@ -379,7 +391,7 @@ const Checkout = () => {
     if (paymentMethod === 'cash' && needsChange) {
       notes = `${notes ? notes + '. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
     }
-    
+
     // Adicionar notas sem sobrescrever o nome do cliente
     if (notes) {
       orderData.notes = notes;
@@ -397,12 +409,10 @@ const Checkout = () => {
       notes: orderData.notes,
       items: orderData.items
     });
-
     if (!orderValidation.success) {
       console.error('[CHECKOUT] Order validation failed:', orderValidation.errors);
       throw new Error(orderValidation.errors?.[0] || 'Dados do pedido inválidos');
     }
-
     console.log('[CHECKOUT] ✅ Order data validated and prepared');
     console.log('[CHECKOUT] Order data:', {
       user_id: orderData.user_id,
@@ -428,32 +438,28 @@ const Checkout = () => {
       console.log('[CHECKOUT] Navigating to card payment page');
       navigate('/payment/card');
     }
-
     toast({
       title: "Redirecionando para pagamento",
-      description: "Complete o pagamento para confirmar seu pedido.",
+      description: "Complete o pagamento para confirmar seu pedido."
     });
   };
-
   const handlePresencialPaymentProtected = async () => {
     console.log('[CHECKOUT] Processing in-person payment');
-    
     try {
       // ⚠️ CRÍTICO: Pagamentos presenciais NÃO usam fila - criar direto
-      await protectOrderCreation(
-        {
-          items: items.map(i => ({ product_id: i.productId, quantity: i.quantity })),
-          total: total,
-          delivery: deliveryMethod,
-          paymentMethod
-        },
-        handlePresencialPayment,
-        {
-          userId: user?.id || '',
-          enableIdempotency: true,
-          useQueue: false // Não usar fila para pagamentos presenciais!
-        }
-      );
+      await protectOrderCreation({
+        items: items.map(i => ({
+          product_id: i.productId,
+          quantity: i.quantity
+        })),
+        total: total,
+        delivery: deliveryMethod,
+        paymentMethod
+      }, handlePresencialPayment, {
+        userId: user?.id || '',
+        enableIdempotency: true,
+        useQueue: false // Não usar fila para pagamentos presenciais!
+      });
     } catch (error) {
       console.error('[CHECKOUT] Error creating order:', error);
       toast({
@@ -464,29 +470,23 @@ const Checkout = () => {
       setLoading(false);
     }
   };
-
   const handlePresencialPayment = async () => {
     // Validar perfil existe e tem dados obrigatórios
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user?.id)
-      .maybeSingle();
-
+    const {
+      data: userProfile,
+      error: profileError
+    } = await supabase.from('profiles').select('*').eq('id', user?.id).maybeSingle();
     if (profileError || !userProfile) {
       throw new Error('Perfil não encontrado. Por favor, complete seu cadastro.');
     }
-
     if (!userProfile.full_name || userProfile.full_name.trim().length < 3) {
       setShowProfileModal(true);
       throw new Error('Complete seu nome completo no perfil para continuar');
     }
-
     if (deliveryMethod === 'delivery' && !userProfile.phone) {
       setShowProfileModal(true);
       throw new Error('Telefone é obrigatório para entregas. Complete seu perfil.');
     }
-
     const customerName = userProfile?.full_name || user?.email?.split('@')[0] || 'Cliente';
     const customerPhone = userProfile?.phone || '';
 
@@ -496,7 +496,6 @@ const Checkout = () => {
       phone: customerPhone,
       email: user?.email
     });
-
     if (!customerValidation.success) {
       console.error('[CHECKOUT] Customer validation failed:', customerValidation.errors);
       throw new Error(customerValidation.errors?.[0] || 'Complete seu perfil antes de continuar. Vá para "Minha Conta".');
@@ -506,7 +505,6 @@ const Checkout = () => {
     if (deliveryMethod === 'delivery' && !customerPhone) {
       throw new Error('Para entregas, é necessário cadastrar um telefone. Vá para "Minha Conta" e complete seu perfil.');
     }
-
     let addressId = selectedAddressId;
 
     // Validar e criar endereço se necessário
@@ -522,22 +520,18 @@ const Checkout = () => {
         state: newAddress.state,
         zip_code: newAddress.zip_code || undefined
       });
-
       if (!addressValidation.success) {
         console.error('[CHECKOUT] Address validation failed:', addressValidation.errors);
         throw new Error(addressValidation.errors?.[0] || 'Dados de endereço inválidos');
       }
-
-      const { data: addressData, error: addressError } = await supabase
-        .from('addresses')
-        .insert({
-          user_id: user?.id,
-          ...addressValidation.data,
-          zip_code: newAddress.zip_code || ''
-        })
-        .select()
-        .single();
-
+      const {
+        data: addressData,
+        error: addressError
+      } = await supabase.from('addresses').insert({
+        user_id: user?.id,
+        ...addressValidation.data,
+        zip_code: newAddress.zip_code || ''
+      }).select().single();
       if (addressError) throw addressError;
       addressId = addressData.id;
       console.log('[CHECKOUT] ✅ Address validated and created without CEP requirement');
@@ -547,12 +541,9 @@ const Checkout = () => {
     let deliveryAddressSnapshot = null;
     if (deliveryMethod === 'delivery') {
       if (addressId) {
-        const { data: addr } = await supabase
-          .from('addresses')
-          .select('*')
-          .eq('id', addressId)
-          .single();
-        
+        const {
+          data: addr
+        } = await supabase.from('addresses').select('*').eq('id', addressId).single();
         if (addr) {
           deliveryAddressSnapshot = {
             street: addr.street,
@@ -579,25 +570,23 @@ const Checkout = () => {
     }
 
     // Create order
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        user_id: user?.id,
-        address_id: deliveryMethod === 'delivery' ? addressId : null,
-        delivery_address_snapshot: deliveryAddressSnapshot,
-        total_amount: total,
-        delivery_fee: calculatedDeliveryFee,
-        delivery_method: deliveryMethod,
-        status: 'pending',
-        payment_status: 'pending',
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        payment_method: paymentMethod,
-        notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
-      })
-      .select()
-      .single();
-
+    const {
+      data: orderData,
+      error: orderError
+    } = await supabase.from('orders').insert({
+      user_id: user?.id,
+      address_id: deliveryMethod === 'delivery' ? addressId : null,
+      delivery_address_snapshot: deliveryAddressSnapshot,
+      total_amount: total,
+      delivery_fee: calculatedDeliveryFee,
+      delivery_method: deliveryMethod,
+      status: 'pending',
+      payment_status: 'pending',
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      payment_method: paymentMethod,
+      notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
+    }).select().single();
     if (orderError) throw orderError;
 
     // Create order items
@@ -609,50 +598,41 @@ const Checkout = () => {
       total_price: item.price * item.quantity,
       customizations: item.customizations ? JSON.parse(JSON.stringify(item.customizations)) : null
     }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
+    const {
+      error: itemsError
+    } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
 
     // Update order with notes if needed
     if (paymentMethod === 'cash' && needsChange) {
       const orderNotes = `${deliveryMethod === 'pickup' ? 'Retirada no balcão. ' : ''}Troco para ${formatPrice(parseFloat(changeAmount))}`;
-      await supabase
-        .from('orders')
-        .update({ notes: orderNotes })
-        .eq('id', orderData.id);
+      await supabase.from('orders').update({
+        notes: orderNotes
+      }).eq('id', orderData.id);
     }
 
     // Register coupon use if applicable
     if (appliedCoupon) {
       await registerCouponUse(orderData.id);
-      
+
       // Update order with coupon info (types will be updated after migration)
-      await supabase
-        .from('orders')
-        .update({
-          coupon_id: appliedCoupon.id,
-          coupon_code: appliedCoupon.code,
-          discount_amount: discount
-        } as any)
-        .eq('id', orderData.id);
+      await supabase.from('orders').update({
+        coupon_id: appliedCoupon.id,
+        coupon_code: appliedCoupon.code,
+        discount_amount: discount
+      } as any).eq('id', orderData.id);
     }
 
     // Clear cart and navigate
     clearCart();
     navigate(`/order-status/${orderData.id}`);
-
     toast({
       title: "Pedido criado!",
-      description: "Acompanhe o status do seu pedido.",
+      description: "Acompanhe o status do seu pedido."
     });
   };
-
   if (items.length === 0) {
-    return (
-      <SidebarProvider>
+    return <SidebarProvider>
         <div className="flex min-h-screen w-full">
           <AppSidebar />
           <SidebarInset>
@@ -667,34 +647,23 @@ const Checkout = () => {
                 <p className="text-muted-foreground mb-6">
                   Adicione produtos para continuar
                 </p>
-                <Button 
-                  onClick={() => navigate('/menu')}
-                  className="gradient-pizza text-white"
-                >
+                <Button onClick={() => navigate('/menu')} className="gradient-pizza text-white">
                   Ver Cardápio
                 </Button>
               </div>
             </div>
           </SidebarInset>
         </div>
-      </SidebarProvider>
-    );
+      </SidebarProvider>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="flex items-center gap-2"
-              >
+              <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 {getBackButtonText()}
               </Button>
@@ -710,140 +679,103 @@ const Checkout = () => {
                 
                 {/* STEP INDICATOR */}
                 <div className="flex items-center justify-center space-x-4 mb-8">
-                  {[
-                    { key: 'review', label: 'Revisar', icon: '📋' },
-                    { key: 'address', label: 'Entrega', icon: '📍' },
-                    { key: 'payment', label: 'Pagamento', icon: '💳' }
-                  ].map((s, index) => (
-                    <div key={s.key} className="flex items-center">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium ${
-                        step === s.key ? 'bg-primary text-primary-foreground' :
-                        ['review', 'address', 'payment'].indexOf(step) > index ? 'bg-green-500 text-white' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
+                  {[{
+                  key: 'review',
+                  label: 'Revisar',
+                  icon: '📋'
+                }, {
+                  key: 'address',
+                  label: 'Entrega',
+                  icon: '📍'
+                }, {
+                  key: 'payment',
+                  label: 'Pagamento',
+                  icon: '💳'
+                }].map((s, index) => <div key={s.key} className="flex items-center">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium ${step === s.key ? 'bg-primary text-primary-foreground' : ['review', 'address', 'payment'].indexOf(step) > index ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                         {['review', 'address', 'payment'].indexOf(step) > index ? <Check className="h-4 w-4" /> : s.icon}
                       </div>
                       <span className="ml-2 text-sm font-medium">{s.label}</span>
                       {index < 2 && <div className="w-8 h-px bg-border mx-4" />}
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
 
                 {/* STEP: REVIEW */}
-                {step === 'review' && (
-                  <>
+                {step === 'review' && <>
                     {/* Store Closed Alert */}
-                    {scheduleData?.autoSchedule && !isOpen && (
-                      <StoreClosedAlert variant="inline" showBackButton={false} />
-                    )}
+                    {scheduleData?.autoSchedule && !isOpen && <StoreClosedAlert variant="inline" showBackButton={false} />}
 
                     <Card>
                       <CardHeader>
                         <CardTitle>Seus Itens ({items.length})</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                       {productsLoading && (
-                        <div className="flex items-center justify-center p-8 text-muted-foreground">
+                       {productsLoading && <div className="flex items-center justify-center p-8 text-muted-foreground">
                           Carregando produtos...
-                        </div>
-                      )}
-                      {productsError && (
-                        <div className="flex items-center justify-center p-8 text-destructive">
+                        </div>}
+                      {productsError && <div className="flex items-center justify-center p-8 text-destructive">
                           Erro ao carregar informações dos produtos
-                        </div>
-                      )}
-                      {!productsLoading && !productsError && items.map((item) => {
-                        const productInfo = getProductInfo(item.productId);
-                        // Fallback para dados do carrinho se produto não foi encontrado
-                        const categoryLabel = productInfo 
-                          ? `${productInfo.category_name}${productInfo.subcategory_name ? ' - ' + productInfo.subcategory_name : ''}`
-                          : 'Produto';
-                        
-                        return (
-                          <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                        </div>}
+                      {!productsLoading && !productsError && items.map(item => {
+                      const productInfo = getProductInfo(item.productId);
+                      // Fallback para dados do carrinho se produto não foi encontrado
+                      const categoryLabel = productInfo ? `${productInfo.category_name}${productInfo.subcategory_name ? ' - ' + productInfo.subcategory_name : ''}` : 'Produto';
+                      return <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg">
                             <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
-                              {item.image ? (
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                              ) : (
-                                <span className="text-2xl">🍕</span>
-                              )}
+                              {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" /> : <span className="text-2xl">🍕</span>}
                             </div>
                             
                             <div className="flex-1 space-y-2">
                               {/* Category - Subcategory */}
-                              {categoryLabel && (
-                                <p className="text-xs text-muted-foreground uppercase font-medium">
+                              {categoryLabel && <p className="text-xs text-muted-foreground uppercase font-medium">
                                   {categoryLabel}
-                                </p>
-                              )}
+                                </p>}
                               
                               {/* Product Name */}
                               <h3 className="font-medium">{item.name}</h3>
                               
                               {/* Customizations */}
-                              {item.customizations && (
-                                <div className="space-y-1 text-sm text-muted-foreground">
+                              {item.customizations && <div className="space-y-1 text-sm text-muted-foreground">
                                   {/* Usar crustName ao invés de crust */}
-                                  {item.customizations.crustName && (
-                                    <p className="flex items-center gap-1">
-                                      <span className="font-medium">Borda:</span> {item.customizations.crustName}
-                                    </p>
-                                  )}
+                                  {item.customizations.crustName && <p className="flex items-center gap-1">
+                                      <span className="font-medium">Borda Recheada:</span> {item.customizations.crustName}
+                                    </p>}
                                   {/* Fallback para crust se crustName não existir */}
-                                  {!item.customizations.crustName && item.customizations.crust && (
-                                    <p className="flex items-center gap-1">
+                                  {!item.customizations.crustName && item.customizations.crust && <p className="flex items-center gap-1">
                                       <span className="font-medium">Borda:</span> {item.customizations.crust}
-                                    </p>
-                                  )}
+                                    </p>}
                                   
                                   {/* Usar extrasNames se disponível */}
-                                  {((item.customizations.extrasNames || item.customizations.extras)?.length > 0) && (
-                                    <p className="flex items-center gap-1">
+                                  {(item.customizations.extrasNames || item.customizations.extras)?.length > 0 && <p className="flex items-center gap-1">
                                       <span className="font-medium">Extras:</span> 
                                       {(item.customizations.extrasNames || item.customizations.extras).join(', ')}
-                                    </p>
-                                  )}
+                                    </p>}
                                   
-                                  {item.customizations.halfAndHalf && (
-                                    <p className="flex items-center gap-1">
+                                  {item.customizations.halfAndHalf && <p className="flex items-center gap-1">
                                       <span className="font-medium">Meio a meio:</span> 
                                       {item.customizations.halfAndHalf.firstHalf} / {item.customizations.halfAndHalf.secondHalf}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
+                                    </p>}
+                                </div>}
                               
                               {/* Notes */}
-                              {item.notes && (
-                                <p className="text-sm text-muted-foreground italic">
+                              {item.notes && <p className="text-sm text-muted-foreground italic">
                                   Obs: {item.notes}
-                                </p>
-                              )}
+                                </p>}
                               
                               {/* Price and Quantity Controls */}
                               <div className="flex items-center justify-between mt-2 pt-2 border-t">
                                 <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => {
-                                      const newQuantity = Math.max(1, item.quantity - 1);
-                                      updateQuantity(item.id, newQuantity);
-                                    }}
-                                  >
+                                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+                                const newQuantity = Math.max(1, item.quantity - 1);
+                                updateQuantity(item.id, newQuantity);
+                              }}>
                                     -
                                   </Button>
                                   <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => {
-                                      const newQuantity = item.quantity + 1;
-                                      updateQuantity(item.id, newQuantity);
-                                    }}
-                                  >
+                                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+                                const newQuantity = item.quantity + 1;
+                                updateQuantity(item.id, newQuantity);
+                              }}>
                                     +
                                   </Button>
                                 </div>
@@ -851,25 +783,17 @@ const Checkout = () => {
                               </div>
                             </div>
                             
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(item.id)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0">
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </div>
-                        );
-                      })}
+                          </div>;
+                    })}
                     </CardContent>
                   </Card>
-                  </>
-                )}
+                  </>}
 
                 {/* STEP: ADDRESS */}
-                {step === 'address' && (
-                  <div className="space-y-6">
+                {step === 'address' && <div className="space-y-6">
                     {/* Delivery Method */}
                     <Card>
                       <CardHeader>
@@ -877,13 +801,13 @@ const Checkout = () => {
                       </CardHeader>
                       <CardContent>
                         <RadioGroup value={deliveryMethod} onValueChange={(value: 'delivery' | 'pickup') => {
-                          setDeliveryMethod(value);
-                          if (value === 'pickup') {
-                            setSelectedNeighborhood('');
-                            setSelectedAddressId('');
-                            setShowAddressForm(false);
-                          }
-                        }}>
+                      setDeliveryMethod(value);
+                      if (value === 'pickup') {
+                        setSelectedNeighborhood('');
+                        setSelectedAddressId('');
+                        setShowAddressForm(false);
+                      }
+                    }}>
                           <div className="flex items-center space-x-2 p-4 border rounded-lg">
                             <RadioGroupItem value="delivery" id="delivery" />
                             <Label htmlFor="delivery" className="flex-1 cursor-pointer">
@@ -915,43 +839,32 @@ const Checkout = () => {
                     </Card>
 
                     {/* Address Selection for Delivery */}
-                    {deliveryMethod === 'delivery' && (
-                      <div className="space-y-4">
+                    {deliveryMethod === 'delivery' && <div className="space-y-4">
                         {/* Endereço Selecionado - Compacto */}
-                        {addresses.length > 0 && !showAddressForm && (
-                          <Card>
+                        {addresses.length > 0 && !showAddressForm && <Card>
                             <CardContent className="p-4">
-                              <AddressSelector
-                                addresses={addresses}
-                                selectedAddressId={selectedAddressId || addresses.find(a => a.is_default)?.id || addresses[0]?.id || ''}
-                                onSelect={(addressId, neighborhood) => {
-                                  console.debug('Checkout: Endereço selecionado', { addressId, neighborhood });
-                                  setSelectedAddressId(addressId);
-                                  setSelectedNeighborhood(neighborhood);
-                                }}
-                              />
+                              <AddressSelector addresses={addresses} selectedAddressId={selectedAddressId || addresses.find(a => a.is_default)?.id || addresses[0]?.id || ''} onSelect={(addressId, neighborhood) => {
+                        console.debug('Checkout: Endereço selecionado', {
+                          addressId,
+                          neighborhood
+                        });
+                        setSelectedAddressId(addressId);
+                        setSelectedNeighborhood(neighborhood);
+                      }} />
                             </CardContent>
-                          </Card>
-                        )}
+                          </Card>}
 
                         {/* Botão: Adicionar Novo Endereço */}
-                        {addresses.length > 0 && !showAddressForm && (
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              setShowAddressForm(true);
-                              setSelectedAddressId('');
-                              setSelectedNeighborhood('');
-                            }}
-                          >
+                        {addresses.length > 0 && !showAddressForm && <Button variant="outline" className="w-full" onClick={() => {
+                    setShowAddressForm(true);
+                    setSelectedAddressId('');
+                    setSelectedNeighborhood('');
+                  }}>
                             + Adicionar Novo Endereço
-                          </Button>
-                        )}
+                          </Button>}
 
                         {/* Formulário de Novo Endereço (sem CEP) */}
-                        {(addresses.length === 0 || showAddressForm) && (
-                          <Card>
+                        {(addresses.length === 0 || showAddressForm) && <Card>
                             <CardHeader>
                               <CardTitle>Novo Endereço</CardTitle>
                               <p className="text-sm text-muted-foreground">
@@ -962,84 +875,68 @@ const Checkout = () => {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2">
                                   <Label htmlFor="street">Rua *</Label>
-                                  <Input
-                                    id="street"
-                                    value={newAddress.street}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, street: e.target.value }))}
-                                    placeholder="Nome da rua"
-                                  />
+                                  <Input id="street" value={newAddress.street} onChange={e => setNewAddress(prev => ({
+                            ...prev,
+                            street: e.target.value
+                          }))} placeholder="Nome da rua" />
                                 </div>
                                 
                                 <div>
                                   <Label htmlFor="number">Número *</Label>
-                                  <Input
-                                    id="number"
-                                    value={newAddress.number}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, number: e.target.value }))}
-                                    placeholder="123"
-                                  />
+                                  <Input id="number" value={newAddress.number} onChange={e => setNewAddress(prev => ({
+                            ...prev,
+                            number: e.target.value
+                          }))} placeholder="123" />
                                 </div>
                                 
                                 <div>
                                   <Label htmlFor="neighborhood">Bairro *</Label>
-                                  <NeighborhoodSelector
-                                    selectedNeighborhood={newAddress.neighborhood}
-                                    onSelect={(neighborhood) => {
-                                      setNewAddress(prev => ({ ...prev, neighborhood }));
-                                      setSelectedNeighborhood(neighborhood);
-                                    }}
-                                  />
+                                  <NeighborhoodSelector selectedNeighborhood={newAddress.neighborhood} onSelect={neighborhood => {
+                            setNewAddress(prev => ({
+                              ...prev,
+                              neighborhood
+                            }));
+                            setSelectedNeighborhood(neighborhood);
+                          }} />
                                 </div>
                                 
                                 <div className="md:col-span-2">
                                   <Label htmlFor="complement">Complemento</Label>
-                                  <Input
-                                    id="complement"
-                                    value={newAddress.complement}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, complement: e.target.value }))}
-                                    placeholder="Apto, bloco, etc."
-                                  />
+                                  <Input id="complement" value={newAddress.complement} onChange={e => setNewAddress(prev => ({
+                            ...prev,
+                            complement: e.target.value
+                          }))} placeholder="Apto, bloco, etc." />
                                 </div>
                                 
                                 <div className="md:col-span-2">
                                   <Label htmlFor="reference">Ponto de Referência</Label>
-                                  <Input
-                                    id="reference"
-                                    value={newAddress.reference_point}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, reference_point: e.target.value }))}
-                                    placeholder="Próximo ao mercado..."
-                                  />
+                                  <Input id="reference" value={newAddress.reference_point} onChange={e => setNewAddress(prev => ({
+                            ...prev,
+                            reference_point: e.target.value
+                          }))} placeholder="Próximo ao mercado..." />
                                 </div>
                               </div>
 
-                              {addresses.length > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  className="w-full"
-                                  onClick={() => {
-                                    setShowAddressForm(false);
-                                    setNewAddress({
-                                      street: '',
-                                      number: '',
-                                      neighborhood: '',
-                                      complement: '',
-                                      reference_point: '',
-                                      city: 'Sua Cidade',
-                                      state: 'SP',
-                                      zip_code: ''
-                                    });
-                                  }}
-                                >
+                              {addresses.length > 0 && <Button variant="ghost" className="w-full" onClick={() => {
+                        setShowAddressForm(false);
+                        setNewAddress({
+                          street: '',
+                          number: '',
+                          neighborhood: '',
+                          complement: '',
+                          reference_point: '',
+                          city: 'Sua Cidade',
+                          state: 'SP',
+                          zip_code: ''
+                        });
+                      }}>
                                   ← Voltar para endereços salvos
-                                </Button>
-                              )}
+                                </Button>}
                             </CardContent>
-                          </Card>
-                        )}
+                          </Card>}
 
                         {/* Selected Neighborhood Summary */}
-                        {selectedNeighborhood && (
-                          <div className="p-4 bg-muted rounded-lg">
+                        {selectedNeighborhood && <div className="p-4 bg-muted rounded-lg">
                             <div className="flex justify-between items-center">
                               <div>
                                 <p className="font-medium">{selectedNeighborhood}</p>
@@ -1054,20 +951,14 @@ const Checkout = () => {
                                 </p>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                          </div>}
+                      </div>}
+                  </div>}
 
                 {/* STEP: PAYMENT */}
-                {step === 'payment' && (
-                  <div className="space-y-6">
+                {step === 'payment' && <div className="space-y-6">
                     {/* Alerta de perfil incompleto */}
-                    {(!profile?.full_name || (deliveryMethod === 'delivery' && !profile?.phone)) && (
-                      <CheckoutProfileAlert deliveryMethod={deliveryMethod} />
-                    )}
+                    {(!profile?.full_name || deliveryMethod === 'delivery' && !profile?.phone) && <CheckoutProfileAlert deliveryMethod={deliveryMethod} />}
                     
                     {/* Cupom de Desconto */}
                     <Card>
@@ -1076,8 +967,7 @@ const Checkout = () => {
                         <p className="text-sm text-muted-foreground">Possui um cupom? Digite abaixo</p>
                       </CardHeader>
                       <CardContent>
-                        {appliedCoupon ? (
-                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        {appliedCoupon ? <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                             <div>
                               <p className="font-medium text-green-700 dark:text-green-300">
                                 Cupom aplicado: {appliedCoupon.code}
@@ -1089,23 +979,12 @@ const Checkout = () => {
                             <Button variant="ghost" size="sm" onClick={removeCoupon}>
                               Remover
                             </Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Digite o código do cupom"
-                              value={couponCode}
-                              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                              className="flex-1"
-                            />
-                            <Button
-                              onClick={() => applyCoupon(couponCode, subtotal)}
-                              disabled={isApplying || !couponCode}
-                            >
+                          </div> : <div className="flex gap-2">
+                            <Input placeholder="Digite o código do cupom" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} className="flex-1" />
+                            <Button onClick={() => applyCoupon(couponCode, subtotal)} disabled={isApplying || !couponCode}>
                               {isApplying ? 'Aplicando...' : 'Aplicar'}
                             </Button>
-                          </div>
-                        )}
+                          </div>}
                       </CardContent>
                     </Card>
                     
@@ -1117,12 +996,12 @@ const Checkout = () => {
                       </CardHeader>
                       <CardContent>
                         <RadioGroup value={paymentCategory} onValueChange={(value: PaymentCategory) => {
-                          setPaymentCategory(value);
-                          // Reset payment method when category changes
-                          setPaymentMethod(value === 'online' ? 'pix' : 'cash');
-                          setNeedsChange(false);
-                          setChangeAmount('');
-                        }}>
+                      setPaymentCategory(value);
+                      // Reset payment method when category changes
+                      setPaymentMethod(value === 'online' ? 'pix' : 'cash');
+                      setNeedsChange(false);
+                      setChangeAmount('');
+                    }}>
                           <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                             <RadioGroupItem value="online" id="online" />
                             <Label htmlFor="online" className="flex-1 cursor-pointer">
@@ -1158,21 +1037,19 @@ const Checkout = () => {
                     <Card>
                       <CardHeader>
                          <CardTitle>
-                           {paymentCategory === 'online' ? 'Método de Pagamento Online' : 
-                            (deliveryMethod === 'pickup' ? 'Método de Pagamento no Balcão' : 'Método de Pagamento na Entrega')}
+                           {paymentCategory === 'online' ? 'Método de Pagamento Online' : deliveryMethod === 'pickup' ? 'Método de Pagamento no Balcão' : 'Método de Pagamento na Entrega'}
                          </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <RadioGroup value={paymentMethod} onValueChange={(value: PaymentMethod) => {
-                          setPaymentMethod(value);
-                          if (value !== 'cash') {
-                            setNeedsChange(false);
-                            setChangeAmount('');
-                          }
-                        }}>
+                      setPaymentMethod(value);
+                      if (value !== 'cash') {
+                        setNeedsChange(false);
+                        setChangeAmount('');
+                      }
+                    }}>
                           
-                          {paymentCategory === 'online' && (
-                            <>
+                          {paymentCategory === 'online' && <>
                               <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg mb-4">
                                 <p className="text-sm text-blue-700 dark:text-blue-300">
                                   ℹ️ Pagamentos online requerem confirmação antes da criação do pedido
@@ -1217,11 +1094,9 @@ const Checkout = () => {
                                   </div>
                                 </Label>
                               </div>
-                            </>
-                          )}
+                            </>}
 
-                          {paymentCategory === 'on_delivery' && (
-                            <>
+                          {paymentCategory === 'on_delivery' && <>
                               <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                                 <RadioGroupItem value="credit_card_delivery" id="credit_card_delivery" />
                                 <Label htmlFor="credit_card_delivery" className="flex-1 cursor-pointer">
@@ -1260,64 +1135,41 @@ const Checkout = () => {
                                   </div>
                                 </Label>
                               </div>
-                            </>
-                          )}
+                            </>}
                         </RadioGroup>
 
                         {/* Cash Change Options */}
-                        {paymentMethod === 'cash' && (
-                          <div className="mt-6 p-4 bg-muted/30 rounded-lg space-y-4">
+                        {paymentMethod === 'cash' && <div className="mt-6 p-4 bg-muted/30 rounded-lg space-y-4">
                             <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="needsChange"
-                                checked={needsChange}
-                                onChange={(e) => {
-                                  setNeedsChange(e.target.checked);
-                                  if (!e.target.checked) setChangeAmount('');
-                                }}
-                                className="rounded"
-                              />
+                              <input type="checkbox" id="needsChange" checked={needsChange} onChange={e => {
+                          setNeedsChange(e.target.checked);
+                          if (!e.target.checked) setChangeAmount('');
+                        }} className="rounded" />
                               <Label htmlFor="needsChange" className="cursor-pointer">
                                 Preciso de troco
                               </Label>
                             </div>
 
-                            {needsChange && (
-                              <div>
+                            {needsChange && <div>
                                 <Label htmlFor="changeAmount">Troco para quanto?</Label>
-                                <Input
-                                  id="changeAmount"
-                                  type="number"
-                                  value={changeAmount}
-                                  onChange={(e) => setChangeAmount(e.target.value)}
-                                  placeholder="50.00"
-                                  min={total + 0.01}
-                                  step="0.01"
-                                  className="mt-1"
-                                />
+                                <Input id="changeAmount" type="number" value={changeAmount} onChange={e => setChangeAmount(e.target.value)} placeholder="50.00" min={total + 0.01} step="0.01" className="mt-1" />
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Total do pedido: {formatPrice(total)}
                                 </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              </div>}
+                          </div>}
                       </CardContent>
                     </Card>
-                  </div>
-                )}
+                  </div>}
 
                 {/* PROCESSING */}
-                {step === 'processing' && (
-                  <Card>
+                {step === 'processing' && <Card>
                     <CardContent className="p-8 text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                       <h3 className="text-lg font-medium mb-2">Processando seu pedido...</h3>
                       <p className="text-muted-foreground">Aguarde enquanto criamos seu pedido</p>
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
               </div>
 
               {/* SIDEBAR - ORDER SUMMARY */}
@@ -1332,20 +1184,16 @@ const Checkout = () => {
                         <span>Subtotal</span>
                         <span>{formatPrice(subtotal)}</span>
                       </div>
-                      {step !== 'review' && (
-                        <div className="flex justify-between">
+                      {step !== 'review' && <div className="flex justify-between">
                           <span>Taxa de entrega</span>
                           <span className={calculatedDeliveryFee > 0 ? '' : 'text-green-600'}>
                             {calculatedDeliveryFee > 0 ? formatPrice(calculatedDeliveryFee) : 'Grátis'}
                           </span>
-                        </div>
-                      )}
-                      {discount > 0 && (
-                        <div className="flex justify-between text-green-600">
+                        </div>}
+                      {discount > 0 && <div className="flex justify-between text-green-600">
                           <span>Desconto</span>
                           <span>-{formatPrice(discount)}</span>
-                        </div>
-                      )}
+                        </div>}
                       <Separator />
                       <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
@@ -1353,26 +1201,14 @@ const Checkout = () => {
                       </div>
                     </div>
 
-                    {step !== 'processing' && step !== 'payment' && (
-                      <Button 
-                        onClick={handleNext}
-                        disabled={!canProceed || loading}
-                        className="w-full gradient-pizza text-white h-12"
-                      >
+                    {step !== 'processing' && step !== 'payment' && <Button onClick={handleNext} disabled={!canProceed || loading} className="w-full gradient-pizza text-white h-12">
                         {step === 'review' && 'Continuar'}
                         {step === 'address' && 'Escolher Pagamento'}
-                      </Button>
-                    )}
+                      </Button>}
 
-                    {step === 'payment' && (
-                      <CheckoutButton 
-                        onClick={async () => await handleCreateOrder()}
-                        disabled={!canProceed}
-                        className="text-white h-12"
-                      >
+                    {step === 'payment' && <CheckoutButton onClick={async () => await handleCreateOrder()} disabled={!canProceed} className="text-white h-12">
                         Finalizar • {formatPrice(total)}
-                      </CheckoutButton>
-                    )}
+                      </CheckoutButton>}
                   </CardContent>
                 </Card>
               </div>
@@ -1382,19 +1218,13 @@ const Checkout = () => {
       </SidebarProvider>
 
       {/* Profile Validation Modal */}
-      <ProfileValidationModal
-        open={showProfileModal}
-        onComplete={() => {
-          setShowProfileModal(false);
-          toast({
-            title: "✅ Perfil completo",
-            description: "Você pode prosseguir com seu pedido"
-          });
-        }}
-        deliveryMethod={deliveryMethod}
-      />
-    </div>
-  );
+      <ProfileValidationModal open={showProfileModal} onComplete={() => {
+      setShowProfileModal(false);
+      toast({
+        title: "✅ Perfil completo",
+        description: "Você pode prosseguir com seu pedido"
+      });
+    }} deliveryMethod={deliveryMethod} />
+    </div>;
 };
-
 export default Checkout;
