@@ -732,7 +732,7 @@ const Checkout = () => {
                                 </p>}
                               
                               {/* Product Name */}
-                              <h3 className="font-medium">{item.name}</h3>
+                              <h3 className="font-medium">{item.quantity}x {item.name}</h3>
                               
                               {/* Customizations */}
                               {item.customizations && <div className="space-y-1 text-sm text-muted-foreground">
