@@ -196,7 +196,11 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
     
     // Adicionar customizações baseadas na configuração
     if (config.showCrust && selectedCrust !== 'tradicional') {
-      customizations.crust = selectedCrust;
+      // Buscar o nome da borda selecionada
+      const crustOption = config.crustOptions?.find(c => c.id === selectedCrust);
+      
+      customizations.crust = selectedCrust; // Salvar ID
+      customizations.crustName = crustOption?.name; // Salvar nome também
     }
     
     if (config.showTemperature && selectedTemperature !== 'gelada') {
@@ -205,6 +209,7 @@ export const ProductCustomizer = ({ product, isOpen, onClose }: ProductCustomize
     
     if (config.showExtras && selectedExtras.length > 0) {
       customizations.extras = selectedExtras;
+      customizations.extrasNames = selectedExtras; // Garantir nomes dos extras
     }
 
     addItem(product, customizations, notes, quantity);

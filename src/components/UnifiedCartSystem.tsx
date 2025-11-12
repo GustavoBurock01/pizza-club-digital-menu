@@ -115,12 +115,18 @@ export const UnifiedCartSystem = ({
       parts.push(`Meio a meio: ${customizations.halfAndHalf.flavor1} / ${customizations.halfAndHalf.flavor2}`);
     }
     
-    if (customizations.crust && customizations.crust !== 'tradicional') {
+    // Usar crustName ao invés de crust
+    if (customizations.crustName) {
+      parts.push(`Borda: ${customizations.crustName}`);
+    } else if (customizations.crust && customizations.crust !== 'tradicional') {
+      // Fallback caso crustName não exista (dados antigos do carrinho)
       parts.push(`Borda: ${customizations.crust}`);
     }
     
-    if (customizations.extras && customizations.extras.length > 0) {
-      parts.push(`Extras: ${customizations.extras.join(', ')}`);
+    // Usar extrasNames se disponível
+    const extrasToShow = customizations.extrasNames || customizations.extras || [];
+    if (extrasToShow.length > 0) {
+      parts.push(`Extras: ${extrasToShow.join(', ')}`);
     }
     
     return parts.join(' • ');

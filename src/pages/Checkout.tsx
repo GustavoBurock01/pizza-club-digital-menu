@@ -783,16 +783,27 @@ const Checkout = () => {
                               {/* Customizations */}
                               {item.customizations && (
                                 <div className="space-y-1 text-sm text-muted-foreground">
-                                  {item.customizations.crust && (
+                                  {/* Usar crustName ao invés de crust */}
+                                  {item.customizations.crustName && (
+                                    <p className="flex items-center gap-1">
+                                      <span className="font-medium">Borda:</span> {item.customizations.crustName}
+                                    </p>
+                                  )}
+                                  {/* Fallback para crust se crustName não existir */}
+                                  {!item.customizations.crustName && item.customizations.crust && (
                                     <p className="flex items-center gap-1">
                                       <span className="font-medium">Borda:</span> {item.customizations.crust}
                                     </p>
                                   )}
-                                  {item.customizations.extras && item.customizations.extras.length > 0 && (
+                                  
+                                  {/* Usar extrasNames se disponível */}
+                                  {((item.customizations.extrasNames || item.customizations.extras)?.length > 0) && (
                                     <p className="flex items-center gap-1">
-                                      <span className="font-medium">Extras:</span> {item.customizations.extras.join(', ')}
+                                      <span className="font-medium">Extras:</span> 
+                                      {(item.customizations.extrasNames || item.customizations.extras).join(', ')}
                                     </p>
                                   )}
+                                  
                                   {item.customizations.halfAndHalf && (
                                     <p className="flex items-center gap-1">
                                       <span className="font-medium">Meio a meio:</span> 

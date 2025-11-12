@@ -111,7 +111,9 @@ export interface CartCustomization {
     secondHalf: string;
   };
   crust?: string;
+  crustName?: string;
   extras?: string[];
+  extrasNames?: string[];
 }
 
 export interface CartItem {
