@@ -70,7 +70,7 @@ const attendantItems = [
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
   { title: "Gerenciar App", url: "/admin/gerenciar-app", icon: Settings2 },
-  { title: "Configurações", url: "/admin/configuracoes-new", icon: Cog },
+  { title: "Configurações", url: "/admin/configuracoes", icon: Cog },
   { title: "Sistema", url: "/admin/sistema", icon: Server },
   { title: "Relatórios", url: "/admin/relatorios", icon: FileText },
   { title: "CRM", url: "/admin/crm", icon: Users },
@@ -83,12 +83,12 @@ export function AppSidebar() {
   const { getItemCount } = useUnifiedStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const { role } = useRole();
+  const { role, loading: roleLoading } = useRole();
   const itemCount = getItemCount();
 
   // Auto-navigate based on role when accessing root paths
   useEffect(() => {
-    if (location.pathname === '/dashboard' && role) {
+    if (location.pathname === '/dashboard' && role && !roleLoading) {
       if (role === 'admin') {
         navigate('/admin');
       } else if (role === 'attendant') {
@@ -96,10 +96,16 @@ export function AppSidebar() {
       }
       // Clientes permanecem no dashboard
     }
-  }, [role, location.pathname, navigate]);
+  }, [role, roleLoading, location.pathname, navigate]);
 
   // Get menu items based on role
   const getMenuItems = () => {
+    // Se estamos em rota admin, sempre mostrar menu admin
+    if (location.pathname.startsWith('/admin')) {
+      return adminItems;
+    }
+    
+    // Caso contrário, usar role detectado
     switch (role) {
       case 'admin':
         return adminItems;
@@ -111,6 +117,14 @@ export function AppSidebar() {
   };
 
   const menuItems = getMenuItems();
+  
+  // Check if current route matches item (including nested routes)
+  const isRouteActive = (itemUrl: string) => {
+    if (itemUrl === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(itemUrl);
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
@@ -136,7 +150,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     tooltip={item.title}
-                    isActive={location.pathname === item.url}
+                    isActive={isRouteActive(item.url)}
                   >
                     <Button
                       variant="ghost"
