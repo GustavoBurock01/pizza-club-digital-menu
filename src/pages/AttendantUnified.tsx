@@ -8,11 +8,16 @@ import { WABizHeader } from "@/components/WABizHeader";
 import { WABizOrdersTable } from "@/components/WABizOrdersTable";
 import { WABizOrderDetails } from "@/components/WABizOrderDetails";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ThermalPrintQueue } from "@/components/ThermalPrintQueue";
+import { PendingPaymentModal } from "@/components/PendingPaymentModal";
 import { useAttendant } from "@/providers/AttendantProvider";
 import { useThermalPrint } from "@/hooks/useThermalPrint";
+import { useSound } from "@/hooks/useSound";
 import { toast } from "sonner";
-import { Printer, Filter, Calendar } from "lucide-react";
+import { Printer, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AttendantUnified() {
   const { 
@@ -28,22 +33,48 @@ export default function AttendantUnified() {
     cancelOrder 
   } = useAttendant();
 
-  const { printOrder, isPrinting } = useThermalPrint();
+  const { 
+    printOrder, 
+    isPrinting, 
+    printQueue, 
+    printHistory, 
+    retryPrint, 
+    clearQueue 
+  } = useThermalPrint();
+  
+  // ✅ FASE 3: Hook de som configurável
+  const { 
+    settings: soundSettings, 
+    playNewOrderSound, 
+    toggleSound: toggleSoundHook 
+  } = useSound();
 
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState('novos');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPrintQueue, setShowPrintQueue] = useState(false);
+  const [showPendingPayments, setShowPendingPayments] = useState(false);
   
   // Filtros
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   
   const previousPendingCount = useRef(0);
 
-  const toggleSound = () => {
-    setSoundEnabled(!soundEnabled);
-    toast.info(soundEnabled ? "Sons desabilitados" : "Sons habilitados");
-  };
+  // ✅ FASE 3: Query para contar pagamentos pendentes
+  const { data: pendingPaymentsCount } = useQuery({
+    queryKey: ['pending-payments-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('payment_status', 'pending_payment')
+        .neq('status', 'cancelled');
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000, // Atualiza a cada 30s
+  });
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -78,31 +109,17 @@ export default function AttendantUnified() {
     o.status === 'pending' && o.payment_status !== 'pending_payment'
   );
   
-  // Tocar som de sino 3 vezes quando novo pedido chega
+  // ✅ FASE 3: Tocar som configurável quando novo pedido chega
   useEffect(() => {
     const currentPending = novosOrders.length;
     
-    if (soundEnabled && currentPending > previousPendingCount.current && previousPendingCount.current > 0) {
-      const playBellSound = () => {
-        const audio = new Audio('/bell.mp3');
-        audio.volume = 0.7;
-        
-        // Tocar 3 vezes com intervalo de 400ms
-        audio.play().catch(err => console.log('Audio play failed:', err));
-        setTimeout(() => {
-          audio.play().catch(err => console.log('Audio play failed:', err));
-        }, 400);
-        setTimeout(() => {
-          audio.play().catch(err => console.log('Audio play failed:', err));
-        }, 800);
-      };
-      
-      playBellSound();
+    if (soundSettings.enabled && currentPending > previousPendingCount.current && previousPendingCount.current > 0) {
+      playNewOrderSound();
       toast.info("🔔 Novo pedido recebido!");
     }
     
     previousPendingCount.current = currentPending;
-  }, [novosOrders.length, soundEnabled]);
+  }, [novosOrders.length, soundSettings.enabled, playNewOrderSound]);
   const emAndamentoOrders = filteredOrders.filter(o => ['confirmed', 'preparing'].includes(o.status));
   const finalizadosOrders = filteredOrders.filter(o => ['ready', 'out_for_delivery', 'delivered', 'completed'].includes(o.status));
 
@@ -150,11 +167,14 @@ export default function AttendantUnified() {
       <div className="min-h-screen bg-gray-50">
         {/* Header WABiz */}
         <WABizHeader
-        soundEnabled={soundEnabled}
-        onToggleSound={toggleSound}
+        soundEnabled={soundSettings.enabled}
+        onToggleSound={toggleSoundHook}
         onRefresh={refreshData}
         onSearch={handleSearch}
         notificationCount={stats?.pendingOrders || 0}
+        pendingPaymentsCount={pendingPaymentsCount || 0}
+        onOpenPendingPayments={() => setShowPendingPayments(true)}
+        onOpenPrintQueue={() => setShowPrintQueue(true)}
       />
 
       {/* Conteúdo Principal */}
@@ -236,22 +256,37 @@ export default function AttendantUnified() {
         </div>
       </div>
 
-      {/* Modal de Detalhes do Pedido */}
-      {selectedOrder && (
-        <div className="fixed bottom-4 right-4 z-50">
+      {/* Botões de ação flutuantes */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* Botão de Fila de Impressão */}
+        {printQueue.length > 0 && (
+          <Button
+            variant="default"
+            size="lg"
+            onClick={() => setShowPrintQueue(true)}
+            className="shadow-lg animate-pulse"
+          >
+            <Printer className="h-5 w-5 mr-2" />
+            Fila ({printQueue.length})
+          </Button>
+        )}
+        
+        {/* Botão de Reimprimir (se tiver pedido selecionado) */}
+        {selectedOrder && (
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={() => handleOrderAction('print', selectedOrder.id)}
             disabled={isPrinting}
             className="shadow-lg"
           >
-            <Printer className="h-4 w-4 mr-2" />
+            <Printer className="h-5 w-5 mr-2" />
             {isPrinting ? 'Imprimindo...' : 'Reimprimir'}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       
+      {/* Modal de Detalhes do Pedido */}
       <WABizOrderDetails
         order={selectedOrder}
         isOpen={!!selectedOrder}
@@ -262,6 +297,37 @@ export default function AttendantUnified() {
         onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
         onCancel={() => handleOrderAction('cancel', selectedOrder?.id)}
         isUpdating={isUpdating}
+      />
+      
+      {/* ✅ FASE 3: Modal de Fila de Impressão */}
+      {showPrintQueue && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Fila de Impressão</h2>
+              <Button variant="ghost" onClick={() => setShowPrintQueue(false)}>
+                Fechar
+              </Button>
+            </div>
+            <ThermalPrintQueue
+              queue={printQueue}
+              onRetry={retryPrint}
+              onClear={clearQueue}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* ✅ FASE 3: Modal de Pagamentos Pendentes */}
+      <PendingPaymentModal
+        isOpen={showPendingPayments}
+        onClose={() => setShowPendingPayments(false)}
+        onViewDetails={(orderId) => {
+          const order = orders?.find(o => o.id === orderId);
+          if (order) {
+            handleViewDetails(order);
+          }
+        }}
       />
       </div>
     </>

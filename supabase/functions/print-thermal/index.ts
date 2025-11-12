@@ -184,8 +184,14 @@ function formatOrderForPrint(order: Order): string {
   return printer.getContent();
 }
 
-// Simular envio para impressora Elgin (em produção, usaria SDK real)
-async function sendToElginPrinter(content: string, printerIP?: string): Promise<boolean> {
+// Simular envio para impressora Elgin com detecção de erros específicos
+async function sendToElginPrinter(content: string, printerIP?: string): Promise<{
+  success: boolean;
+  error_type?: string;
+  error_message?: string;
+  retryable?: boolean;
+  suggested_action?: string;
+}> {
   try {
     console.log('[THERMAL-PRINT] 🖨️ Enviando para impressora Elgin...');
     console.log(`[THERMAL-PRINT] 📍 IP: ${printerIP || 'USB'}`);
@@ -196,6 +202,17 @@ async function sendToElginPrinter(content: string, printerIP?: string): Promise<
     if (printerIP) {
       // Envio via rede TCP/IP
       console.log(`[THERMAL-PRINT] 🌐 Conectando via TCP: ${printerIP}:9100`);
+      
+      // Simular verificação de conexão de rede
+      if (Math.random() < 0.1) { // 10% de chance de falha de rede (simulação)
+        return {
+          success: false,
+          error_type: 'NETWORK_ERROR',
+          error_message: 'Não foi possível conectar à impressora via rede',
+          retryable: true,
+          suggested_action: 'Verifique o IP da impressora e a conexão de rede'
+        };
+      }
     } else {
       // Envio via USB
       console.log('[THERMAL-PRINT] 🔌 Conectando via USB');
@@ -205,10 +222,17 @@ async function sendToElginPrinter(content: string, printerIP?: string): Promise<
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     console.log('[THERMAL-PRINT] ✅ Impressão enviada com sucesso!');
-    return true;
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('[THERMAL-PRINT] ❌ Erro ao imprimir:', error);
-    return false;
+    
+    return {
+      success: false,
+      error_type: 'UNKNOWN',
+      error_message: error.message || 'Erro desconhecido na impressão',
+      retryable: true,
+      suggested_action: 'Tente novamente ou contate o suporte'
+    };
   }
 }
 
@@ -284,9 +308,15 @@ serve(async (req) => {
 
     // Enviar para impressora (múltiplas cópias se necessário)
     let successCount = 0;
+    let lastError: any = null;
+    
     for (let i = 0; i < copies; i++) {
-      const success = await sendToElginPrinter(printContent, printerIP);
-      if (success) successCount++;
+      const result = await sendToElginPrinter(printContent, printerIP);
+      if (result.success) {
+        successCount++;
+      } else {
+        lastError = result;
+      }
     }
 
     // Log da impressão
@@ -309,11 +339,17 @@ serve(async (req) => {
       success: successCount > 0,
       message: successCount === copies 
         ? `Comanda impressa com sucesso! (${successCount}/${copies} cópias)`
-        : `Impressão parcial: ${successCount}/${copies} cópias`,
+        : successCount === 0 && lastError
+          ? lastError.error_message
+          : `Impressão parcial: ${successCount}/${copies} cópias`,
       copies_printed: successCount,
       copies_requested: copies,
       order_id: orderId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      error_type: successCount === 0 && lastError ? lastError.error_type : undefined,
+      error_message: successCount === 0 && lastError ? lastError.error_message : undefined,
+      retryable: successCount === 0 && lastError ? lastError.retryable : undefined,
+      suggested_action: successCount === 0 && lastError ? lastError.suggested_action : undefined,
     };
 
     console.log('[THERMAL-PRINT] 📊 Resultado:', response);

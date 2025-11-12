@@ -173,12 +173,13 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     retry: 2,
   });
 
-  // ✅ FASE 2: REAL-TIME COM AUTO-RECONNECT E CONNECTION STATE
+  // ✅ FASE 2 + FASE 3: REAL-TIME COM AUTO-RECONNECT, CONNECTION STATE E PAYMENT STATUS
   useEffect(() => {
     console.log('🔴 [ATTENDANT] Configurando realtime subscription');
     
     let reconnectTimeout: NodeJS.Timeout;
     let channelRef: any = null;
+    let paymentChannelRef: any = null;
     
     const setupChannel = () => {
       // Limpar canal anterior se existir
@@ -303,13 +304,51 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     
     // Configurar canal inicial
     setupChannel();
+    
+    // ✅ FASE 3: Canal separado para updates de payment_status
+    paymentChannelRef = supabase
+      .channel('payment-status-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: 'payment_status=eq.paid'
+        },
+        (payload) => {
+          console.log('💰 [ATTENDANT] Pagamento confirmado:', payload.new);
+          
+          const order = payload.new as any;
+          
+          // Invalidar queries
+          queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
+          
+          // Notificação especial para pagamento confirmado
+          toast.success('💰 Pagamento Confirmado!', {
+            description: `Pedido #${order.id.substring(0, 8)} - ${order.customer_name}`,
+            duration: 5000,
+          });
+          
+          // Som especial de pagamento confirmado
+          const audio = new Audio('/sounds/success.mp3');
+          audio.volume = 0.7;
+          audio.play().catch(() => console.log('Não foi possível tocar som de pagamento'));
+        }
+      )
+      .subscribe((status) => {
+        console.log('💰 [ATTENDANT] Payment channel status:', status);
+      });
 
     // ✅ FASE 2: Cleanup robusto
     return () => {
-      console.log('🔴 [ATTENDANT] Removendo canal realtime');
+      console.log('🔴 [ATTENDANT] Removendo canais realtime');
       clearTimeout(reconnectTimeout);
       if (channelRef) {
         supabase.removeChannel(channelRef);
+      }
+      if (paymentChannelRef) {
+        supabase.removeChannel(paymentChannelRef);
       }
     };
   }, [queryClient]);

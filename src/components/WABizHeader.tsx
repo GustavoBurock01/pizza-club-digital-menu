@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PendingPaymentBadge } from "./PendingPaymentBadge";
 import { 
   Search, 
   Volume2, 
@@ -13,7 +14,8 @@ import {
   LogOut,
   Bell,
   Store,
-  MessageCircle
+  MessageCircle,
+  Printer
 } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { WABizSettings } from "./WABizSettings";
@@ -25,6 +27,9 @@ interface WABizHeaderProps {
   onRefresh: () => void;
   onSearch: (query: string) => void;
   notificationCount?: number;
+  pendingPaymentsCount?: number;
+  onOpenPendingPayments?: () => void;
+  onOpenPrintQueue?: () => void;
 }
 
 export const WABizHeader = ({ 
@@ -32,7 +37,10 @@ export const WABizHeader = ({
   onToggleSound, 
   onRefresh, 
   onSearch,
-  notificationCount = 0 
+  notificationCount = 0,
+  pendingPaymentsCount = 0,
+  onOpenPendingPayments,
+  onOpenPrintQueue,
 }: WABizHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -80,6 +88,14 @@ export const WABizHeader = ({
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 Online
               </Badge>
+              
+              {/* ✅ FASE 3: Badge de Pagamentos Pendentes */}
+              {pendingPaymentsCount > 0 && onOpenPendingPayments && (
+                <PendingPaymentBadge
+                  count={pendingPaymentsCount}
+                  onClick={onOpenPendingPayments}
+                />
+              )}
             </div>
 
             {/* Busca por Número do Pedido */}
@@ -103,6 +119,17 @@ export const WABizHeader = ({
                 <div className="font-medium">{getCurrentTime()}</div>
                 <div className="text-xs">{getGreeting()}</div>
               </div>
+
+              {/* Fila de Impressão */}
+              {onOpenPrintQueue && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onOpenPrintQueue}
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+              )}
 
               {/* Central de Mensagens */}
               <Button 
