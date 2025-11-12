@@ -11,7 +11,7 @@ const segments = [
     count: 67,
     percentage: 13.8,
     avgTicket: 42.0,
-    ltv: 1.298,50,
+    ltv: 1298.50,
     growth: '+27%',
     color: 'text-yellow-500',
   },

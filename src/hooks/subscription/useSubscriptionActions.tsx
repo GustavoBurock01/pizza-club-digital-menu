@@ -55,6 +55,13 @@ export const useSubscriptionActions = (userId?: string) => {
     try {
       console.log('[SUBSCRIPTION-ACTIONS] Reconciling with Stripe...');
       
+      // Get fresh session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('[SUBSCRIPTION-ACTIONS] No active session, skipping reconciliation');
+        return;
+      }
+      
       // Primary reconciliation against Stripe updating Supabase
       const { data, error } = await supabase.functions.invoke('reconcile-subscription', {
         body: { user_id: userId }

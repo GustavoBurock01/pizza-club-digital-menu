@@ -164,6 +164,8 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     signUp: auth.signUp,
     signIn: auth.signIn,
     signOut: async () => {
+      // Clear subscription cache on logout
+      subscription.clearCache();
       await SecureStorage.clearAll();
       await auth.signOut();
     },

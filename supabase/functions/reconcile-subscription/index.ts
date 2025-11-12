@@ -35,8 +35,27 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
-    if (userError || !userData.user) {
-      throw new Error(`Authentication error: ${userError?.message || 'No user found'}`);
+    if (userError) {
+      logStep("Authentication failed", { error: userError.message });
+      return new Response(JSON.stringify({ 
+        error: "Session expired - please login again",
+        success: false,
+        requiresLogin: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
+    if (!userData.user) {
+      return new Response(JSON.stringify({ 
+        error: "User not found",
+        success: false,
+        requiresLogin: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
     
     const user = userData.user;
