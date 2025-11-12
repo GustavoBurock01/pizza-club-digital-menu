@@ -25,6 +25,7 @@ export const AdminProductExtras = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExtra, setEditingExtra] = useState<ProductExtra | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -130,17 +131,29 @@ export const AdminProductExtras = () => {
   };
 
   const toggleActive = async (extra: ProductExtra) => {
+    setTogglingId(extra.id);
     try {
       const { error } = await supabase
         .from('product_extras')
         .update({ is_active: !extra.is_active })
         .eq('id', extra.id);
 
-      if (error) throw error;
-      toast.success(extra.is_active ? 'Desativado' : 'Ativado');
+      if (error) {
+        console.error('Erro ao atualizar extra:', error);
+        if (error.message.includes('row-level security')) {
+          toast.error('Você não tem permissão para atualizar extras');
+        } else {
+          toast.error(`Erro ao atualizar: ${error.message}`);
+        }
+        throw error;
+      }
+      
+      toast.success(extra.is_active ? 'Extra desativado!' : 'Extra ativado!');
       fetchExtras();
-    } catch (error) {
-      toast.error('Erro ao atualizar');
+    } catch (error: any) {
+      console.error('Erro detalhado:', error);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -235,8 +248,9 @@ export const AdminProductExtras = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => toggleActive(extra)}
+                      disabled={togglingId === extra.id}
                     >
-                      {extra.is_active ? 'Desativar' : 'Ativar'}
+                      {togglingId === extra.id ? 'Processando...' : extra.is_active ? 'Desativar' : 'Ativar'}
                     </Button>
                     <Button
                       size="sm"

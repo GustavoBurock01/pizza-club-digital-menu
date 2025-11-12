@@ -25,6 +25,7 @@ export const AdminProductCrusts = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCrust, setEditingCrust] = useState<ProductCrust | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -130,17 +131,29 @@ export const AdminProductCrusts = () => {
   };
 
   const toggleActive = async (crust: ProductCrust) => {
+    setTogglingId(crust.id);
     try {
       const { error } = await supabase
         .from('product_crusts')
         .update({ is_active: !crust.is_active })
         .eq('id', crust.id);
 
-      if (error) throw error;
-      toast.success(crust.is_active ? 'Desativada' : 'Ativada');
+      if (error) {
+        console.error('Erro ao atualizar borda:', error);
+        if (error.message.includes('row-level security')) {
+          toast.error('Você não tem permissão para atualizar bordas');
+        } else {
+          toast.error(`Erro ao atualizar: ${error.message}`);
+        }
+        throw error;
+      }
+      
+      toast.success(crust.is_active ? 'Borda desativada!' : 'Borda ativada!');
       fetchCrusts();
-    } catch (error) {
-      toast.error('Erro ao atualizar');
+    } catch (error: any) {
+      console.error('Erro detalhado:', error);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -235,8 +248,9 @@ export const AdminProductCrusts = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => toggleActive(crust)}
+                      disabled={togglingId === crust.id}
                     >
-                      {crust.is_active ? 'Desativar' : 'Ativar'}
+                      {togglingId === crust.id ? 'Processando...' : crust.is_active ? 'Desativar' : 'Ativar'}
                     </Button>
                     <Button
                       size="sm"
