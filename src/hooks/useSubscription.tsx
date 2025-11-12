@@ -41,26 +41,26 @@ export const useSubscription = (userId?: string) => {
   // 2. Actions hook - ações e realtime
   const actions = useSubscriptionActions(userId);
 
-  // ===== AUTO RECONCILE ON FIRST LOAD =====
+  // ===== AUTO RECONCILE ON FIRST LOAD - DESABILITADO =====
+  // A reconciliação automática causava erros 401 quando a sessão não estava totalmente estabelecida
+  // Agora apenas reconcilia manualmente quando o usuário clica no botão
+  // ou quando há uma atualização via webhook do Stripe
   useEffect(() => {
     if (userId && !query.isLoading && !query.isActive) {
-      // Reconciliar se nunca tentou OU se a última tentativa tem mais de 60s
+      // Verificar se já tentou reconciliar recentemente (últimos 5 minutos)
       const lastRecon = Number(sessionStorage.getItem(`reconciled_${userId}`) || '0');
-      const shouldReconcile = !lastRecon || (Date.now() - lastRecon > 60_000);
+      const fiveMinutes = 5 * 60 * 1000;
+      const shouldReconcile = !lastRecon || (Date.now() - lastRecon > fiveMinutes);
       
       if (shouldReconcile) {
-        console.log('[SUBSCRIPTION] First load - attempting reconciliation');
-        const timeout = setTimeout(() => {
-          actions.reconcile().then(() => {
-            try { 
-              sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); 
-            } catch {}
-          });
-        }, 1000);
-        return () => clearTimeout(timeout);
+        console.log('[SUBSCRIPTION] Checking if reconciliation is needed...');
+        // Apenas marcar que verificamos, não forçar reconciliação
+        try { 
+          sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); 
+        } catch {}
       }
     }
-  }, [userId, query.isLoading, query.isActive, actions]);
+  }, [userId, query.isLoading, query.isActive]);
 
   // Retornar API unificada (mesma interface pública)
   return {

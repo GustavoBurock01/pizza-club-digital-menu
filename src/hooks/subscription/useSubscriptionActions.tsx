@@ -56,9 +56,23 @@ export const useSubscriptionActions = (userId?: string) => {
       console.log('[SUBSCRIPTION-ACTIONS] Reconciling with Stripe...');
       
       // Get fresh session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.warn('[SUBSCRIPTION-ACTIONS] No active session, skipping reconciliation');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.warn('[SUBSCRIPTION-ACTIONS] No active session, skipping reconciliation', sessionError);
+        // Clear cache on auth errors
+        clearLocalCache(userId);
+        queryClient.removeQueries({ queryKey: ['subscription', userId] });
+        return;
+      }
+      
+      // Verify session is not expired (within 5 minutes of expiry)
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      const now = Date.now();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (expiresAt > 0 && (expiresAt - now) < fiveMinutes) {
+        console.warn('[SUBSCRIPTION-ACTIONS] Session near expiry, skipping reconciliation');
         return;
       }
       
@@ -67,51 +81,40 @@ export const useSubscriptionActions = (userId?: string) => {
         body: { user_id: userId }
       });
       
+      // Handle 401/403 errors (authentication issues) - don't retry
       if (error) {
+        const errorData = (data as any) || {};
+        if (errorData.requiresLogin || error.message?.includes('Authentication') || error.message?.includes('Session')) {
+          console.warn('[SUBSCRIPTION-ACTIONS] Authentication error, clearing cache:', errorData);
+          clearLocalCache(userId);
+          queryClient.removeQueries({ queryKey: ['subscription', userId] });
+          return;
+        }
+        
         console.error('[SUBSCRIPTION-ACTIONS] Reconciliation error:', error);
         throw error;
       }
       
       console.log('[SUBSCRIPTION-ACTIONS] Reconciliation result:', data);
-    } catch (error) {
-      console.error('[SUBSCRIPTION-ACTIONS] Reconciliation failed, trying fallback check-subscription...', error);
-      
-      // Fallback: direct check that also upserts an active sub if found
-      try {
-        const { data: checkData, error: checkError } = await supabase.functions.invoke('check-subscription', {});
-        
-        if (checkError) {
-          console.error('[SUBSCRIPTION-ACTIONS] Fallback check-subscription error:', checkError);
-        } else {
-          console.log('[SUBSCRIPTION-ACTIONS] Fallback check-subscription result:', checkData);
-          
-          // If subscribed, optimistically seed local cache for instant unlock
-          if ((checkData as any)?.subscribed) {
-            const payload = checkData as any;
-            const optimistic: SubscriptionData = {
-              isActive: true,
-              status: payload.status || 'active',
-              planName: payload.plan_name || 'Ativo',
-              planPrice: Number(payload.plan_price) || 0,
-              expiresAt: payload.expires_at || null,
-              stripeSubscriptionId: payload.stripe_subscription_id || null,
-            };
-            
-            // Update React Query cache immediately for instant unlock
-            queryClient.setQueryData(['subscription', userId], optimistic as any);
-          }
-        }
-      } catch (fallbackErr) {
-        console.error('[SUBSCRIPTION-ACTIONS] Fallback check-subscription failed:', fallbackErr);
+    } catch (error: any) {
+      // Don't do fallback for authentication errors
+      if (error?.message?.includes('Authentication') || error?.message?.includes('Session')) {
+        console.warn('[SUBSCRIPTION-ACTIONS] Skipping fallback due to auth error');
+        return;
       }
+      
+      console.error('[SUBSCRIPTION-ACTIONS] Reconciliation failed:', error);
     } finally {
       // Mark that we've attempted reconciliation to avoid UI deadlocks
       try { 
         sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); 
       } catch {}
       
-      // Trigger refetch after any attempt
-      queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
+      // Trigger refetch after any attempt (only if session is valid)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        queryClient.invalidateQueries({ queryKey: ['subscription', userId] });
+      }
     }
   }, [userId, queryClient]);
 
