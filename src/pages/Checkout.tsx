@@ -49,6 +49,7 @@ const Checkout = () => {
     items,
     getSubtotal,
     getTotal,
+    getItemCount,
     clearCart,
     removeItem,
     setDeliveryFee,
@@ -707,7 +708,29 @@ const Checkout = () => {
 
                     <Card>
                       <CardHeader>
-                        <CardTitle>Seus Itens ({items.length})</CardTitle>
+                        <CardTitle>Seus Itens ({getItemCount()})</CardTitle>
+                        
+                        {/* Lista Resumida de Itens */}
+                        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
+                          {items.map((item) => (
+                            <div 
+                              key={`summary-${item.id}`} 
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <span className="font-semibold text-primary min-w-[3ch]">
+                                {item.quantity}x
+                              </span>
+                              <span className="text-foreground">
+                                {item.name}
+                              </span>
+                              {item.customizations?.crustName && (
+                                <span className="text-xs text-muted-foreground">
+                                  (com {item.customizations.crustName})
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                        {productsLoading && <div className="flex items-center justify-center p-8 text-muted-foreground">
