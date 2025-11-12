@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { PendingPaymentBadge } from "./PendingPaymentBadge";
 import { 
   Search, 
-  Volume2, 
-  VolumeX, 
   RefreshCw, 
   Settings, 
   LogOut,
@@ -22,8 +20,6 @@ import { WABizSettings } from "./WABizSettings";
 import { MessagesHub } from "./MessagesHub";
 
 interface WABizHeaderProps {
-  soundEnabled: boolean;
-  onToggleSound: () => void;
   onRefresh: () => void;
   onSearch: (query: string) => void;
   notificationCount?: number;
@@ -33,8 +29,6 @@ interface WABizHeaderProps {
 }
 
 export const WABizHeader = ({ 
-  soundEnabled, 
-  onToggleSound, 
   onRefresh, 
   onSearch,
   notificationCount = 0,
@@ -162,21 +156,6 @@ export const WABizHeader = ({
                 )}
               </Button>
 
-              {/* Controle de Som */}
-              <Button
-                variant={soundEnabled ? "default" : "outline"}
-                size="sm"
-                onClick={onToggleSound}
-                className="flex items-center gap-2"
-              >
-                {soundEnabled ? (
-                  <Volume2 className="h-4 w-4" />
-                ) : (
-                  <VolumeX className="h-4 w-4" />
-                )}
-                Som
-              </Button>
-
               {/* Atualizar */}
               <Button
                 variant="outline"
@@ -219,7 +198,6 @@ export const WABizHeader = ({
             </div>
             
             <div className="flex items-center space-x-4 text-gray-600">
-              <span>Status do som: {soundEnabled ? "Ativado" : "Desativado"}</span>
               <span>Última atualização: {getCurrentTime()}</span>
             </div>
           </div>
@@ -229,8 +207,6 @@ export const WABizHeader = ({
       <WABizSettings
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        soundEnabled={soundEnabled}
-        onToggleSound={onToggleSound}
         onOpenMessages={() => setMessagesOpen(true)}
       />
 

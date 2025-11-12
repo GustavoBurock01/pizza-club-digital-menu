@@ -167,15 +167,13 @@ export default function AttendantUnified() {
       <div className="min-h-screen bg-gray-50">
         {/* Header WABiz */}
         <WABizHeader
-        soundEnabled={soundSettings.enabled}
-        onToggleSound={toggleSoundHook}
-        onRefresh={refreshData}
-        onSearch={handleSearch}
-        notificationCount={stats?.pendingOrders || 0}
-        pendingPaymentsCount={pendingPaymentsCount || 0}
-        onOpenPendingPayments={() => setShowPendingPayments(true)}
-        onOpenPrintQueue={() => setShowPrintQueue(true)}
-      />
+          onRefresh={refreshData}
+          onSearch={handleSearch}
+          notificationCount={stats?.pendingOrders || 0}
+          pendingPaymentsCount={pendingPaymentsCount || 0}
+          onOpenPendingPayments={() => setShowPendingPayments(true)}
+          onOpenPrintQueue={() => setShowPrintQueue(true)}
+        />
 
       {/* Conteúdo Principal */}
       <div className="p-6">
