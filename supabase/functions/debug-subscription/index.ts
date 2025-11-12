@@ -42,13 +42,32 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check if user can debug (admin or own user)
+    const { data: body } = await req.json().catch(() => ({ data: {} }));
+    const targetUserId = body?.target_user_id || user.id;
+    
+    // Validate admin permission if debugging another user
+    if (targetUserId !== user.id) {
+      const { data: isAdmin } = await supabaseClient
+        .rpc('has_role', { _role: 'admin' })
+        .single();
+      
+      if (!isAdmin) {
+        throw new Error('Only admins can debug other users');
+      }
+      
+      logStep("Admin debugging another user", { adminId: user.id, targetUserId });
+    }
+
+    const debugUserId = targetUserId;
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Step 1: Check current database state
     const { data: currentSub, error: dbError } = await supabaseClient
       .from('subscriptions')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', debugUserId)
       .single();
 
     logStep("Current database subscription", { 
@@ -61,7 +80,7 @@ serve(async (req) => {
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', debugUserId)
       .single();
 
     logStep("User profile", { 
@@ -74,7 +93,8 @@ serve(async (req) => {
     });
 
     // Step 3: Check Stripe customers by email
-    const customers = await stripe.customers.list({ email: user.email, limit: 10 });
+    const targetEmail = profile?.email || user.email;
+    const customers = await stripe.customers.list({ email: targetEmail, limit: 10 });
     logStep("Stripe customers found", { 
       count: customers.data.length,
       customers: customers.data.map((c: any) => ({
@@ -170,7 +190,7 @@ serve(async (req) => {
     const { data: auditLogs } = await supabaseClient
       .from('subscription_audit_logs')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', debugUserId)
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -182,8 +202,9 @@ serve(async (req) => {
     // Summary
     const summary = {
       user: {
-        id: user.id,
-        email: user.email
+        id: debugUserId,
+        email: targetEmail,
+        debugged_by: user.id !== debugUserId ? user.id : undefined
       },
       database_subscription: currentSub,
       stripe_customers_count: customers.data.length,

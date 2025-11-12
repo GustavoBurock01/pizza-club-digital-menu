@@ -26,6 +26,7 @@ import {
   Server,
   Megaphone,
   Plug,
+  Bug,
 } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUnifiedStore } from '@/stores/simpleStore';
@@ -50,8 +51,15 @@ import { Button } from "@/components/ui/button";
 import { useRole } from "@/hooks/useUnifiedProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: any;
+  badge?: string;
+}
+
 // Menu items for customers
-const customerItems = [
+const customerItems: MenuItem[] = [
   { title: "Início", url: "/dashboard", icon: Home },
   { title: "Cardápio", url: "/menu", icon: Package },
   { title: "Meus Pedidos", url: "/orders", icon: FileText },
@@ -60,18 +68,19 @@ const customerItems = [
 ];
 
 // Menu items for attendants  
-const attendantItems = [
+const attendantItems: MenuItem[] = [
   { title: "Dashboard", url: "/attendant", icon: BarChart3 },
   { title: "Pedidos", url: "/attendant/orders", icon: FileText },
   { title: "Clientes", url: "/attendant/customers", icon: Users },
 ];
 
 // Menu items for admins (NOVA HIERARQUIA)
-const adminItems = [
+const adminItems: MenuItem[] = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
   { title: "Gerenciar App", url: "/admin/gerenciar-app", icon: Settings2 },
   { title: "Configurações", url: "/admin/configuracoes", icon: Cog },
   { title: "Sistema", url: "/admin/sistema", icon: Server },
+  { title: "Debug Assinatura", url: "/admin/sistema/subscription-debug", icon: Bug, badge: "Admin" },
   { title: "Relatórios", url: "/admin/relatorios", icon: FileText },
   { title: "CRM", url: "/admin/crm", icon: Users },
   { title: "Marketing", url: "/admin/marketing", icon: Megaphone },
@@ -162,6 +171,11 @@ export function AppSidebar() {
                       {item.title === "Carrinho" && itemCount > 0 && (
                         <Badge variant="destructive" className="ml-auto">
                           {itemCount}
+                        </Badge>
+                      )}
+                      {item.badge && (
+                        <Badge variant="destructive" className="ml-auto text-xs px-1.5 py-0">
+                          {item.badge}
                         </Badge>
                       )}
                     </Button>

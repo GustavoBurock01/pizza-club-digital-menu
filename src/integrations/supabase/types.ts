@@ -2447,6 +2447,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_debug_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string | null
+          duration_ms: number | null
+          error: string | null
+          id: string
+          metadata: Json | null
+          result: Json | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          result?: Json | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          result?: Json | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean | null
@@ -2797,6 +2833,7 @@ export type Database = {
       cleanup_expired_stock_reservations: { Args: never; Returns: number }
       cleanup_monitoring_data: { Args: never; Returns: number }
       cleanup_old_closed_attempts: { Args: never; Returns: number }
+      cleanup_old_debug_logs: { Args: never; Returns: number }
       cleanup_old_queue_items: { Args: never; Returns: number }
       cleanup_rate_limits: { Args: never; Returns: number }
       complete_queue_item: {

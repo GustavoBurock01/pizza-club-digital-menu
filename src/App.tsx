@@ -66,6 +66,7 @@ const SistemaLogs = lazy(() => import("@/pages/admin/sistema/Logs"));
 const SistemaStatus = lazy(() => import("@/pages/admin/sistema/Status"));
 const SistemaPlanos = lazy(() => import("@/pages/admin/sistema/Planos"));
 const SistemaBackups = lazy(() => import("@/pages/admin/sistema/Backups"));
+const AdminSubscriptionDebug = lazy(() => import("@/pages/admin/sistema/SubscriptionDebug"));
 
 // FASE 6 - Relatórios
 const Relatorios = lazy(() => import("@/pages/admin/relatorios/index"));
@@ -267,6 +268,7 @@ const App = () => {
                 <Route path="status" element={<SistemaStatus />} />
                 <Route path="planos" element={<SistemaPlanos />} />
                 <Route path="backups" element={<SistemaBackups />} />
+                <Route path="subscription-debug" element={<AdminSubscriptionDebug />} />
               </Route>
 
               {/* ===== FASE 6 - RELATÓRIOS ===== */}
