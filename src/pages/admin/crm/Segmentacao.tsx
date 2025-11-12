@@ -6,13 +6,13 @@ import { Users, TrendingUp, Target, Filter } from 'lucide-react';
 
 const segments = [
   {
-    name: 'VIP - Alta Frequência',
+    name: 'QUENTE - ALTA FREQUENCIA',
     description: '15+ pedidos nos últimos 3 meses',
     count: 67,
     percentage: 13.8,
     avgTicket: 42.0,
-    ltv: 892.0,
-    growth: '+12%',
+    ltv: 1.298,50,
+    growth: '+27%',
     color: 'text-yellow-500',
   },
   {
