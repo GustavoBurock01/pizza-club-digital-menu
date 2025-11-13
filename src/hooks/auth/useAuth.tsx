@@ -26,6 +26,39 @@ export const useAuth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
+        // ✅ CORREÇÃO: Redirecionar no INITIAL_SESSION baseado na role
+        if (event === 'INITIAL_SESSION' && session?.user) {
+          const currentPath = window.location.pathname;
+          
+          // Se está em /auth ou /, redirecionar baseado na role (sem debounce!)
+          if (currentPath === '/auth' || currentPath === '/') {
+            setTimeout(() => {
+              supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .limit(1)
+                .maybeSingle()
+                .then(({ data }) => {
+                  const role = data?.role || 'customer';
+                  
+                  console.log('[AUTH] INITIAL_SESSION redirect for role:', role);
+                  
+                  switch (role) {
+                    case 'admin':
+                      navigate('/admin');
+                      break;
+                    case 'attendant':
+                      navigate('/attendant');
+                      break;
+                    default:
+                      navigate('/dashboard');
+                  }
+                });
+            }, 0);
+          }
+        }
+        
         if (event === 'SIGNED_OUT') {
           // Clear auth caches
           try {

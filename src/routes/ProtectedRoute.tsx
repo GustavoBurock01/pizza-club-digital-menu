@@ -27,8 +27,8 @@ export const ProtectedRoute = ({
   const location = useLocation();
 
   // ===== LOADING STATE =====
-  // Não bloquear apenas por subscription loading (reconciliação em background)
-  const isLoading = authLoading || (requireRole && roleLoading);
+  // ✅ CORREÇÃO: Sempre esperar role carregar para decisões de redirecionamento corretas
+  const isLoading = authLoading || roleLoading;
 
   if (isLoading) {
     return (
@@ -82,7 +82,8 @@ export const ProtectedRoute = ({
   }
 
   // ===== SUBSCRIPTION CHECK =====
-  if (requireSubscription && user && !hasSubscription) {
+  // ✅ CORREÇÃO: Atendentes e admins não precisam de subscription
+  if (requireSubscription && user && !hasSubscription && !isAdmin && !isAttendant) {
     const lastRecon = user ? Number(sessionStorage.getItem(`reconciled_${user.id}`) || '0') : 0;
     const reconciledRecently = lastRecon && (Date.now() - lastRecon < 60_000);
     if (subLoading || !reconciledRecently) {

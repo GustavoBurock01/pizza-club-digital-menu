@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { useDebounce } from '@/hooks/useDebounce';
 
 interface Profile {
   id: string;
@@ -28,8 +27,8 @@ export const useUnifiedProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Debounce user changes to prevent excessive calls
-  const debouncedUser = useDebounce(user, 300);
+  // ✅ CORREÇÃO: Remover debounce - role é crítica para roteamento imediato
+  const currentUser = user;
 
   // Memoized role computations
   const roleInfo = useMemo(() => {
@@ -56,7 +55,7 @@ export const useUnifiedProfile = () => {
 
   useEffect(() => {
     const fetchProfileAndRole = async () => {
-      if (!debouncedUser?.id) {
+      if (!currentUser?.id) {
         setProfile(null);
         setUserRole(null);
         setLoading(false);
@@ -69,7 +68,7 @@ export const useUnifiedProfile = () => {
         setError(null);
 
         // Check cache first
-        const cacheKey = debouncedUser.id;
+        const cacheKey = currentUser.id;
         const cached = profileCache.get(cacheKey);
         const now = Date.now();
 
@@ -79,13 +78,13 @@ export const useUnifiedProfile = () => {
           return;
         }
 
-        console.log('[PROFILE] Fetching profile and role for user:', debouncedUser.id);
+        console.log('[PROFILE] Fetching profile and role for user:', currentUser.id);
 
         // Fetch profile (without role column)
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', debouncedUser.id)
+          .eq('id', currentUser.id)
           .single();
 
         if (profileError) {
@@ -99,7 +98,7 @@ export const useUnifiedProfile = () => {
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', debouncedUser.id)
+            .eq('user_id', currentUser.id)
             .order('role', { ascending: true })
             .limit(1)
             .maybeSingle();
@@ -134,16 +133,16 @@ export const useUnifiedProfile = () => {
     };
 
     fetchProfileAndRole();
-  }, [debouncedUser?.id]);
+  }, [currentUser]);
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!debouncedUser?.id) throw new Error('Usuário não autenticado');
+    if (!currentUser?.id) throw new Error('Usuário não autenticado');
 
     try {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', debouncedUser.id)
+        .eq('id', currentUser.id)
         .select()
         .single();
 
@@ -152,7 +151,7 @@ export const useUnifiedProfile = () => {
       setProfile(data);
       
       // Update cache
-      profileCache.set(debouncedUser.id, { data, timestamp: Date.now() });
+      profileCache.set(currentUser.id, { data, timestamp: Date.now() });
       
       return data;
     } catch (err: any) {
@@ -164,11 +163,11 @@ export const useUnifiedProfile = () => {
   // Clear cache on user change
   useEffect(() => {
     return () => {
-      if (!debouncedUser) {
+      if (!currentUser) {
         profileCache.clear();
       }
     };
-  }, [debouncedUser]);
+  }, [currentUser]);
 
   return {
     // Profile data
