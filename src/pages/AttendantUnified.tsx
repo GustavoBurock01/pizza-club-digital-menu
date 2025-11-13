@@ -16,6 +16,7 @@ import { useSound } from "@/hooks/useSound";
 import { toast } from "sonner";
 import { Printer, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -30,7 +31,8 @@ export default function AttendantUnified() {
     startPreparation,
     markReady,
     markDelivered,
-    cancelOrder 
+    cancelOrder,
+    autoPrintEnabled
   } = useAttendant();
 
   const { 
@@ -174,6 +176,16 @@ export default function AttendantUnified() {
           onOpenPendingPayments={() => setShowPendingPayments(true)}
           onOpenPrintQueue={() => setShowPrintQueue(true)}
         />
+
+      {/* Badge de Impressão Automática */}
+      {autoPrintEnabled && (
+        <div className="bg-green-50 border-b border-green-200 px-6 py-3">
+          <Badge variant="outline" className="gap-2 bg-white border-green-300 text-green-700">
+            <Printer className="h-3 w-3" />
+            Impressão automática ativa - pedidos confirmados serão impressos automaticamente
+          </Badge>
+        </div>
+      )}
 
       {/* Conteúdo Principal */}
       <div className="p-6">
