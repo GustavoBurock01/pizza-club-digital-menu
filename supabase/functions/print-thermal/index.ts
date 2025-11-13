@@ -245,42 +245,57 @@ serve(async (req) => {
   try {
     console.log('[THERMAL-PRINT] 🚀 Solicitação de impressão recebida');
 
-    const { orderId, printerIP, copies = 1 } = await req.json();
+    const { orderId, printerIP, copies = 1, testMode = false, testOrder } = await req.json();
 
     if (!orderId) {
       throw new Error('ID do pedido é obrigatório');
     }
 
-    // Inicializar Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    let order: Order;
 
-    // Buscar dados completos do pedido
-    console.log(`[THERMAL-PRINT] 📋 Buscando pedido: ${orderId}`);
-    
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        addresses (street, number, neighborhood, city),
-        order_items (
-          quantity,
-          unit_price,
-          total_price,
-          customizations,
-          products (name)
-        )
-      `)
-      .eq('id', orderId)
-      .single();
+    // Modo de teste: usar pedido fornecido sem buscar no banco
+    if (testMode && testOrder) {
+      console.log('[THERMAL-PRINT] 🧪 Modo de teste ativado');
+      order = testOrder as Order;
+    } else {
+      // Modo normal: buscar pedido no banco
+      console.log(`[THERMAL-PRINT] 📋 Buscando pedido: ${orderId}`);
+      
+      // Inicializar Supabase
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          addresses (street, number, neighborhood, city),
+          order_items (
+            quantity,
+            unit_price,
+            total_price,
+            customizations,
+            products (name)
+          )
+        `)
+        .eq('id', orderId)
+        .single();
 
-    if (orderError || !order) {
-      throw new Error(`Pedido não encontrado: ${orderError?.message}`);
+      if (orderError || !orderData) {
+        throw new Error(`Pedido não encontrado: ${orderError?.message}`);
+      }
+      
+      order = orderData as Order;
     }
 
     // Formatar dados para impressão
-    const orderForPrint: Order = {
+    const orderForPrint: Order = testMode ? {
+      // Modo teste: usar dados diretos do testOrder
+      ...order,
+      items: order.items || []
+    } : {
+      // Modo normal: mapear dados do banco
       id: order.id,
       customer_name: order.customer_name,
       customer_phone: order.customer_phone,
@@ -289,14 +304,14 @@ serve(async (req) => {
       payment_method: order.payment_method,
       created_at: order.created_at,
       status: order.status,
-      street: order.addresses?.street,
-      number: order.addresses?.number,
-      neighborhood: order.addresses?.neighborhood,
-      city: order.addresses?.city,
+      street: (order as any).addresses?.street,
+      number: (order as any).addresses?.number,
+      neighborhood: (order as any).addresses?.neighborhood,
+      city: (order as any).addresses?.city,
       notes: order.notes,
-      items: order.order_items.map((item: any) => ({
+      items: ((order as any).order_items || []).map((item: any) => ({
         quantity: item.quantity,
-        name: item.products.name,
+        name: item.products?.name || item.name,
         unit_price: item.unit_price,
         total_price: item.total_price,
         customizations: item.customizations
@@ -319,21 +334,28 @@ serve(async (req) => {
       }
     }
 
-    // Log da impressão
-    await supabase
-      .from('webhook_logs')
-      .insert({
-        platform: 'elgin_printer',
-        event_type: 'thermal_print',
-        payload: {
-          order_id: orderId,
-          printer_ip: printerIP,
-          copies_requested: copies,
-          copies_printed: successCount,
-          print_content_size: printContent.length
-        },
-        status: successCount > 0 ? 'success' : 'failed'
-      });
+    // Log da impressão (apenas em modo normal, não em teste)
+    if (!testMode) {
+      // Inicializar Supabase para log (se ainda não foi inicializado)
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      await supabase
+        .from('webhook_logs')
+        .insert({
+          platform: 'elgin_printer',
+          event_type: 'thermal_print',
+          payload: {
+            order_id: orderId,
+            printer_ip: printerIP,
+            copies_requested: copies,
+            copies_printed: successCount,
+            print_content_size: printContent.length
+          },
+          status: successCount > 0 ? 'success' : 'failed'
+        });
+    }
 
     const response = {
       success: successCount > 0,
