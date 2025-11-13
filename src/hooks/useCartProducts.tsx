@@ -24,7 +24,10 @@ export const useCartProducts = (items: CartItem[]) => {
           id,
           name,
           categories:category_id (name),
-          subcategories:subcategory_id (name)
+          subcategories:subcategory_id (
+            name,
+            categories:category_id (name)
+          )
         `)
         .in('id', productIds);
 
@@ -33,12 +36,25 @@ export const useCartProducts = (items: CartItem[]) => {
         throw error;
       }
 
-      return (data || []).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        category_name: p.categories?.name || 'Produto',
-        subcategory_name: p.subcategories?.name || ''
-      })) as ProductInfo[];
+      return (data || []).map((p: any) => {
+        // Priorizar categoria direta do produto, depois categoria da subcategoria
+        let categoryName = p.categories?.name;
+        
+        if (!categoryName && p.subcategories?.categories?.name) {
+          categoryName = p.subcategories.categories.name;
+        }
+        
+        if (!categoryName) {
+          categoryName = 'Produto';
+        }
+        
+        return {
+          id: p.id,
+          name: p.name,
+          category_name: categoryName,
+          subcategory_name: p.subcategories?.name || ''
+        };
+      }) as ProductInfo[];
     },
     enabled: productIds.length > 0,
     ...applyStrategy('cartProducts'),
