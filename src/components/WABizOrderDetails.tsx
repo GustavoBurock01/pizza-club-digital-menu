@@ -96,8 +96,7 @@ export const WABizOrderDetails = ({
       confirmed: "Confirmado", 
       preparing: "Preparando",
       ready: "Pronto para Retirada",
-      out_for_delivery: "Em Rota de Entrega",
-      delivering: "Em Rota de Entrega",
+      in_delivery: "Em Rota de Entrega",
       delivered: "Entregue",
       completed: "Finalizado",
       cancelled: "Cancelado"
@@ -162,6 +161,7 @@ export const WABizOrderDetails = ({
           </Button>
         );
       case 'ready':
+        // Apenas para RETIRADA
         return isPickup ? (
           <Button 
             onClick={onMarkDelivered} 
@@ -172,9 +172,10 @@ export const WABizOrderDetails = ({
             Finalizar Pedido
           </Button>
         ) : null;
-      case 'out_for_delivery':
-      case 'delivering':
-        return (
+      
+      case 'in_delivery':
+        // Apenas para ENTREGA
+        return !isPickup ? (
           <Button 
             onClick={onMarkDelivered} 
             disabled={isUpdating}
@@ -183,7 +184,8 @@ export const WABizOrderDetails = ({
             <Check className="h-4 w-4 mr-2" />
             Marcar como Entregue
           </Button>
-        );
+        ) : null;
+      
       default:
         return null;
     }

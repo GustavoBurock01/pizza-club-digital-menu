@@ -444,8 +444,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
 
   const markReady = useCallback(async (orderId: string, deliveryMethod: string) => {
     try {
-      // Se for retirada, marca como ready. Se for delivery, marca como out_for_delivery
-      const newStatus = deliveryMethod === 'pickup' ? 'ready' : 'out_for_delivery';
+      // Se for retirada, marca como ready. Se for delivery, marca como in_delivery
+      const newStatus = deliveryMethod === 'pickup' ? 'ready' : 'in_delivery';
       await updateOrderStatus(orderId, newStatus);
       toast.success(deliveryMethod === 'pickup' ? "Pronto para retirada!" : "Saiu para entrega!");
     } catch (error) {

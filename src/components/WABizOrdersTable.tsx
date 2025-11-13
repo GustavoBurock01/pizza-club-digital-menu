@@ -29,7 +29,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
       confirmed: "bg-blue-500 hover:bg-blue-600",
       preparing: "bg-purple-500 hover:bg-purple-600",
       ready: "bg-green-500 hover:bg-green-600",
-      delivering: "bg-orange-500 hover:bg-orange-600",
+      in_delivery: "bg-orange-500 hover:bg-orange-600",
       delivered: "bg-gray-500 hover:bg-gray-600",
       cancelled: "bg-red-500 hover:bg-red-600"
     };
@@ -42,7 +42,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
       confirmed: "Confirmado", 
       preparing: "Preparando",
       ready: "Pronto",
-      delivering: "Em entrega",
+      in_delivery: "Em entrega",
       delivered: "Entregue",
       cancelled: "Cancelado"
     };
