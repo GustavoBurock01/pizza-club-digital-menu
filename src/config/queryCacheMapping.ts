@@ -13,6 +13,7 @@ export const DOMAIN_CACHE_STRATEGY = {
   categories: CACHE_STRATEGIES.STATIC,
   productTemplates: CACHE_STRATEGIES.STATIC,
   systemConfig: CACHE_STRATEGIES.STATIC,
+  cartProducts: CACHE_STRATEGIES.STATIC, // ✅ Categorias são metadados estruturais (raramente mudam)
   
   // Semi-static data (1h cache) - Muda ocasionalmente
   userProfile: CACHE_STRATEGIES.SEMI_STATIC,
@@ -23,7 +24,6 @@ export const DOMAIN_CACHE_STRATEGY = {
   // Dynamic data (5min cache) - Muda com frequência moderada
   products: CACHE_STRATEGIES.DYNAMIC,
   menu: CACHE_STRATEGIES.DYNAMIC,
-  cartProducts: CACHE_STRATEGIES.DYNAMIC,
   
   // Critical data (30s cache) - Precisa estar sempre atualizado
   stock: CACHE_STRATEGIES.CRITICAL,
