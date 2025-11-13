@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Printer, TestTube, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Printer, TestTube, CheckCircle, XCircle, Eye, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useThermalPrinterConfig } from '@/hooks/useThermalPrinterConfig';
 import { useThermalPrint } from '@/hooks/useThermalPrint';
@@ -72,6 +73,18 @@ export default function Impressao() {
         </div>
 
         <Separator />
+
+        {/* Alert quando ativada */}
+        {localEnabled && (
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Impressão automática ativada</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Todos os pedidos confirmados serão impressos automaticamente. 
+              Os atendentes verão um indicador no painel quando esta função estiver ativa.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Ativação */}
         <div className="flex items-center justify-between">
@@ -164,6 +177,14 @@ export default function Impressao() {
           >
             <TestTube className="h-4 w-4" />
             {isPrinting ? 'Testando...' : 'Testar Impressão'}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handlePreview}
+          >
+            <Eye className="h-4 w-4" />
+            Visualizar Comanda
           </Button>
         </div>
 

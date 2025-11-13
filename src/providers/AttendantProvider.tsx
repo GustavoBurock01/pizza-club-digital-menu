@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useThermalPrint } from '@/hooks/useThermalPrint';
+import { useAutoPrint } from '@/hooks/useAutoPrint';
 
 // ===== TIPOS CONSOLIDADOS =====
 interface AttendantStats {
@@ -66,6 +67,9 @@ interface AttendantContextType {
   markReady: (orderId: string, deliveryMethod: string) => Promise<void>;
   markDelivered: (orderId: string) => Promise<void>;
   cancelOrder: (orderId: string) => Promise<void>;
+  
+  // Auto-print
+  autoPrintEnabled: boolean;
 }
 
 const AttendantContext = createContext<AttendantContextType | undefined>(undefined);
@@ -82,6 +86,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
   
   const queryClient = useQueryClient();
   const { printOrder } = useThermalPrint();
+  const { tryAutoPrint, isEnabled: autoPrintEnabled } = useAutoPrint();
 
   // ===== QUERY ÚNICA PARA DADOS COMBINADOS =====
   const { data: combinedData, isLoading: loading, refetch } = useQuery({
@@ -219,6 +224,20 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
               // Tocar som de notificação
               const audio = new Audio('/bell.mp3');
               audio.play().catch(() => console.log('Não foi possível tocar o som de notificação'));
+            }
+
+            // ✅ Impressão automática para pedidos confirmados
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const order = payload.new as any;
+              
+              // Tentar imprimir se foi confirmado
+              if (order.status === 'confirmed') {
+                tryAutoPrint({
+                  id: order.id,
+                  status: order.status,
+                  customer_name: order.customer_name || 'Cliente'
+                });
+              }
             }
           }
         )
@@ -484,6 +503,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     markReady,
     markDelivered,
     cancelOrder,
+    autoPrintEnabled, // ✅ Auto-print status
   };
 
   return (
