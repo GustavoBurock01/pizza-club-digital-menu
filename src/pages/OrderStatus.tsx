@@ -164,6 +164,8 @@ const OrderStatus = () => {
   };
 
   const getStatusInfo = (status: string) => {
+    const isPickup = order?.delivery_method === 'pickup';
+    
     const statusConfig = {
       pending: {
         label: 'Pedido Recebido',
@@ -183,17 +185,23 @@ const OrderStatus = () => {
         icon: Clock,
         description: 'Sua pizza está sendo preparada'
       },
-      out_for_delivery: {
-        label: 'Saiu para Entrega',
-        color: 'bg-purple-500',
-        icon: Truck,
-        description: 'Em rota de entrega'
-      },
-      delivered: {
-        label: 'Entregue',
+      ready: {
+        label: 'Pronto para Retirada',
         color: 'bg-green-500',
         icon: CheckCircle,
-        description: 'Pedido entregue com sucesso'
+        description: 'Seu pedido está pronto!'
+      },
+      in_delivery: {
+        label: 'Em Rota de Entrega',
+        color: 'bg-purple-500',
+        icon: Truck,
+        description: 'Seu pedido está a caminho'
+      },
+      delivered: {
+        label: 'Concluído',
+        color: 'bg-green-500',
+        icon: CheckCircle,
+        description: isPickup ? 'Pedido retirado com sucesso!' : 'Pedido entregue com sucesso!'
       }
     };
 
@@ -214,14 +222,25 @@ const OrderStatus = () => {
   };
 
   const getStatusSteps = () => {
-    const steps = [
+    const isPickup = order?.delivery_method === 'pickup';
+    
+    const pickupSteps = [
       { key: 'pending', label: 'Recebido' },
       { key: 'confirmed', label: 'Confirmado' },
       { key: 'preparing', label: 'Preparando' },
-      { key: 'out_for_delivery', label: 'Em Entrega' },
-      { key: 'delivered', label: 'Entregue' }
+      { key: 'ready', label: 'Pronto para Retirada' },
+      { key: 'delivered', label: 'Concluído' }
     ];
-
+    
+    const deliverySteps = [
+      { key: 'pending', label: 'Recebido' },
+      { key: 'confirmed', label: 'Confirmado' },
+      { key: 'preparing', label: 'Preparando' },
+      { key: 'in_delivery', label: 'Em Rota de Entrega' },
+      { key: 'delivered', label: 'Concluído' }
+    ];
+    
+    const steps = isPickup ? pickupSteps : deliverySteps;
     const currentIndex = steps.findIndex(step => step.key === order?.status);
     
     return steps.map((step, index) => ({

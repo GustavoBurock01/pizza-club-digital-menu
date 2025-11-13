@@ -34,7 +34,7 @@ const getStatusColor = (status: string) => {
     case 'confirmed': return 'bg-blue-100 text-blue-800';
     case 'preparing': return 'bg-orange-100 text-orange-800';
     case 'ready': return 'bg-purple-100 text-purple-800';
-    case 'delivering': return 'bg-indigo-100 text-indigo-800';
+    case 'in_delivery': return 'bg-indigo-100 text-indigo-800';
     case 'delivered': return 'bg-green-100 text-green-800';
     case 'cancelled': return 'bg-red-100 text-red-800';
     default: return 'bg-gray-100 text-gray-800';
@@ -46,8 +46,8 @@ const getStatusLabel = (status: string) => {
     case 'pending': return 'Pendente';
     case 'confirmed': return 'Confirmado';
     case 'preparing': return 'Preparando';
-    case 'ready': return 'Pronto';
-    case 'delivering': return 'Entregando';
+    case 'ready': return 'Pronto (Retirada)';
+    case 'in_delivery': return 'Em Rota de Entrega';
     case 'delivered': return 'Entregue';
     case 'cancelled': return 'Cancelado';
     default: return status;
