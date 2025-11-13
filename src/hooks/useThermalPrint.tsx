@@ -343,10 +343,61 @@ export const useThermalPrint = () => {
     toast.success('Fila de impressão limpa');
   }, [printQueue]);
 
+  // Função para obter preview do pedido
+  const getOrderPreview = async (orderId: string) => {
+    try {
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            quantity,
+            unit_price,
+            total_price,
+            notes,
+            products (name)
+          ),
+          addresses (
+            street,
+            number,
+            complement,
+            neighborhood,
+            city,
+            state,
+            zip_code
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (error) throw error;
+      if (!order) throw new Error('Pedido não encontrado');
+
+      return {
+        ...order,
+        order_number: order.id.slice(0, 8),
+        customer_phone: order.customer_phone || 'Não informado',
+        delivery_address: order.addresses,
+        items: order.order_items?.map((item: any) => ({
+          product_name: item.products?.name || 'Produto',
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          notes: item.notes
+        })) || [],
+        subtotal: order.total_amount - (order.delivery_fee || 0)
+      };
+    } catch (error) {
+      console.error('Erro ao buscar pedido para preview:', error);
+      throw error;
+    }
+  };
+
   return {
     printOrder,
     printOrderCopies,
     testPrinter,
+    getOrderPreview,
     isPrinting,
     lastPrintResult,
     printQueue,

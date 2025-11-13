@@ -1,8 +1,16 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VirtualizedList } from './VirtualizedList';
+import { formatCurrency, formatDateTime } from '@/utils/formatting';
+import { Eye } from 'lucide-react';
+import { ThermalPrintPreviewDialog } from './ThermalPrintPreviewDialog';
+import { formatOrderForPreview } from '@/utils/thermalPrintFormatter';
+import { useThermalPrint } from '@/hooks/useThermalPrint';
+import { toast } from 'sonner';
+
 // Definindo o tipo AdminOrder diretamente
 interface AdminOrder {
   id: string;
@@ -14,7 +22,6 @@ interface AdminOrder {
     full_name: string;
   };
 }
-import { formatCurrency, formatDateTime } from '@/utils/formatting';
 
 interface AdminOrdersTableProps {
   orders: AdminOrder[];
@@ -48,6 +55,35 @@ const getStatusLabel = (status: string) => {
 };
 
 export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTableProps) => {
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewLines, setPreviewLines] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const { getOrderPreview, printOrder, isPrinting } = useThermalPrint();
+
+  const handleShowPreview = async (order: AdminOrder) => {
+    try {
+      const orderData = await getOrderPreview(order.id);
+      const lines = formatOrderForPreview(orderData);
+      setPreviewLines(lines);
+      setSelectedOrder(order);
+      setShowPreview(true);
+    } catch (error) {
+      toast.error("Erro ao carregar preview do pedido");
+      console.error(error);
+    }
+  };
+
+  const handlePrintFromPreview = async () => {
+    if (selectedOrder) {
+      try {
+        await printOrder(selectedOrder.id);
+        toast.success("Pedido enviado para impressão");
+      } catch (error) {
+        toast.error("Erro ao imprimir pedido");
+      }
+    }
+  };
+
   const renderOrder = (order: AdminOrder) => (
     <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="flex-1">
@@ -68,6 +104,13 @@ export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTablePro
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleShowPreview(order)}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
         <Select
           value={order.status}
           onValueChange={(value) => onUpdateStatus(order.id, value)}
@@ -116,6 +159,15 @@ export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTablePro
           </div>
         )}
       </CardContent>
+
+      <ThermalPrintPreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        lines={previewLines}
+        onConfirm={handlePrintFromPreview}
+        title={`Preview do Pedido #${selectedOrder?.id.slice(0, 8)}`}
+        description="Visualize como a comanda será impressa"
+      />
     </Card>
   );
 };
