@@ -4,13 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Printer, TestTube, CheckCircle, XCircle } from 'lucide-react';
+import { Printer, TestTube, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useThermalPrinterConfig } from '@/hooks/useThermalPrinterConfig';
 import { useThermalPrint } from '@/hooks/useThermalPrint';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { ThermalPrintPreviewDialog } from '@/components/ThermalPrintPreviewDialog';
+import { formatOrderForPreview } from '@/utils/thermalPrintFormatter';
+import { mockTestOrder } from '@/utils/mockThermalData';
 
 export default function Impressao() {
   const { config, setConnectionType, setPrinterIP, setEnabled, saveConfig, isLoading } = useThermalPrinterConfig();
@@ -19,6 +22,8 @@ export default function Impressao() {
   const [localIP, setLocalIP] = useState(config.printerIP);
   const [localType, setLocalType] = useState(config.connectionType);
   const [localEnabled, setLocalEnabled] = useState(config.enabled);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewLines, setPreviewLines] = useState<any[]>([]);
 
   const handleSave = async () => {
     await saveConfig({
@@ -31,6 +36,16 @@ export default function Impressao() {
 
   const handleTest = async () => {
     await testPrinter(localType === 'network' ? localIP : undefined);
+  };
+
+  const handlePreview = () => {
+    const lines = formatOrderForPreview(mockTestOrder);
+    setPreviewLines(lines);
+    setShowPreview(true);
+  };
+
+  const handlePrintFromPreview = async () => {
+    await handleTest();
   };
 
   const lastTest = config.testResults?.[0];
@@ -163,6 +178,15 @@ export default function Impressao() {
           </ol>
         </div>
       </Card>
+
+      <ThermalPrintPreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        lines={previewLines}
+        onConfirm={handlePrintFromPreview}
+        title="Preview de Teste"
+        description="Visualize como ficará a comanda de teste na impressora térmica"
+      />
     </div>
   );
 }
