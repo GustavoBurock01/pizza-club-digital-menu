@@ -20,10 +20,21 @@ export const DOMAIN_CACHE_STRATEGY = {
   subscription: CACHE_STRATEGIES.SEMI_STATIC,
   addresses: CACHE_STRATEGIES.SEMI_STATIC,
   loyaltyTiers: CACHE_STRATEGIES.SEMI_STATIC,
+  products: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De DYNAMIC - Catálogo muda 1-2x/semana
+  menu: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De DYNAMIC - Estrutura raramente muda
+  campaigns: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Configuradas e mantidas
+  coupons: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Criados e permanecem fixos
+  promotions: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Período definido
+  banners: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Estáticos durante exibição
+  deliveryDrivers: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Lista muda raramente
+  deliveryZones: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Zonas são fixas
+  integrations: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Configurações estáticas
+  customerSegments: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Segmentação não muda em tempo real
+  loyaltyRewards: CACHE_STRATEGIES.SEMI_STATIC, // ✅ De REALTIME - Recompensas configuradas
   
   // Dynamic data (5min cache) - Muda com frequência moderada
-  products: CACHE_STRATEGIES.DYNAMIC,
-  menu: CACHE_STRATEGIES.DYNAMIC,
+  customers: CACHE_STRATEGIES.DYNAMIC, // ✅ De REALTIME - Lista muda, mas 5min é suficiente
+  loyaltyRedemptions: CACHE_STRATEGIES.DYNAMIC, // ✅ De REALTIME - Resgates não precisam ser instantâneos
   
   // Critical data (30s cache) - Precisa estar sempre atualizado
   stock: CACHE_STRATEGIES.CRITICAL,
@@ -31,18 +42,7 @@ export const DOMAIN_CACHE_STRATEGY = {
   adminOrders: CACHE_STRATEGIES.CRITICAL,
   
   // Realtime data (30s cache + refetch agressivo) - Dados em tempo real
-  orders: CACHE_STRATEGIES.REALTIME,
-  customers: CACHE_STRATEGIES.REALTIME,
-  campaigns: CACHE_STRATEGIES.REALTIME,
-  coupons: CACHE_STRATEGIES.REALTIME,
-  promotions: CACHE_STRATEGIES.REALTIME,
-  banners: CACHE_STRATEGIES.REALTIME,
-  deliveryDrivers: CACHE_STRATEGIES.REALTIME,
-  deliveryZones: CACHE_STRATEGIES.REALTIME,
-  integrations: CACHE_STRATEGIES.REALTIME,
-  customerSegments: CACHE_STRATEGIES.REALTIME,
-  loyaltyRewards: CACHE_STRATEGIES.REALTIME,
-  loyaltyRedemptions: CACHE_STRATEGIES.REALTIME,
+  orders: CACHE_STRATEGIES.REALTIME, // ✅ Mantido - Pedidos precisam ser instantâneos
 } as const;
 
 /**
