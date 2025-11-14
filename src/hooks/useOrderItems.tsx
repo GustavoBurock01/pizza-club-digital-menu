@@ -31,42 +31,49 @@ export const useOrderItems = (orderId: string | undefined, isOpen: boolean) => {
 
       console.log(`[ORDER-ITEMS] Fetching items for order ${orderId}`);
       
-      // ✅ FASE 2: AbortController integrado com React Query
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          unit_price,
-          total_price,
-          customizations,
-          products (
-            name,
-            image_url
-          )
-        `)
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: true })
-        .abortSignal(signal as any);
+      try {
+        // ✅ FASE 2: AbortController integrado com React Query
+        const { data, error } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            product_id,
+            quantity,
+            unit_price,
+            total_price,
+            customizations,
+            products (
+              name,
+              image_url
+            )
+          `)
+          .eq('order_id', orderId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('[ORDER-ITEMS] Error:', error);
-        throw error;
+        if (error) {
+          console.error('[ORDER-ITEMS] Error:', error);
+          throw error;
+        }
+
+        console.log(`[ORDER-ITEMS] Found ${data?.length || 0} items`, data);
+        return (data || []) as OrderItem[];
+      } catch (err: any) {
+        // Não logar erro de abort
+        if (err.name !== 'AbortError' && !signal?.aborted) {
+          console.error('[ORDER-ITEMS] Exception:', err);
+        }
+        throw err;
       }
-
-      console.log(`[ORDER-ITEMS] Found ${data?.length || 0} items`);
-      return (data || []) as OrderItem[];
     },
     enabled: !!orderId && isOpen, // ✅ FASE 2: Só fetch quando necessário
     staleTime: 30000, // 30 segundos
-    retry: 3, // ✅ FASE 2: React Query faz retry automático
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // ✅ FASE 2: Backoff exponencial
+    retry: 2, // ✅ FASE 2: React Query faz retry automático
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 5000), // ✅ FASE 2: Backoff exponencial
   });
 
-  // ✅ FASE 2: Mostrar toast apenas quando houver erro final
+  // ✅ FASE 2: Mostrar toast apenas quando houver erro final (exceto aborts)
   useEffect(() => {
-    if (error) {
+    if (error && error.name !== 'AbortError') {
       console.error('[ORDER-ITEMS] Final error after retries:', error);
       toast({
         title: "Erro ao carregar itens",
