@@ -1,6 +1,6 @@
 // ===== HOOK PARA CONFIGURAÇÕES DA IMPRESSORA TÉRMICA =====
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 interface PrinterConfig {
@@ -162,8 +162,17 @@ export const useThermalPrinterConfig = () => {
     });
   };
 
+  // Memorizar config para evitar mudanças desnecessárias
+  const memoizedConfig = useMemo(() => config, [
+    config.connectionType,
+    config.printerIP,
+    config.enabled,
+    config.lastTested,
+    config.testResults.length
+  ]);
+
   return {
-    config,
+    config: memoizedConfig,
     isLoading,
     setConnectionType,
     setPrinterIP,

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useThermalPrint } from './useThermalPrint';
 import { useThermalPrinterConfig } from './useThermalPrinterConfig';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ export const useAutoPrint = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const logAutoPrint = (action: string, data: any) => {
+  const logAutoPrint = useCallback((action: string, data: any) => {
     const log: AutoPrintLog = {
       timestamp: new Date().toISOString(),
       action,
@@ -49,9 +49,9 @@ export const useAutoPrint = () => {
     } catch (error) {
       console.error('[AUTO-PRINT] Erro ao salvar log:', error);
     }
-  };
+  }, [config.enabled]);
 
-  const tryAutoPrint = async (order: AutoPrintOrder) => {
+  const tryAutoPrint = useCallback(async (order: AutoPrintOrder) => {
     // Verificar se impressão automática está habilitada
     if (!config.enabled) {
       logAutoPrint('skipped_disabled', { orderId: order.id });
@@ -95,7 +95,7 @@ export const useAutoPrint = () => {
         },
       });
     }
-  };
+  }, [config.enabled, printOrder, logAutoPrint]);
 
   const getAutoPrintLogs = (): AutoPrintLog[] => {
     try {
