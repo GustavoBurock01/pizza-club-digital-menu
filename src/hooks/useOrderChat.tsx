@@ -46,17 +46,19 @@ export const useOrderChat = (orderId: string) => {
         setUnreadCount(unread);
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
+      if (error.name === 'AbortError' || signal?.aborted) {
         console.log('[CHAT] Fetch aborted');
         return;
       }
-      console.error('Erro ao buscar mensagens:', error);
-      // ✅ FASE 2: Toast chamado aqui, não na dependência
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar as mensagens.',
-        variant: 'destructive',
-      });
+      // Só mostrar toast se for um erro real e não abort
+      if (error.code !== 'PGRST116' && error.message !== 'signal is aborted without reason') {
+        console.error('Erro ao buscar mensagens:', error);
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar as mensagens.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
@@ -69,14 +71,18 @@ export const useOrderChat = (orderId: string) => {
     if (!orderId) {
       setMessages([]);
       setLoading(false);
+      setUnreadCount(0);
       return;
     }
 
     // ✅ FASE 2: AbortController para cancelar fetches pendentes
     const abortController = new AbortController();
+    let isMounted = true;
     
     // Buscar mensagens iniciais
-    fetchMessages(abortController.signal);
+    if (isMounted) {
+      fetchMessages(abortController.signal);
+    }
 
     let channelRef: any = null;
 
@@ -143,6 +149,7 @@ export const useOrderChat = (orderId: string) => {
     // ✅ FASE 2: Cleanup robusto com AbortController
     return () => {
       console.log(`[CHAT] Cleaning up channel for order ${orderId}`);
+      isMounted = false;
       abortController.abort(); // Cancelar fetch pendente
       if (channelRef) {
         supabase.removeChannel(channelRef);
