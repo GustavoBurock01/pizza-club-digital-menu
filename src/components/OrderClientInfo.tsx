@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card';
 import { User } from 'lucide-react';
 
 interface OrderClientInfoProps {
@@ -7,9 +6,9 @@ interface OrderClientInfoProps {
 
 export const OrderClientInfo = ({ order }: OrderClientInfoProps) => {
   return (
-    <Card className="p-4 border-l-4 border-l-blue-500">
-      <div className="flex items-center gap-2 mb-3">
-        <User className="h-5 w-5 text-blue-500" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <User className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-lg">Cliente</h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -30,6 +29,6 @@ export const OrderClientInfo = ({ order }: OrderClientInfoProps) => {
           <p className="font-medium truncate">{order.profiles?.email || 'Não informado'}</p>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
