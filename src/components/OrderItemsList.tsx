@@ -1,6 +1,23 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingCart, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useCatalogPricing } from '@/hooks/useCatalogPricing';
+
+const parseCurrency = (v: any): number => {
+  if (v == null) return 0;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    let s = v.replace(/[^\d,.-]/g, '').trim();
+    if (s.includes(',') && s.includes('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (s.includes(',')) {
+      s = s.replace(',', '.');
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+};
 
 interface OrderItemsListProps {
   items: any[];
@@ -8,6 +25,8 @@ interface OrderItemsListProps {
 }
 
 export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
+  const { crustById, crustByName, extraByName } = useCatalogPricing();
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -45,14 +64,41 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
             const productName = item.products?.name || 'Produto';
             const categoryName = item.products?.categories?.name || null;
             const subcategoryName = item.products?.subcategories?.name || null;
-            const quantity = item.quantity || 1;
-            const unit = Number(item.unit_price || 0);
-            const total = Number(item.total_price ?? unit * quantity);
+            const quantity = parseCurrency(item.quantity ?? 1) || 1;
+            const unit = parseCurrency(item.unit_price ?? item.unitPrice ?? c.unit_price ?? 0);
+            const total = parseCurrency(item.total_price ?? item.totalPrice ?? unit * quantity);
 
-            const crustLabel = c.crustName || c.crust || null;
-            const crustPrice = Number(c.crustPrice || c.crust_price || 0);
-            const extrasList = (c.extrasNames || c.extras || []) as string[];
-            const extrasPrices = (c.extrasPrices || c.extras_prices || []) as number[];
+            const crustLabel = c.crustName || c.crust || c.crust_label || null;
+            const crustId = typeof c.crust === 'string' ? c.crust : c.crust?.id;
+            const crustInfo = (crustId && crustById[crustId]) || (crustLabel && crustByName[crustLabel]);
+            const crustPrice = parseCurrency(c.crustPrice ?? c.crust_price ?? crustInfo?.price ?? 0);
+
+            const extrasList: string[] = Array.isArray(c.extrasNames)
+              ? c.extrasNames
+              : Array.isArray(c.extras)
+                ? c.extras
+                : [];
+
+            const rawExtrasPrices: any[] = Array.isArray(c.extrasPrices)
+              ? c.extrasPrices
+              : Array.isArray(c.extras_prices)
+                ? c.extras_prices
+                : [];
+
+            const extrasWithPrice = extrasList.map((name: string, idx: number) => {
+              const raw = rawExtrasPrices[idx];
+              const price = parseCurrency(raw ?? extraByName[name]?.price ?? 0);
+              return { name, price };
+            });
+
+            let extrasTotal = extrasWithPrice.reduce((acc, e) => acc + (Number.isFinite(e.price) ? e.price : 0), 0);
+
+            if (!extrasTotal && Array.isArray((c as any).extrasDetails)) {
+              extrasTotal = (c as any).extrasDetails.reduce(
+                (acc: number, e: any) => acc + parseCurrency(e?.price ?? e?.valor ?? 0),
+                0
+              );
+            }
 
             return (
               <div key={item.id} className="pb-4 border-b border-border/50 last:border-0">
@@ -69,6 +115,7 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
                     <p className="text-sm font-semibold">
                       {quantity}x {productName}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Preço unitário: R$ {unit.toFixed(2)}</p>
                   </div>
                   <p className="text-sm font-bold ml-3">
                     R$ {total.toFixed(2)}
