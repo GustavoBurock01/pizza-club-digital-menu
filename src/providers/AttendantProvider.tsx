@@ -1,6 +1,6 @@
 // ===== PROVIDER UNIFICADO DE ATENDENTE OTIMIZADO =====
 
-import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -87,6 +87,12 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
   const { printOrder } = useThermalPrint();
   const { tryAutoPrint, isEnabled: autoPrintEnabled } = useAutoPrint();
+  
+  // Usar ref para tryAutoPrint evitar loop infinito
+  const tryAutoPrintRef = useRef(tryAutoPrint);
+  useEffect(() => {
+    tryAutoPrintRef.current = tryAutoPrint;
+  }, [tryAutoPrint]);
 
   // ===== QUERY ÚNICA PARA DADOS COMBINADOS =====
   const { data: combinedData, isLoading: loading, refetch } = useQuery({
@@ -186,6 +192,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     let reconnectTimeout: NodeJS.Timeout;
     let channelRef: any = null;
     let isReconnecting = false; // Prevent multiple simultaneous reconnects
+    let isMounted = true; // Track component mount status
     
     const setupChannel = () => {
       // Clear existing reconnect timeout
@@ -271,12 +278,12 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
               }
             }
 
-            // Auto-print confirmed orders
+            // Auto-print confirmed orders (usar ref)
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               const order = payload.new as any;
               
               if (order.status === 'confirmed') {
-                tryAutoPrint({
+                tryAutoPrintRef.current({
                   id: order.id,
                   status: order.status,
                   customer_name: order.customer_name || 'Cliente'
@@ -384,6 +391,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
 
     // Robust cleanup
     return () => {
+      isMounted = false;
       const ts = new Date().toLocaleTimeString();
       console.log(`🧹 [${ts}] ATTENDANT: Limpando realtime subscription`);
       
@@ -400,7 +408,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         channelRef = null;
       }
     };
-  }, [queryClient, tryAutoPrint]);
+  }, [queryClient]);
 
   // ===== ACTIONS OTIMIZADAS COM OPTIMISTIC UPDATES =====
   const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
