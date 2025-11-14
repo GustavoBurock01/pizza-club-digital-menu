@@ -39,7 +39,7 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
           <p className="text-sm">Nenhum item encontrado</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {items.map((item) => {
             const c = item.customizations || {};
             const productName = item.products?.name || 'Produto';
@@ -50,66 +50,56 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
             const total = Number(item.total_price ?? unit * quantity);
 
             const crustLabel = c.crustName || c.crust || null;
-            const crustPrice = c.crustPrice || c.crust_price || null;
+            const crustPrice = Number(c.crustPrice || c.crust_price || 0);
             const extrasList = (c.extrasNames || c.extras || []) as string[];
-            const extrasPrices = c.extrasPrices || c.extras_prices || null;
+            const extrasPrices = (c.extrasPrices || c.extras_prices || []) as number[];
 
             return (
-              <div key={item.id} className="py-3 border-b border-border/50 last:border-0">
-                {/* Linha principal */}
-                <div className="flex items-center justify-between">
+              <div key={item.id} className="pb-4 border-b border-border/50 last:border-0">
+                {/* Categoria e Subcategoria como título */}
+                {(categoryName || subcategoryName) && (
+                  <div className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    {categoryName}{subcategoryName ? ` - ${subcategoryName}` : ''}
+                  </div>
+                )}
+
+                {/* Linha principal com produto e preço total */}
+                <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <p className="text-sm font-medium">
+                    <p className="text-sm font-semibold">
                       {quantity}x {productName}
                     </p>
-                    {/* Categoria e Subcategoria */}
-                    <div className="flex gap-2 mt-0.5">
-                      {categoryName && (
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-primary/5">
-                          {categoryName}
-                        </Badge>
-                      )}
-                      {subcategoryName && (
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-secondary/5">
-                          {subcategoryName}
-                        </Badge>
-                      )}
-                    </div>
                   </div>
-                  <p className="text-sm font-semibold ml-3">
+                  <p className="text-sm font-bold ml-3">
                     R$ {total.toFixed(2)}
                   </p>
                 </div>
 
                 {/* Tamanho */}
                 {c.size && (
-                  <div className="mt-2 text-xs text-muted-foreground">
+                  <div className="mb-1.5 text-xs text-muted-foreground">
                     <span className="font-medium">Tamanho:</span> {c.size}
                   </div>
                 )}
 
-                {/* Borda */}
+                {/* Borda Recheada */}
                 {crustLabel && (
-                  <div className="mt-1.5 flex items-center justify-between text-xs bg-accent/30 rounded px-2 py-1.5">
-                    <span className="text-foreground">
-                      <span className="font-medium">Borda:</span> {crustLabel}
-                    </span>
-                    {crustPrice != null && crustPrice > 0 && (
-                      <span className="font-semibold text-foreground">
-                        + R$ {Number(crustPrice).toFixed(2)}
+                  <div className="mb-1.5 text-xs">
+                    <span className="font-medium">Borda Recheada:</span> {crustLabel}
+                    {crustPrice > 0 && (
+                      <span className="ml-2 font-semibold">
+                        + R$ {crustPrice.toFixed(2)}
                       </span>
                     )}
                   </div>
                 )}
 
-                {/* Adicionais */}
+                {/* Extras/Adicionais */}
                 {Array.isArray(extrasList) && extrasList.length > 0 && (
-                  <div className="mt-1.5 flex items-center justify-between text-xs bg-accent/30 rounded px-2 py-1.5">
-                    <span className="text-foreground">
-                      <span className="font-medium">Adicionais:</span> {extrasList.join(', ')}
-                    </span>
+                  <div className="mb-1.5 text-xs">
+                    <span className="font-medium">Extras:</span> {extrasList.join(', ')}
                     {Array.isArray(extrasPrices) && extrasPrices.length > 0 && (
-                      <span className="font-semibold text-foreground">
+                      <span className="ml-2 font-semibold">
                         + R$ {extrasPrices.reduce((acc: number, n: number) => acc + Number(n || 0), 0).toFixed(2)}
                       </span>
                     )}
