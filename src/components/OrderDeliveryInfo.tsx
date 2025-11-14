@@ -1,5 +1,4 @@
-import { Button } from '@/components/ui/button';
-import { MapPin, MessageCircle } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface OrderDeliveryInfoProps {
   order: any;
@@ -47,15 +46,12 @@ export const OrderDeliveryInfo = ({ order }: OrderDeliveryInfoProps) => {
           )}
         </div>
       ) : (
-        <div className="text-sm space-y-2">
-          <p className="text-muted-foreground">Cliente irá retirar no local</p>
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="font-medium">🏪 Retirada na loja</p>
-          </div>
+        <div className="text-sm">
+          <p className="text-muted-foreground">🏪 Cliente irá retirar no local</p>
         </div>
       )}
       
-      {order.notes && (
+      {order.delivery_method === 'delivery' && order.notes && (
         <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">
             📝 Observações do Cliente
@@ -63,24 +59,6 @@ export const OrderDeliveryInfo = ({ order }: OrderDeliveryInfoProps) => {
           <p className="text-sm text-yellow-700 dark:text-yellow-400">{order.notes}</p>
         </div>
       )}
-      
-      <div className="mt-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          asChild 
-          className="w-full"
-        >
-          <a 
-            href={`https://wa.me/55${order.customer_phone?.replace(/\D/g, '')}?text=Olá ${order.customer_name}! Sou do restaurante, sobre seu pedido ${order.id.slice(0, 8)}...`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Enviar WhatsApp
-          </a>
-        </Button>
-      </div>
     </div>
   );
 };
