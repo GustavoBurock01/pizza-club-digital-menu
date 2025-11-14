@@ -106,9 +106,9 @@ export default function AttendantUnified() {
   }) || [];
 
   // Separar pedidos por categoria seguindo padrão WABiz
-  // ⚠️ CRÍTICO: Não mostrar pedidos com status "pending_payment" (aguardando confirmação de pagamento online)
+  // ✅ NOVOS: Pedidos confirmados aguardando início do preparo
   const novosOrders = filteredOrders.filter(o => 
-    o.status === 'pending' && o.payment_status !== 'pending_payment'
+    o.status === 'confirmed' && o.payment_status !== 'pending_payment'
   );
   
   // ✅ FASE 3: Tocar som configurável quando novo pedido chega
@@ -122,8 +122,15 @@ export default function AttendantUnified() {
     
     previousPendingCount.current = currentPending;
   }, [novosOrders.length, soundSettings.enabled, playNewOrderSound]);
-  const emAndamentoOrders = filteredOrders.filter(o => ['confirmed', 'preparing'].includes(o.status));
-  const finalizadosOrders = filteredOrders.filter(o => ['ready', 'out_for_delivery', 'delivered', 'completed'].includes(o.status));
+  // ✅ EM ANDAMENTO: Todas as etapas de preparo e entrega
+  const emAndamentoOrders = filteredOrders.filter(o => 
+    o.status === 'preparing' || o.status === 'ready' || o.status === 'in_delivery'
+  );
+  
+  // ✅ FINALIZADOS: Apenas pedidos concluídos
+  const finalizadosOrders = filteredOrders.filter(o => 
+    o.status === 'delivered' || o.status === 'cancelled'
+  );
 
   // Ações do modal
   const handleOrderAction = async (action: string, orderId: string) => {
