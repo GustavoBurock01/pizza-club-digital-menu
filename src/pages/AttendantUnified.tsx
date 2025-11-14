@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WABizHeader } from "@/components/WABizHeader";
 import { WABizOrdersTable } from "@/components/WABizOrdersTable";
-import { WABizOrderDetails } from "@/components/WABizOrderDetails";
+import { WABizOrderDetailsRefactored as WABizOrderDetails } from "@/components/WABizOrderDetailsRefactored";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ThermalPrintQueue } from "@/components/ThermalPrintQueue";
 import { PendingPaymentModal } from "@/components/PendingPaymentModal";
@@ -304,17 +304,17 @@ export default function AttendantUnified() {
       </div>
       
       {/* Modal de Detalhes do Pedido */}
-      <WABizOrderDetails
-        order={selectedOrder}
-        isOpen={!!selectedOrder}
-        onClose={handleCloseDetails}
-        onConfirm={() => handleOrderAction('confirm', selectedOrder?.id)}
-        onStartPreparation={() => handleOrderAction('startPreparation', selectedOrder?.id)}
-        onMarkReady={() => handleOrderAction('markReady', selectedOrder?.id)}
-        onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
-        onCancel={() => handleOrderAction('cancel', selectedOrder?.id)}
-        isUpdating={isUpdating}
-      />
+      {selectedOrder && (
+        <WABizOrderDetails
+          order={selectedOrder}
+          onClose={handleCloseDetails}
+          onConfirm={() => handleOrderAction('confirm', selectedOrder?.id)}
+          onStartPreparation={() => handleOrderAction('startPreparation', selectedOrder?.id)}
+          onMarkReady={() => handleOrderAction('markReady', selectedOrder?.id)}
+          onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
+          onCancel={() => handleOrderAction('cancel', selectedOrder?.id)}
+        />
+      )}
       
       {/* ✅ FASE 3: Modal de Fila de Impressão */}
       {showPrintQueue && (

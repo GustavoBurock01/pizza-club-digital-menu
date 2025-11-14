@@ -103,7 +103,7 @@ export const OrderChatPanel = ({ orderId, customerName }: OrderChatPanelProps) =
                       {msg.message}
                     </p>
                     <p className="text-xs opacity-70 mt-1">
-                      {format(new Date(msg.created_at), 'HH:mm', { locale: ptBR })}
+                      {format(new Date(msg.created_at), "HH:mm 'de' dd/MM", { locale: ptBR })}
                     </p>
                   </div>
                 </div>
@@ -116,6 +116,12 @@ export const OrderChatPanel = ({ orderId, customerName }: OrderChatPanelProps) =
 
       {/* Input */}
       <div className="p-4 border-t bg-muted/50">
+        {sending && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 px-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>Enviando mensagem...</span>
+          </div>
+        )}
         <div className="flex gap-2">
           <Input
             value={message}
