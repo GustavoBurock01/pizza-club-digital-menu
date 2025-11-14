@@ -145,9 +145,9 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
                 {Array.isArray(extrasList) && extrasList.length > 0 && (
                   <div className="mb-1.5 text-xs">
                     <span className="font-medium">Extras:</span> {extrasList.join(', ')}
-                    {Array.isArray(extrasPrices) && extrasPrices.length > 0 && (
+                    {extrasTotal > 0 && (
                       <span className="ml-2 font-semibold">
-                        + R$ {extrasPrices.reduce((acc: number, n: number) => acc + Number(n || 0), 0).toFixed(2)}
+                        + R$ {extrasTotal.toFixed(2)}
                       </span>
                     )}
                   </div>
