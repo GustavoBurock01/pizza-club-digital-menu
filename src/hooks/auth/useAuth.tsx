@@ -59,7 +59,8 @@ export const useAuth = () => {
           }
         }
         
-        if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
+          console.log('[AUTH] SIGNED_OUT event detected - clearing auth caches');
           // Clear auth caches
           try {
             const keysToRemove: string[] = [];
@@ -78,6 +79,11 @@ export const useAuth = () => {
           } catch (e) {
             console.warn('[AUTH] Failed to clear cache:', e);
           }
+        }
+        
+        // ✅ CORREÇÃO CRÍTICA: Detectar logout indevido
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('[AUTH] Token refreshed successfully');
         }
         
         if (mounted) setLoading(false);

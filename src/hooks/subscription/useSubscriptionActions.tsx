@@ -60,9 +60,10 @@ export const useSubscriptionActions = (userId?: string) => {
       
       if (sessionError || !session) {
         console.warn('[SUBSCRIPTION-ACTIONS] No active session, skipping reconciliation', sessionError);
-        // Clear cache on auth errors
-        clearLocalCache(userId);
-        queryClient.removeQueries({ queryKey: ['subscription', userId] });
+        // ✅ CORREÇÃO: NÃO limpar cache em caso de erro temporário de session
+        // Apenas skip reconciliation - não fazer logout ou limpar dados
+        // clearLocalCache(userId); // REMOVIDO
+        // queryClient.removeQueries({ queryKey: ['subscription', userId] }); // REMOVIDO
         return;
       }
       
@@ -85,9 +86,10 @@ export const useSubscriptionActions = (userId?: string) => {
       if (error) {
         const errorData = (data as any) || {};
         if (errorData.requiresLogin || error.message?.includes('Authentication') || error.message?.includes('Session')) {
-          console.warn('[SUBSCRIPTION-ACTIONS] Authentication error, clearing cache:', errorData);
-          clearLocalCache(userId);
-          queryClient.removeQueries({ queryKey: ['subscription', userId] });
+          console.warn('[SUBSCRIPTION-ACTIONS] Authentication error during reconciliation:', errorData);
+          // ✅ CORREÇÃO: NÃO limpar cache ou query em erros de auth
+          // Isso pode causar logout indevido durante page reload
+          // A session pode estar temporariamente indisponível durante reload
           return;
         }
         
@@ -100,10 +102,18 @@ export const useSubscriptionActions = (userId?: string) => {
       // Don't do fallback for authentication errors
       if (error?.message?.includes('Authentication') || error?.message?.includes('Session')) {
         console.warn('[SUBSCRIPTION-ACTIONS] Skipping fallback due to auth error');
+        // ✅ CORREÇÃO: Marcar tentativa mesmo em erro de auth
+        try { 
+          sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); 
+        } catch {}
         return;
       }
       
       console.error('[SUBSCRIPTION-ACTIONS] Reconciliation failed:', error);
+      // Marcar tentativa em caso de erro genérico
+      try { 
+        sessionStorage.setItem(`reconciled_${userId}`, String(Date.now())); 
+      } catch {}
     } finally {
       // Mark that we've attempted reconciliation to avoid UI deadlocks
       try { 
