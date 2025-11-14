@@ -178,28 +178,49 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     retry: 2,
   });
 
-  // ✅ FASE 2 + FASE 3: REAL-TIME COM AUTO-RECONNECT, CONNECTION STATE E PAYMENT STATUS
+  // ✅ CONSOLIDATED REALTIME: Single unified channel with improved stability
   useEffect(() => {
-    console.log('🔴 [ATTENDANT] Configurando realtime subscription');
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`🔌 [${timestamp}] ATTENDANT: Configurando realtime subscription`);
     
     let reconnectTimeout: NodeJS.Timeout;
     let channelRef: any = null;
-    let paymentChannelRef: any = null;
+    let isReconnecting = false; // Prevent multiple simultaneous reconnects
     
     const setupChannel = () => {
-      // Limpar canal anterior se existir
-      if (channelRef) {
-        console.log('🔴 [ATTENDANT] Limpando canal anterior');
-        supabase.removeChannel(channelRef);
+      // Clear existing reconnect timeout
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+
+      // Don't setup if already reconnecting
+      if (isReconnecting) {
+        console.log('⏸️ [ATTENDANT] Reconnect já em andamento, aguardando...');
+        return;
       }
       
+      // Cleanup previous channel properly
+      if (channelRef) {
+        const ts = new Date().toLocaleTimeString();
+        console.log(`🧹 [${ts}] ATTENDANT: Limpando canal anterior`);
+        try {
+          channelRef.unsubscribe(); // Unsubscribe first
+          supabase.removeChannel(channelRef); // Then remove
+        } catch (e) {
+          console.warn('Erro ao limpar canal anterior:', e);
+        }
+        channelRef = null;
+      }
+      
+      // Create unified channel with all listeners
       channelRef = supabase
-        .channel('attendant-realtime', {
+        .channel('attendant-unified', {
           config: {
             broadcast: { self: false },
             presence: { key: 'attendant' }
           }
         })
+        // Listener 1: Orders table changes (all events)
         .on(
           'postgres_changes',
           {
@@ -208,29 +229,52 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             table: 'orders'
           },
           (payload) => {
-            console.log('🔴 [ATTENDANT] Pedido atualizado via realtime:', payload.eventType, payload.new);
+            const ts = new Date().toLocaleTimeString();
+            console.log(`📦 [${ts}] ATTENDANT: Pedido ${payload.eventType}:`, {
+              id: (payload.new as any)?.id?.substring(0, 8),
+              status: (payload.new as any)?.status,
+              payment_status: (payload.new as any)?.payment_status
+            });
             
-            // Invalidate e refetch imediatamente
+            // Invalidate and refetch immediately
             queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
             queryClient.refetchQueries({ queryKey: ['attendant-data'] });
             
-            // Toast para novo pedido
+            // Toast for new order
             if (payload.eventType === 'INSERT') {
               const newOrder = payload.new as any;
               toast.info(`🔔 Novo pedido #${newOrder.id.substring(0, 8)}`, {
                 description: `Cliente: ${newOrder.customer_name || 'N/A'}`
               });
               
-              // Tocar som de notificação
+              // Play notification sound
               const audio = new Audio('/bell.mp3');
-              audio.play().catch(() => console.log('Não foi possível tocar o som de notificação'));
+              audio.play().catch(() => console.log('Som de notificação não disponível'));
             }
 
-            // ✅ Impressão automática para pedidos confirmados
+            // Special notification for payment confirmed
+            if (payload.eventType === 'UPDATE') {
+              const order = payload.new as any;
+              const oldOrder = payload.old as any;
+              
+              // Detect payment status change to 'paid'
+              if (oldOrder?.payment_status !== 'paid' && order.payment_status === 'paid') {
+                toast.success('💰 Pagamento Confirmado!', {
+                  description: `Pedido #${order.id.substring(0, 8)} - ${order.customer_name}`,
+                  duration: 5000,
+                });
+                
+                // Play success sound
+                const audio = new Audio('/sounds/success.mp3');
+                audio.volume = 0.7;
+                audio.play().catch(() => console.log('Som de pagamento não disponível'));
+              }
+            }
+
+            // Auto-print confirmed orders
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               const order = payload.new as any;
               
-              // Tentar imprimir se foi confirmado
               if (order.status === 'confirmed') {
                 tryAutoPrint({
                   id: order.id,
@@ -241,6 +285,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         )
+        // Listener 2: Order items changes
         .on(
           'postgres_changes',
           {
@@ -249,15 +294,18 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             table: 'order_items'
           },
           (payload) => {
-            console.log('🔴 [ATTENDANT] Item do pedido atualizado via realtime:', payload.eventType);
+            const ts = new Date().toLocaleTimeString();
+            console.log(`🛒 [${ts}] ATTENDANT: Item atualizado:`, payload.eventType);
             queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
           }
         )
         .subscribe((status) => {
-          console.log('🔴 [ATTENDANT] Realtime status:', status);
+          const ts = new Date().toLocaleTimeString();
+          console.log(`🔌 [${ts}] ATTENDANT: Status do canal:`, status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('✅ [ATTENDANT] Realtime CONECTADO com sucesso!');
+            console.log(`✅ [${ts}] ATTENDANT: Realtime CONECTADO com sucesso!`);
+            isReconnecting = false;
             setConnectionState({
               isConnected: true,
               reconnectAttempts: 0,
@@ -267,13 +315,13 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
               duration: 2000,
             });
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ [ATTENDANT] Erro no canal realtime');
+            console.error(`❌ [${ts}] ATTENDANT: Erro no canal realtime`);
             handleConnectionError('Erro no canal realtime');
           } else if (status === 'TIMED_OUT') {
-            console.error('⏰ [ATTENDANT] Timeout na conexão realtime');
+            console.error(`⏰ [${ts}] ATTENDANT: Timeout na conexão realtime`);
             handleConnectionError('Timeout na conexão');
           } else if (status === 'CLOSED') {
-            console.warn('⚠️ [ATTENDANT] Conexão realtime fechada');
+            console.warn(`⚠️ [${ts}] ATTENDANT: Conexão realtime fechada`);
             setConnectionState(prev => ({
               ...prev,
               isConnected: false,
@@ -282,13 +330,22 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         });
     };
     
-    // ✅ FASE 2: Auto-reconnect com backoff exponencial
+    // Auto-reconnect with exponential backoff
     const handleConnectionError = (error: string) => {
+      // Prevent multiple reconnect attempts
+      if (isReconnecting) {
+        console.log('⏸️ [ATTENDANT] Reconnect já agendado, ignorando erro');
+        return;
+      }
+
+      isReconnecting = true;
+
       setConnectionState(prev => {
         const newAttempts = prev.reconnectAttempts + 1;
         
-        // Máximo de 5 tentativas
+        // Maximum 5 attempts
         if (newAttempts > 5) {
+          isReconnecting = false;
           toast.error('Falha na reconexão', {
             description: 'Recarregue a página para tentar novamente',
           });
@@ -299,7 +356,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           };
         }
         
-        // Calcular delay com backoff exponencial (1s, 2s, 4s, 8s, 16s)
+        // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, 16s)
         const delay = Math.min(1000 * Math.pow(2, newAttempts - 1), 16000);
         
         toast.warning(`Reconectando em ${delay / 1000}s...`, {
@@ -307,9 +364,10 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           duration: delay,
         });
         
-        // Tentar reconectar após o delay
+        // Schedule reconnect
         reconnectTimeout = setTimeout(() => {
-          console.log(`🔄 [ATTENDANT] Tentando reconectar (tentativa ${newAttempts})`);
+          const ts = new Date().toLocaleTimeString();
+          console.log(`🔄 [${ts}] ATTENDANT: Tentando reconectar (tentativa ${newAttempts})`);
           setupChannel();
         }, delay);
         
@@ -321,56 +379,28 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
       });
     };
     
-    // Configurar canal inicial
+    // Setup initial channel
     setupChannel();
-    
-    // ✅ FASE 3: Canal separado para updates de payment_status
-    paymentChannelRef = supabase
-      .channel('payment-status-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: 'payment_status=eq.paid'
-        },
-        (payload) => {
-          console.log('💰 [ATTENDANT] Pagamento confirmado:', payload.new);
-          
-          const order = payload.new as any;
-          
-          // Invalidar queries
-          queryClient.invalidateQueries({ queryKey: ['attendant-data'] });
-          
-          // Notificação especial para pagamento confirmado
-          toast.success('💰 Pagamento Confirmado!', {
-            description: `Pedido #${order.id.substring(0, 8)} - ${order.customer_name}`,
-            duration: 5000,
-          });
-          
-          // Som especial de pagamento confirmado
-          const audio = new Audio('/sounds/success.mp3');
-          audio.volume = 0.7;
-          audio.play().catch(() => console.log('Não foi possível tocar som de pagamento'));
-        }
-      )
-      .subscribe((status) => {
-        console.log('💰 [ATTENDANT] Payment channel status:', status);
-      });
 
-    // ✅ FASE 2: Cleanup robusto
+    // Robust cleanup
     return () => {
-      console.log('🔴 [ATTENDANT] Removendo canais realtime');
+      const ts = new Date().toLocaleTimeString();
+      console.log(`🧹 [${ts}] ATTENDANT: Limpando realtime subscription`);
+      
       clearTimeout(reconnectTimeout);
+      isReconnecting = false;
+      
       if (channelRef) {
-        supabase.removeChannel(channelRef);
-      }
-      if (paymentChannelRef) {
-        supabase.removeChannel(paymentChannelRef);
+        try {
+          channelRef.unsubscribe();
+          supabase.removeChannel(channelRef);
+        } catch (e) {
+          console.warn('Erro ao limpar canal:', e);
+        }
+        channelRef = null;
       }
     };
-  }, [queryClient]);
+  }, [queryClient, tryAutoPrint]);
 
   // ===== ACTIONS OTIMIZADAS COM OPTIMISTIC UPDATES =====
   const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
