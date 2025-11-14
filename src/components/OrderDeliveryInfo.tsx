@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, MessageCircle } from 'lucide-react';
 
@@ -8,9 +7,9 @@ interface OrderDeliveryInfoProps {
 
 export const OrderDeliveryInfo = ({ order }: OrderDeliveryInfoProps) => {
   return (
-    <Card className="p-4 border-l-4 border-l-green-500">
-      <div className="flex items-center gap-2 mb-3">
-        <MapPin className="h-5 w-5 text-green-500" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <MapPin className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-lg">
           {order.delivery_method === 'pickup' ? 'Retirada' : 'Entrega'}
         </h3>
@@ -82,6 +81,6 @@ export const OrderDeliveryInfo = ({ order }: OrderDeliveryInfoProps) => {
           </a>
         </Button>
       </div>
-    </Card>
+    </div>
   );
 };

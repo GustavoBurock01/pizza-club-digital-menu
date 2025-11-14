@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign } from 'lucide-react';
@@ -34,9 +33,9 @@ export const OrderFinancialSummary = ({ order }: OrderFinancialSummaryProps) => 
   const paymentStatus = getPaymentStatusLabel(order.payment_status || 'pending');
 
   return (
-    <Card className="p-4 border-l-4 border-l-purple-500">
-      <div className="flex items-center gap-2 mb-3">
-        <DollarSign className="h-5 w-5 text-purple-500" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <DollarSign className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-lg">Resumo Financeiro</h3>
       </div>
       
@@ -106,6 +105,6 @@ export const OrderFinancialSummary = ({ order }: OrderFinancialSummaryProps) => 
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };

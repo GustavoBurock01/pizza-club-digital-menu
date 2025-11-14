@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingCart, Package } from 'lucide-react';
@@ -10,9 +9,9 @@ interface OrderItemsListProps {
 
 export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
   return (
-    <Card className="p-4 border-l-4 border-l-orange-500">
-      <div className="flex items-center gap-2 mb-3">
-        <ShoppingCart className="h-5 w-5 text-orange-500" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <ShoppingCart className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-lg">Itens do Pedido</h3>
         {!loading && items.length > 0 && (
           <Badge variant="secondary" className="ml-auto">
@@ -110,6 +109,6 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
           ))}
         </div>
       )}
-    </Card>
+    </div>
   );
 };
