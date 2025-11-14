@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingCart, Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface OrderItemsListProps {
   items: any[];
@@ -39,74 +39,71 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
           <p className="text-sm">Nenhum item encontrado</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <div 
-              key={item.id} 
-              className="flex gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              {/* Imagem */}
-              <div className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-muted">
-                {item.products?.image_url ? (
-                  <img 
-                    src={item.products.image_url} 
-                    alt={item.products.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{item.products?.name || 'Produto'}</p>
-                
-                {/* Customizações */}
-                {item.customizations && (
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {item.customizations.size && (
-                      <Badge variant="outline" className="text-xs">
-                        {item.customizations.size}
-                      </Badge>
-                    )}
-                    {item.customizations.crust && (
-                      <Badge variant="outline" className="text-xs">
-                        {item.customizations.crust}
-                      </Badge>
-                    )}
-                    {item.customizations.extras?.length > 0 && (
-                      item.customizations.extras.map((extra: string, idx: number) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          + {extra}
-                        </Badge>
-                      ))
-                    )}
-                  </div>
-                )}
-                
-                {/* Observações */}
-                {item.customizations?.observations && (
-                  <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2">
-                    "{item.customizations.observations}"
+        <div className="space-y-2">
+          {items.map((item) => {
+            const c = item.customizations || {};
+            const productName = item.products?.name || 'Produto';
+            const quantity = item.quantity || 1;
+            const unit = Number(item.unit_price || 0);
+            const total = Number(item.total_price ?? unit * quantity);
+
+            const crustLabel = c.crustName || c.crust || null;
+            const crustPrice = c.crustPrice || c.crust_price || null;
+            const extrasList = (c.extrasNames || c.extras || []) as string[];
+            const extrasPrices = c.extrasPrices || c.extras_prices || null;
+
+            return (
+              <div key={item.id} className="py-2 border-b border-border/50 last:border-0">
+                {/* Linha principal */}
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    {quantity}x {productName}
                   </p>
+                  <p className="text-sm font-semibold">
+                    R$ {total.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Tamanho */}
+                {c.size && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    <span>tamanho: {c.size}</span>
+                  </div>
+                )}
+
+                {/* Borda */}
+                {crustLabel && (
+                  <div className="mt-1 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>borda recheada: {crustLabel}</span>
+                    {crustPrice != null && (
+                      <span>R$ {Number(crustPrice).toFixed(2)}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Adicionais */}
+                {Array.isArray(extrasList) && extrasList.length > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>
+                      adicionais: {extrasList.join(', ')}
+                    </span>
+                    {Array.isArray(extrasPrices) && extrasPrices.length > 0 && (
+                      <span>
+                        R$ {extrasPrices.reduce((acc: number, n: number) => acc + Number(n || 0), 0).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Observações */}
+                {c.observations && (
+                  <div className="mt-1 text-xs text-muted-foreground italic">
+                    observações: {c.observations}
+                  </div>
                 )}
               </div>
-              
-              {/* Preço */}
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs text-muted-foreground mb-1">
-                  {item.quantity}x
-                </p>
-                <p className="font-semibold text-sm">
-                  R$ {((item.unit_price || 0) * (item.quantity || 1)).toFixed(2)}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
