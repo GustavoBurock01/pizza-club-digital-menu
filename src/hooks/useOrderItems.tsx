@@ -15,6 +15,12 @@ interface OrderItem {
   products: {
     name: string;
     image_url: string;
+    categories?: {
+      name: string;
+    } | null;
+    subcategories?: {
+      name: string;
+    } | null;
   } | null;
 }
 
@@ -44,7 +50,9 @@ export const useOrderItems = (orderId: string | undefined, isOpen: boolean) => {
             customizations,
             products (
               name,
-              image_url
+              image_url,
+              categories:category_id (name),
+              subcategories:subcategory_id (name)
             )
           `)
           .eq('order_id', orderId)
