@@ -105,53 +105,49 @@ export const OrderItemsList = ({ items, loading }: OrderItemsListProps) => {
                 {/* Categoria e Subcategoria como título */}
                 {(categoryName || subcategoryName) && (
                   <div className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    {categoryName}{subcategoryName ? ` - ${subcategoryName}` : ''}
+                    {categoryName && subcategoryName 
+                      ? `${categoryName} - ${subcategoryName}`
+                      : categoryName || subcategoryName
+                    }
                   </div>
                 )}
 
-                {/* Linha principal com produto e preço total */}
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
+                {/* Linha principal com produto, tamanho e preços */}
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">
                       {quantity}x {productName}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">Preço unitário: R$ {unit.toFixed(2)}</p>
+                    
+                    {/* Tamanho */}
+                    {c.size && (
+                      <div className="mt-1.5 text-xs text-muted-foreground">
+                        <span className="font-medium">Tamanho:</span> {c.size}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm font-bold ml-3">
-                    R$ {total.toFixed(2)}
-                  </p>
+
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    <p className="text-sm font-bold whitespace-nowrap">
+                      R$ {total.toFixed(2)}
+                    </p>
+                    
+                    {/* Borda Recheada - lado direito */}
+                    {crustLabel && crustPrice > 0 && (
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
+                        + Borda: R$ {crustPrice.toFixed(2)}
+                      </p>
+                    )}
+
+                    {/* Extras/Adicionais - lado direito */}
+                    {Array.isArray(extrasList) && extrasList.length > 0 && extrasTotal > 0 && (
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
+                        + Extras: R$ {extrasTotal.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
                 </div>
-
-                {/* Tamanho */}
-                {c.size && (
-                  <div className="mb-1.5 text-xs text-muted-foreground">
-                    <span className="font-medium">Tamanho:</span> {c.size}
-                  </div>
-                )}
-
-                {/* Borda Recheada */}
-                {crustLabel && (
-                  <div className="mb-1.5 text-xs">
-                    <span className="font-medium">Borda Recheada:</span> {crustLabel}
-                    {crustPrice > 0 && (
-                      <span className="ml-2 font-semibold">
-                        + R$ {crustPrice.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Extras/Adicionais */}
-                {Array.isArray(extrasList) && extrasList.length > 0 && (
-                  <div className="mb-1.5 text-xs">
-                    <span className="font-medium">Extras:</span> {extrasList.join(', ')}
-                    {extrasTotal > 0 && (
-                      <span className="ml-2 font-semibold">
-                        + R$ {extrasTotal.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Observações */}
                 {c.observations && (
