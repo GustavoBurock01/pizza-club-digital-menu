@@ -49,9 +49,9 @@ export function AttendantSidebar() {
     
     switch (badgeType) {
       case 'pending':
-        return stats.pendingOrders > 0 ? stats.pendingOrders : null;
+        return stats.pending_orders > 0 ? stats.pending_orders : null;
       case 'preparing':
-        return stats.preparingOrders > 0 ? stats.preparingOrders : null;
+        return stats.preparing_orders > 0 ? stats.preparing_orders : null;
       default:
         return null;
     }

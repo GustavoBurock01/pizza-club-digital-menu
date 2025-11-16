@@ -12,49 +12,45 @@ import { Search, Clock, Eye, Truck, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 const Orders = () => {
   const navigate = useNavigate();
   const { user } = useUnifiedAuth();
   const { toast } = useToast();
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
-    }
-  }, [user]);
-
-  const fetchOrders = async () => {
-    try {
+  // Fetch user's orders with complete information
+  const { data: orders, isLoading: loading } = useQuery({
+    queryKey: ['orders', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
       const { data, error } = await supabase
         .from('orders')
         .select(`
           *,
-          addresses (*),
           order_items (
             *,
             products (name, image_url)
           )
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-
+      
       if (error) throw error;
-      setOrders(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar pedidos:', error);
-      toast({
-        title: "Erro ao carregar pedidos",
-        description: error.message,
-        variant: "destructive",
+      
+      console.log('[ORDERS] 📊 Pedidos carregados:', {
+        total: data?.length || 0,
+        com_snapshot: data?.filter(o => o.delivery_address_snapshot).length || 0,
+        sem_snapshot: data?.filter(o => !o.delivery_address_snapshot).length || 0,
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+      
+      return data || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
+  });
 
   const getStatusInfo = (status: string) => {
     const statusConfig = {
@@ -76,24 +72,29 @@ const Orders = () => {
     });
   };
 
+  // Format address for display - ALWAYS use snapshot
   const formatAddress = (order: any) => {
-    if (order.delivery_method === 'pickup') {
+    if (order.delivery_method === 'Retirada') {
       return 'Rei da Pizza d Paraty Delivery - Paraty';
     }
-    const addr = order.addresses || order.delivery_address_snapshot;
-    if (!addr) return 'Retirada no local';
-    return `${addr.street}, ${addr.number}${addr.neighborhood ? ` - ${addr.neighborhood}` : ''}, ${addr.city}`;
+    
+    const addr = order.delivery_address_snapshot;
+    
+    if (!addr) return 'Endereço não disponível';
+    
+    return `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}`;
   };
 
   const getDeliveryIcon = (order: any) => {
-    return order.delivery_method === 'pickup' ? Store : Truck;
+    return order.delivery_method === 'Retirada' ? Store : Truck;
   };
 
-  const filteredOrders = orders.filter(order => {
-    const addr = order.addresses || order.delivery_address_snapshot;
-    return order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           addr?.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredOrders = orders?.filter(order => {
+    const searchLower = searchTerm.toLowerCase();
+    const addr = order.delivery_address_snapshot as any;
+    return order.id.toLowerCase().includes(searchLower) ||
+           (addr && typeof addr === 'object' && addr.neighborhood?.toLowerCase().includes(searchLower));
+  }) || [];
 
   // Separar em andamento e finalizados
   const inProgressOrders = filteredOrders.filter(o => 

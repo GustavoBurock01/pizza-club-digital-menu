@@ -189,7 +189,7 @@ export default function AttendantUnified() {
         <WABizHeader
           onRefresh={refreshData}
           onSearch={handleSearch}
-          notificationCount={stats?.pendingOrders || 0}
+          notificationCount={stats?.pending_orders || 0}
           pendingPaymentsCount={pendingPaymentsCount || 0}
           onOpenPendingPayments={() => setShowPendingPayments(true)}
           onOpenPrintQueue={() => setShowPrintQueue(true)}
