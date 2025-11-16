@@ -10,12 +10,15 @@ import {
   ExternalLink,
   Package
 } from "lucide-react";
+import { useCatalogPricing } from "@/hooks/useCatalogPricing";
 
 interface StripeInfoCardsProps {
   order: any;
+  items?: any[];
 }
 
-export const StripeInfoCards = ({ order }: StripeInfoCardsProps) => {
+export const StripeInfoCards = ({ order, items = [] }: StripeInfoCardsProps) => {
+  const { crustById, crustByName, extraByName } = useCatalogPricing();
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
       pix: 'PIX',
@@ -46,7 +49,48 @@ export const StripeInfoCards = ({ order }: StripeInfoCardsProps) => {
     );
   };
 
-  const subtotal = order.total_amount - (order.delivery_fee || 0) + (order.discount_amount || 0);
+  // Calcular subtotal baseado nos itens reais
+  const calculateItemsSubtotal = () => {
+    if (!items || items.length === 0) {
+      // Fallback para o cálculo antigo
+      return order.total_amount - (order.delivery_fee || 0) + (order.discount_amount || 0);
+    }
+
+    let total = 0;
+    
+    items.forEach((item: any) => {
+      // Preço base do produto
+      const basePrice = item.unit_price * item.quantity;
+      
+      // Calcular preço da borda
+      let crustPrice = 0;
+      if (item.customizations?.crust) {
+        const crust = crustById[item.customizations.crust];
+        crustPrice = (crust?.price || 0) * item.quantity;
+      } else if (item.customizations?.crustName) {
+        const crust = crustByName[item.customizations.crustName];
+        crustPrice = (crust?.price || 0) * item.quantity;
+      }
+      
+      // Calcular preço dos extras
+      let extrasPrice = 0;
+      if (item.customizations?.extrasNames && Array.isArray(item.customizations.extrasNames)) {
+        item.customizations.extrasNames.forEach((extraName: string) => {
+          const extra = extraByName[extraName];
+          extrasPrice += (extra?.price || 0) * item.quantity;
+        });
+      }
+      
+      total += basePrice + crustPrice + extrasPrice;
+    });
+    
+    return total;
+  };
+
+  const subtotal = calculateItemsSubtotal();
+  const deliveryFee = order.delivery_fee || 0;
+  const discountAmount = order.discount_amount || 0;
+  const totalAmount = subtotal + deliveryFee - discountAmount;
 
   return (
     <div className="space-y-6">
@@ -277,7 +321,7 @@ export const StripeInfoCards = ({ order }: StripeInfoCardsProps) => {
                 Total
               </span>
               <span className="text-2xl font-bold text-gray-900">
-                R$ {order.total_amount?.toFixed(2) || '0.00'}
+                R$ {totalAmount.toFixed(2)}
               </span>
             </div>
           </div>
