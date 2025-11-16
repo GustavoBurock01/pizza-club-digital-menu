@@ -316,7 +316,7 @@ export const StripeOrderModal = ({
     <>
       <Dialog open={!!order} onOpenChange={onClose}>
         <DialogOverlay className="bg-black/50" />
-        <DialogContent className="max-w-[90vw] h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogContent className="max-w-6xl h-[90vh] p-0 gap-0 flex flex-col">
           {/* HEADER FIXO */}
           <div className="px-8 py-6 border-b border-gray-200 bg-white flex-shrink-0">
             <div className="flex items-start justify-between">

@@ -1,5 +1,5 @@
-import { Package2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useCatalogPricing } from "@/hooks/useCatalogPricing";
 
 interface StripeItemsListProps {
   items: any[];
@@ -7,125 +7,211 @@ interface StripeItemsListProps {
 }
 
 export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
-  if (loading) {
+  const { crustByName, extraByName, loading: pricingLoading } = useCatalogPricing();
+
+  const getCrustPrice = (crustName: string): number => {
+    if (!crustName) return 0;
+    const crust = crustByName[crustName];
+    return crust?.price || 0;
+  };
+
+  const getExtraPrice = (extraName: string): number => {
+    if (!extraName) return 0;
+    const extra = extraByName[extraName];
+    return extra?.price || 0;
+  };
+
+  // Agrupar itens por categoria
+  const groupedItems = items.reduce((acc, item) => {
+    const category = item.products?.categories?.name || 'Outros Produtos';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  if (loading || pricingLoading) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold text-gray-900">Itens do Pedido</h3>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
-        </div>
+      <div className="space-y-4 animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-muted h-32 rounded-lg" />
+        ))}
       </div>
     );
   }
 
   if (!items || items.length === 0) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold text-gray-900">Itens do Pedido</h3>
-        <div className="text-center py-12">
-          <Package2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Nenhum item encontrado</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <div className="text-4xl mb-3">📦</div>
+        <p className="text-sm">Nenhum item encontrado</p>
       </div>
     );
   }
 
+  const totalItems = items.reduce((sum, item) => sum + (item.total_price || 0), 0);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-gray-900">Itens do Pedido</h3>
-        <Badge variant="secondary" className="text-xs">
-          {items.length} {items.length === 1 ? 'item' : 'itens'}
-        </Badge>
-      </div>
+    <div className="space-y-6">
+      {Object.entries(groupedItems).map(([category, categoryItems]) => (
+        <div key={category}>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+            {category}
+          </h4>
+          <div className="space-y-4">
+            {(categoryItems as any[]).map((item: any, index: number) => {
+              const crustPrice = item.customizations?.crustName 
+                ? getCrustPrice(item.customizations.crustName) 
+                : 0;
+              
+              const extrasTotal = (item.customizations?.extrasNames || [])
+                .reduce((sum: number, extraName: string) => sum + getExtraPrice(extraName), 0);
 
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div 
-            key={item.id} 
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
-          >
-            {/* Nome e Quantidade */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                  {item.products?.name || 'Produto'}
-                </h4>
-                <p className="text-xs text-gray-500">
-                  Quantidade: {item.quantity}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-base font-bold text-gray-900">
-                  R$ {(item.total_price || 0).toFixed(2)}
-                </p>
-                <p className="text-xs text-gray-500">
-                  R$ {(item.unit_price || 0).toFixed(2)} un.
-                </p>
-              </div>
-            </div>
+              const basePrice = item.unit_price * item.quantity;
+              const customizationsTotal = crustPrice + extrasTotal;
 
-            {/* Customizações */}
-            {item.customizations && (
-              <div className="space-y-2 pt-3 border-t border-gray-100">
-                {/* Borda */}
-                {item.customizations.crustName && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-gray-500 min-w-[70px]">Borda:</span>
-                    <span className="text-xs text-gray-700">{item.customizations.crustName}</span>
-                  </div>
-                )}
-
-                {/* Extras */}
-                {item.customizations.extrasNames && item.customizations.extrasNames.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-gray-500 min-w-[70px]">Extras:</span>
-                    <span className="text-xs text-gray-700">
-                      {item.customizations.extrasNames.join(', ')}
-                    </span>
-                  </div>
-                )}
-
-                {/* Bebidas */}
-                {item.customizations.drinksNames && item.customizations.drinksNames.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-gray-500 min-w-[70px]">Bebidas:</span>
-                    <span className="text-xs text-gray-700">
-                      {item.customizations.drinksNames.join(', ')}
-                    </span>
-                  </div>
-                )}
-
-                {/* Observações */}
-                {item.customizations.observations && (
-                  <div className="flex items-start gap-2 mt-2">
-                    <span className="text-xs font-medium text-gray-500 min-w-[70px]">Obs:</span>
-                    <span className="text-xs text-gray-700 italic">
-                      {item.customizations.observations}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Badge de estoque (se aplicável) */}
-            {item.products?.stock_quantity !== undefined && item.products.stock_quantity !== null && (
-              <div className="mt-3 pt-2 border-t border-gray-100">
-                <Badge 
-                  variant={item.products.stock_quantity > 10 ? "secondary" : "destructive"}
-                  className="text-xs"
+              return (
+                <div
+                  key={index}
+                  className="bg-card border border-border rounded-lg p-4 hover:shadow-sm transition-shadow"
                 >
-                  Estoque: {item.products.stock_quantity}
-                </Badge>
-              </div>
-            )}
+                  {/* Badges de categoria/subcategoria/tamanho */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {item.products?.categories?.name || 'Produto'}
+                    </Badge>
+                    {item.products?.subcategory && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.products.subcategory}
+                      </Badge>
+                    )}
+                    {item.products?.size && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.products.size}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Nome do produto */}
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="font-semibold text-sm text-foreground flex-1">
+                      {item.products?.name || 'Produto'}
+                    </h3>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      Qtd: {item.quantity}
+                    </span>
+                  </div>
+
+                  {/* Descrição do produto */}
+                  {item.products?.description && (
+                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                      {item.products.description}
+                    </p>
+                  )}
+
+                  {/* Breakdown de preços */}
+                  <div className="space-y-1.5 mt-3">
+                    {/* Preço base */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {item.quantity}x Preço base
+                      </span>
+                      <span className="text-foreground font-medium">
+                        R$ {basePrice.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {/* Borda recheada (destaque especial) */}
+                    {item.customizations?.crustName && crustPrice > 0 && (
+                      <div className="flex items-center justify-between text-xs bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded border border-amber-200 dark:border-amber-800">
+                        <span className="text-amber-900 dark:text-amber-200 font-medium">
+                          + Borda: {item.customizations.crustName}
+                        </span>
+                        <span className="text-amber-900 dark:text-amber-200 font-semibold">
+                          + R$ {crustPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Extras */}
+                    {item.customizations?.extrasNames?.map((extraName: string, idx: number) => {
+                      const extraPrice = getExtraPrice(extraName);
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-xs pl-3">
+                          <span className="text-muted-foreground">
+                            + {extraName}
+                          </span>
+                          <span className="text-foreground font-medium">
+                            + R$ {extraPrice.toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+
+                    {/* Bebidas */}
+                    {item.customizations?.drinksNames?.map((drinkName: string, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between text-xs pl-3">
+                        <span className="text-muted-foreground">
+                          + {drinkName}
+                        </span>
+                        <span className="text-foreground font-medium">
+                          (incluído)
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Linha separadora + Total do item */}
+                    <div className="pt-2 mt-2 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">
+                          Total do item
+                        </span>
+                        <span className="text-base font-bold text-foreground">
+                          R$ {(item.total_price || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      {customizationsTotal > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          (Base: R$ {basePrice.toFixed(2)} + Adicionais: R$ {customizationsTotal.toFixed(2)})
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Observações */}
+                  {item.customizations?.observations && (
+                    <div className="mt-3 p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded">
+                      <p className="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
+                        💬 {item.customizations.observations}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
+        </div>
+      ))}
+
+      {/* Card de total geral */}
+      <div className="sticky bottom-0 mt-6 p-4 bg-muted border-2 border-border rounded-lg shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">
+              Total de Itens
+            </p>
+            <p className="text-sm font-semibold text-foreground">
+              {items.length} {items.length === 1 ? 'item' : 'itens'}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground mb-1">
+              Subtotal
+            </p>
+            <p className="text-xl font-bold text-foreground">
+              R$ {totalItems.toFixed(2)}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
