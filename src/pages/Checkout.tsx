@@ -787,7 +787,7 @@ const Checkout = () => {
                               {item.customizations && <div className="space-y-1 text-sm text-muted-foreground">
                                   {/* Usar crustName ao invés de crust */}
                                   {item.customizations.crustName && <p className="flex items-center gap-1">
-                                      <span className="font-medium">Borda Recheada:</span> {item.customizations.crustName}
+                                      <span className="font-medium">Borda recheada:</span> {item.customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim()}
                                     </p>}
                                   {/* Fallback para crust se crustName não existir */}
                                   {!item.customizations.crustName && item.customizations.crust && <p className="flex items-center gap-1">
