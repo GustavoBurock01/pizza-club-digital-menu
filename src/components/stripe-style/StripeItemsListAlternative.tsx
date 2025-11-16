@@ -43,15 +43,17 @@ export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAl
   return (
     <div className="space-y-4">
       {items.map((item: any, index: number) => {
-        const crustPrice = item.customizations?.crustName 
+        const crustPriceUnit = item.customizations?.crustName 
           ? getCrustPrice(item.customizations.crustName) 
           : 0;
         
-        const extrasTotal = (item.customizations?.extrasNames || [])
+        const extrasTotalUnit = (item.customizations?.extrasNames || [])
           .reduce((sum: number, extraName: string) => sum + getExtraPrice(extraName), 0);
 
         const basePrice = item.unit_price;
         const itemSubtotal = basePrice * item.quantity;
+        const crustPrice = crustPriceUnit * item.quantity;
+        const extrasTotal = extrasTotalUnit * item.quantity;
         const calculatedTotal = itemSubtotal + crustPrice + extrasTotal;
 
         const categoryName = item.products?.categories?.name || 'Produtos';
@@ -112,11 +114,11 @@ export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAl
                   <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                     🍕 Borda Recheada: <span className="font-normal">{item.customizations.crustName}</span>
                   </p>
-                  {crustPrice > 0 && (
-                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                      + R$ {crustPrice.toFixed(2)}
-                    </p>
-                  )}
+              {crustPriceUnit > 0 && (
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  + R$ {crustPriceUnit.toFixed(2)} {item.quantity > 1 && `x ${item.quantity}`} = R$ {crustPrice.toFixed(2)}
+                </p>
+              )}
                 </div>
               )}
 
@@ -126,11 +128,11 @@ export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAl
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                     ➕ Adicionais: <span className="font-normal">{item.customizations.extrasNames.join(', ')}</span>
                   </p>
-                  {extrasTotal > 0 && (
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      + R$ {extrasTotal.toFixed(2)}
-                    </p>
-                  )}
+              {extrasTotalUnit > 0 && (
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  + R$ {extrasTotalUnit.toFixed(2)} {item.quantity > 1 && `x ${item.quantity}`} = R$ {extrasTotal.toFixed(2)}
+                </p>
+              )}
                 </div>
               )}
 

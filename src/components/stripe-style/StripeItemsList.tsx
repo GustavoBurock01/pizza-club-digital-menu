@@ -43,15 +43,17 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
   return (
     <div className="space-y-4">
       {items.map((item: any, index: number) => {
-        const crustPrice = item.customizations?.crustName 
+        const crustPriceUnit = item.customizations?.crustName 
           ? getCrustPrice(item.customizations.crustName) 
           : 0;
         
-        const extrasTotal = (item.customizations?.extrasNames || [])
+        const extrasTotalUnit = (item.customizations?.extrasNames || [])
           .reduce((sum: number, extraName: string) => sum + getExtraPrice(extraName), 0);
 
         const basePrice = item.unit_price;
         const itemSubtotal = basePrice * item.quantity;
+        const crustPrice = crustPriceUnit * item.quantity;
+        const extrasTotal = extrasTotalUnit * item.quantity;
         const calculatedTotal = itemSubtotal + crustPrice + extrasTotal;
 
         return (
@@ -76,7 +78,7 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
                   borda recheada: {item.customizations.crustName.toLowerCase()}
                 </span>
                 <span className="text-sm font-normal text-foreground">
-                  + {crustPrice.toFixed(2)}
+                  + {crustPriceUnit.toFixed(2)} {item.quantity > 1 && `x ${item.quantity} = ${crustPrice.toFixed(2)}`}
                 </span>
               </div>
             )}
@@ -88,7 +90,7 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
                   Adicionais: {item.customizations.extrasNames.join(', ').toLowerCase()}
                 </span>
                 <span className="text-sm font-normal text-foreground">
-                  + {extrasTotal.toFixed(2)}
+                  + {extrasTotalUnit.toFixed(2)} {item.quantity > 1 && `x ${item.quantity} = ${extrasTotal.toFixed(2)}`}
                 </span>
               </div>
             )}
