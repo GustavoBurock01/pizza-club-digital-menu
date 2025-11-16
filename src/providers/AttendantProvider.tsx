@@ -145,29 +145,33 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
       if (ordersError) throw ordersError;
 
       // Processar dados dos pedidos
-      const orders: AttendantOrder[] = (ordersData || []).map(order => ({
-        id: order.id,
-        user_id: order.user_id,
-        customer_name: order.customer_name,
-        customer_phone: order.customer_phone,
-        customer_email: order.profiles?.email,
-        status: order.status,
-        delivery_method: order.delivery_method || 'delivery',
-        total_amount: order.total_amount,
-        delivery_fee: order.delivery_fee,
-        payment_method: order.payment_method,
-        payment_status: order.payment_status,
-        created_at: order.created_at,
-        updated_at: order.updated_at,
-        items_count: order.order_items?.length || 0,
-        total_items: order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
-        delivery_address_snapshot: order.delivery_address_snapshot,
-        street: order.delivery_address_snapshot?.street || order.addresses?.street,
-        number: order.delivery_address_snapshot?.number || order.addresses?.number,
-        neighborhood: order.delivery_address_snapshot?.neighborhood || order.addresses?.neighborhood,
-        city: order.delivery_address_snapshot?.city || order.addresses?.city,
-        notes: order.notes
-      }));
+      const orders: AttendantOrder[] = (ordersData || []).map((order: any) => {
+        const snapshot = order.delivery_address_snapshot as any;
+        
+        return {
+          id: order.id,
+          user_id: order.user_id,
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          customer_email: order.profiles?.email,
+          status: order.status,
+          delivery_method: order.delivery_method || 'delivery',
+          total_amount: order.total_amount,
+          delivery_fee: order.delivery_fee,
+          payment_method: order.payment_method,
+          payment_status: order.payment_status,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+          items_count: order.order_items?.length || 0,
+          total_items: order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+          delivery_address_snapshot: snapshot,
+          street: snapshot?.street || order.addresses?.street,
+          number: snapshot?.number || order.addresses?.number,
+          neighborhood: snapshot?.neighborhood || order.addresses?.neighborhood,
+          city: snapshot?.city || order.addresses?.city,
+          notes: order.notes
+        };
+      });
 
       // Calcular estatísticas a partir dos dados já carregados
       const stats: AttendantStats = {
