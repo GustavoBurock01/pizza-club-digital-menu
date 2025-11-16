@@ -316,11 +316,11 @@ export default function AttendantUnified() {
         <StripeOrderModal
           order={selectedOrder}
           onClose={handleCloseDetails}
-          onConfirm={() => handleOrderAction('confirm', selectedOrder?.id)}
+          onConfirmOrder={() => handleOrderAction('confirm', selectedOrder?.id)}
           onStartPreparation={() => handleOrderAction('startPreparation', selectedOrder?.id)}
           onMarkReady={() => handleOrderAction('markReady', selectedOrder?.id)}
           onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
-          onCancel={() => handleOrderAction('cancel', selectedOrder?.id)}
+          onCancelOrder={() => handleOrderAction('cancel', selectedOrder?.id)}
         />
       )}
       

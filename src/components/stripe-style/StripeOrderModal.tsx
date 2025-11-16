@@ -1,114 +1,143 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Clock, Printer, MessageCircle, X, Check, ChefHat, Truck, Package, CheckCircle } from 'lucide-react';
-import { StripeClientInfo } from './StripeClientInfo';
-import { StripeDeliveryInfo } from './StripeDeliveryInfo';
-import { StripeItemsList } from './StripeItemsList';
-import { StripeFinancialSummary } from './StripeFinancialSummary';
-import { OrderChatPanel } from '../OrderChatPanel';
-import { OrderTimeline } from '../OrderTimeline';
-import { useOrderItems } from '@/hooks/useOrderItems';
-import { useOrderChat } from '@/hooks/useOrderChat';
-import { useThermalPrint } from '@/hooks/useThermalPrint';
-import { useStoreInfo } from '@/hooks/useStoreInfo';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState, useEffect, useRef } from "react";
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Printer, 
+  X, 
+  Clock, 
+  Check, 
+  ChefHat, 
+  Truck, 
+  Package,
+  CheckCircle,
+  MessageCircle,
+  RefreshCw,
+  Link2,
+  AlertCircle
+} from "lucide-react";
+import { useOrderItems } from "@/hooks/useOrderItems";
+import { useStoreInfo } from "@/hooks/useStoreInfo";
+import { useThermalPrint } from "@/hooks/useThermalPrint";
+import { useOrderChat } from "@/hooks/useOrderChat";
+import { OrderChatPanel } from "@/components/OrderChatPanel";
+import { OrderTimeline } from "@/components/OrderTimeline";
+import { StripeItemsList } from "./StripeItemsList";
+import { StripeInfoCards } from "./StripeInfoCards";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface StripeOrderModalProps {
   order: any;
   onClose: () => void;
-  onConfirm?: (orderId: string) => void;
+  onConfirmOrder?: (orderId: string) => void;
   onStartPreparation?: (orderId: string) => void;
   onMarkReady?: (orderId: string) => void;
   onMarkDelivered?: (orderId: string) => void;
-  onCancel?: (orderId: string) => void;
+  onCancelOrder?: (orderId: string) => void;
 }
 
 export const StripeOrderModal = ({
   order,
   onClose,
-  onConfirm,
+  onConfirmOrder,
   onStartPreparation,
   onMarkReady,
   onMarkDelivered,
-  onCancel,
+  onCancelOrder,
 }: StripeOrderModalProps) => {
   const [showChat, setShowChat] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  
-  const { items = [] } = useOrderItems(order?.id, !!order);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  const { items, loading: itemsLoading } = useOrderItems(order?.id, !!order);
   const { storeInfo } = useStoreInfo();
   const { printOrder } = useThermalPrint();
-  const { messages, unreadCount } = useOrderChat(order?.id);
+  const { unreadCount } = useOrderChat(order?.id);
 
-  if (!order) return null;
+  const isPresencialPayment = ['credit_card_delivery', 'debit_card_delivery', 'cash'].includes(order?.payment_method);
 
-  const isPresencialPayment = ['credit_card_delivery', 'debit_card_delivery', 'cash'].includes(order.payment_method);
+  // Auto-scroll para o topo ao abrir
+  useEffect(() => {
+    if (rightColumnRef.current) {
+      rightColumnRef.current.scrollTop = 0;
+    }
+  }, [order?.id]);
 
-  const getRelativeTime = (date: string) => {
-    const now = new Date();
-    const created = new Date(date);
-    const diff = Math.floor((now.getTime() - created.getTime()) / 1000 / 60);
-    
-    if (diff < 1) return 'agora mesmo';
-    if (diff < 60) return `${diff} min`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h`;
-    return `${Math.floor(diff / 1440)} dias`;
-  };
+  // Auto-reload a cada 15s para pedidos ativos
+  useEffect(() => {
+    if (!order || ['delivered', 'cancelled'].includes(order.status)) return;
 
-  const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['order-items', order.id] });
+      toast.info("Pedido atualizado", { duration: 2000 });
+    }, 15000);
 
-  const getStatusBadgeClass = (status: string) => {
-    const classes: Record<string, string> = {
-      pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-      preparing: 'bg-orange-50 text-orange-700 border-orange-200',
-      ready: 'bg-green-50 text-green-700 border-green-200',
-      in_delivery: 'bg-purple-50 text-purple-700 border-purple-200',
-      delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      cancelled: 'bg-red-50 text-red-700 border-red-200',
+    return () => clearInterval(interval);
+  }, [order?.id, order?.status, queryClient]);
+
+  // Hotkeys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ESC - Fechar modal
+      if (e.key === 'Escape' && !showChat && !showTimeline && !showCancelDialog) {
+        onClose();
+      }
+      
+      // CTRL+S - Ação primária
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handlePrimaryAction();
+      }
+      
+      // R - Recarregar
+      if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handleReload();
+      }
+      
+      // P - Imprimir
+      if (e.key === 'p' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handlePrint();
+      }
     };
-    return classes[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [order, showChat, showTimeline, showCancelDialog]);
+
+  const handlePrint = () => {
+    if (items && items.length > 0) {
+      printOrder(order.id);
+      toast.success("Pedido enviado para impressão");
+    }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: '🆕 Recebido',
-      confirmed: '✓ Confirmado',
-      preparing: '👨‍🍳 Em Preparo',
-      ready: '✓ Pronto',
-      in_delivery: '🚚 Saiu para Entrega',
-      delivered: '✓ Entregue',
-      cancelled: '✗ Cancelado',
-    };
-    return labels[status] || status;
+  const handleReload = () => {
+    queryClient.invalidateQueries({ queryKey: ['order-items', order.id] });
+    toast.success("Pedido recarregado", { duration: 2000 });
   };
 
-  const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      pix: 'PIX',
-      credit_card: 'Cartão de Crédito',
-      debit_card: 'Cartão de Débito',
-      cash: 'Dinheiro',
-      credit_card_delivery: 'Cartão de Crédito (Presencial)',
-      debit_card_delivery: 'Cartão de Débito (Presencial)',
-    };
-    return labels[method] || method;
+  const handleCopyLink = () => {
+    const publicLink = `${window.location.origin}/order/${order.id}`;
+    navigator.clipboard.writeText(publicLink);
+    toast.success("Link copiado para a área de transferência");
   };
 
   const handleConfirmPayment = async () => {
@@ -120,17 +149,41 @@ export const StripeOrderModal = ({
 
       if (error) throw error;
 
-      toast.success('Pagamento confirmado com sucesso!');
+      toast.success("Pagamento confirmado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       onClose();
-    } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao confirmar pagamento');
+    } catch (error: any) {
+      toast.error("Erro ao confirmar pagamento: " + error.message);
+    }
+  };
+
+  const handlePrimaryAction = () => {
+    if (!order) return;
+
+    // Confirmação de pagamento presencial tem prioridade
+    if (order.payment_status === 'pending' && isPresencialPayment) {
+      handleConfirmPayment();
+      return;
+    }
+
+    switch (order.status) {
+      case 'pending':
+      case 'confirmed':
+        onStartPreparation?.(order.id);
+        break;
+      case 'preparing':
+        onMarkReady?.(order.id);
+        break;
+      case 'ready':
+      case 'in_delivery':
+        onMarkDelivered?.(order.id);
+        break;
     }
   };
 
   const getPrimaryActionButton = () => {
-    if (order.status === 'delivered' || order.status === 'cancelled') return null;
-    
+    if (!order || ['delivered', 'cancelled'].includes(order.status)) return null;
+
     // Confirmação de pagamento presencial tem prioridade
     if (order.payment_status === 'pending' && isPresencialPayment) {
       return (
@@ -144,7 +197,7 @@ export const StripeOrderModal = ({
         </Button>
       );
     }
-    
+
     switch (order.status) {
       case 'pending':
       case 'confirmed':
@@ -209,57 +262,124 @@ export const StripeOrderModal = ({
     }
   };
 
+  const getRelativeTime = (date: string) => {
+    const now = new Date();
+    const created = new Date(date);
+    const diff = Math.floor((now.getTime() - created.getTime()) / 1000 / 60);
+    
+    if (diff < 1) return 'agora mesmo';
+    if (diff < 60) return `${diff} min`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+    return `${Math.floor(diff / 1440)} dias`;
+  };
+
+  const formatDateTime = (date: string) => {
+    return new Date(date).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    const classes: Record<string, string> = {
+      pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
+      preparing: 'bg-orange-50 text-orange-700 border-orange-200',
+      ready: 'bg-green-50 text-green-700 border-green-200',
+      in_delivery: 'bg-purple-50 text-purple-700 border-purple-200',
+      delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      cancelled: 'bg-red-50 text-red-700 border-red-200',
+    };
+    return classes[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: 'Recebido',
+      confirmed: 'Confirmado',
+      preparing: 'Em Preparo',
+      ready: 'Pronto',
+      in_delivery: 'A Caminho',
+      delivered: 'Entregue',
+      cancelled: 'Cancelado',
+    };
+    return labels[status] || status;
+  };
+
+  if (!order) return null;
+
   return (
     <>
       <Dialog open={!!order} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl h-[90vh] p-0 flex flex-col bg-white">
+        <DialogOverlay className="bg-black/50" />
+        <DialogContent className="max-w-[90vw] h-[90vh] p-0 gap-0 flex flex-col">
           {/* HEADER FIXO */}
-          <DialogHeader className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
-            <div className="flex items-center justify-between">
-              {/* ESQUERDA */}
+          <div className="px-8 py-6 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="flex items-start justify-between">
+              {/* ESQUERDA - Título e Info */}
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    {storeInfo?.name || 'Pizza Prime'}
-                  </span>
-                  <span className="text-gray-300">•</span>
-                  <DialogTitle className="text-lg font-semibold text-gray-900 m-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900">
                     Pedido #{order.id.slice(0, 8).toUpperCase()}
-                  </DialogTitle>
+                  </h2>
+                  <Badge 
+                    variant="outline"
+                    className={`text-xs ${getStatusBadgeClass(order.status)}`}
+                  >
+                    {getStatusLabel(order.status)}
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>Recebido há {getRelativeTime(order.created_at)}</span>
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Recebido há {getRelativeTime(order.created_at)}</span>
+                  </div>
                   <span className="text-gray-300">•</span>
                   <span>{formatDateTime(order.created_at)}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="font-medium text-gray-600">{storeInfo?.name || 'Pizza Prime'}</span>
                 </div>
               </div>
-              
-              {/* CENTRO */}
-              <div className="flex-shrink-0 mx-6">
-                <Badge 
-                  variant="outline"
-                  className={getStatusBadgeClass(order.status)}
-                >
-                  {getStatusLabel(order.status)}
-                </Badge>
-              </div>
-              
-              {/* DIREITA */}
+
+              {/* DIREITA - Ações Rápidas */}
               <div className="flex items-center gap-1">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => printOrder(order.id)}
-                  className="h-8 w-8 p-0"
+                  onClick={handlePrint}
+                  title="Imprimir (P)"
+                  className="text-gray-600 hover:text-gray-900"
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
+                  onClick={handleReload}
+                  title="Recarregar (R)"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleCopyLink}
+                  title="Copiar link público"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <Link2 className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
                   onClick={() => setShowChat(true)}
-                  className="h-8 w-8 p-0 relative"
+                  title="Chat"
+                  className="text-gray-600 hover:text-gray-900 relative"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {unreadCount > 0 && (
@@ -272,83 +392,60 @@ export const StripeOrderModal = ({
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setShowTimeline(true)}
-                  className="h-8 w-8 p-0"
+                  title="Histórico"
+                  className="text-gray-600 hover:text-gray-900"
                 >
                   <Clock className="h-4 w-4" />
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onClose}
+                  title="Fechar (ESC)"
+                  className="text-gray-600 hover:text-gray-900 ml-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </DialogHeader>
+          </div>
 
-          {/* CONTEÚDO SCROLLÁVEL */}
-          <ScrollArea className="flex-1 px-6 py-6">
-            <div className="space-y-6">
-              {/* Bloco Cliente */}
-              <StripeClientInfo order={order} />
-              
-              <Separator className="my-6" />
-              
-              {/* Bloco Entrega/Retirada */}
-              <StripeDeliveryInfo order={order} />
-              
-              <Separator className="my-6" />
-              
-              {/* Bloco Itens */}
-              <StripeItemsList items={items} />
-              
-              <Separator className="my-6" />
-              
-              {/* Bloco Resumo Financeiro */}
-              <StripeFinancialSummary order={order} />
-              
-              <Separator className="my-6" />
-              
-              {/* Bloco Pagamento */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-900">Pagamento</h3>
-                
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Método
-                    </label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {getPaymentMethodLabel(order.payment_method)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <Badge 
-                      variant={order.payment_status === 'paid' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {order.payment_status === 'paid' 
-                        ? '✓ Pago' 
-                        : isPresencialPayment 
-                          ? '💰 A Cobrar' 
-                          : '⏳ Pendente'}
-                    </Badge>
-                  </div>
+          {/* CONTEÚDO - 2 COLUNAS */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* COLUNA ESQUERDA - Itens (35%) */}
+            <div className="w-[35%] border-r border-gray-200 bg-gray-50">
+              <ScrollArea className="h-full">
+                <div className="p-6">
+                  <StripeItemsList items={items || []} loading={itemsLoading} />
                 </div>
-              </div>
+              </ScrollArea>
             </div>
-          </ScrollArea>
 
-          {/* FOOTER FIXO */}
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+            {/* COLUNA DIREITA - Informações (65%) */}
+            <div className="flex-1 bg-white">
+              <ScrollArea className="h-full" ref={rightColumnRef}>
+                <div className="p-8">
+                  <StripeInfoCards order={order} />
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* FOOTER FIXO - Ações */}
+          <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex-shrink-0">
             <div className="flex items-center justify-between gap-4">
-              {/* Botão Cancelar */}
+              {/* Botão de Cancelar */}
               <Button 
                 variant="outline" 
                 size="lg"
-                onClick={() => onCancel?.(order.id)}
+                onClick={() => setShowCancelDialog(true)}
                 disabled={['delivered', 'cancelled'].includes(order.status)}
-                className="text-red-600 border-red-200 hover:bg-red-50"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
               >
                 <X className="h-4 w-4 mr-2" />
                 Cancelar Pedido
               </Button>
-              
+
               {/* Botão Primário Dinâmico */}
               {getPrimaryActionButton()}
             </div>
@@ -356,7 +453,7 @@ export const StripeOrderModal = ({
         </DialogContent>
       </Dialog>
 
-      {/* Chat Lateral */}
+      {/* CHAT LATERAL */}
       <Sheet open={showChat} onOpenChange={setShowChat}>
         <SheetContent side="right" className="w-[400px] sm:w-[540px]">
           <SheetHeader>
@@ -366,7 +463,7 @@ export const StripeOrderModal = ({
         </SheetContent>
       </Sheet>
 
-      {/* Timeline Lateral */}
+      {/* TIMELINE LATERAL */}
       <Sheet open={showTimeline} onOpenChange={setShowTimeline}>
         <SheetContent side="right" className="w-[400px] sm:w-[540px]">
           <SheetHeader>
@@ -375,6 +472,33 @@ export const StripeOrderModal = ({
           <OrderTimeline order={order} />
         </SheetContent>
       </Sheet>
+
+      {/* DIÁLOGO DE CANCELAMENTO */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              Cancelar Pedido
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onCancelOrder?.(order.id);
+                setShowCancelDialog(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sim, cancelar pedido
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
