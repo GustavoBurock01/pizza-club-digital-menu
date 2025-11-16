@@ -206,7 +206,9 @@ serve(async (req) => {
     }
 
     const orderData: OrderData = await req.json();
-    console.log('Processing order for user:', user.id);
+    console.log('[CREATE-ORDER] User authenticated:', user.id);
+    console.log('[CREATE-ORDER] Delivery method received:', orderData.delivery_method);
+    console.log('[CREATE-ORDER] Address ID received:', orderData.address_id);
 
     // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
     const storeStatus = await validateStoreIsOpen(
@@ -256,6 +258,24 @@ serve(async (req) => {
     reserveStock(orderData.items, user.id);
 
     try {
+      // Buscar endereço se for delivery e tiver address_id
+      let delivery_address_snapshot = null;
+      if (orderData.delivery_method === 'delivery' && orderData.address_id) {
+        console.log('[CREATE-ORDER] Fetching address snapshot for delivery order');
+        const { data: addr, error: addrError } = await supabaseClient
+          .from('addresses')
+          .select('street, number, neighborhood, city, state, zip_code, complement')
+          .eq('id', orderData.address_id)
+          .single();
+        
+        if (!addrError && addr) {
+          delivery_address_snapshot = addr;
+          console.log('[CREATE-ORDER] ✅ Address snapshot created:', addr.neighborhood);
+        } else {
+          console.warn('[CREATE-ORDER] Could not fetch address:', addrError);
+        }
+      }
+
       // Iniciar transação para criar pedido
       const { data: order, error: orderError } = await supabaseClient
         .from('orders')
@@ -266,6 +286,7 @@ serve(async (req) => {
           payment_method: orderData.payment_method,
           delivery_method: orderData.delivery_method || 'delivery',
           address_id: orderData.address_id,
+          delivery_address_snapshot: delivery_address_snapshot,
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           notes: orderData.notes,

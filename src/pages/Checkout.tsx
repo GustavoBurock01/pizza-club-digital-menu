@@ -294,6 +294,22 @@ const Checkout = () => {
     }
   };
   const handleOnlinePayment = async () => {
+    // VALIDAÇÃO 0: Verificar sessão válida ANTES de qualquer operação
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      console.error('[CHECKOUT] Session error:', sessionError);
+      toast({
+        title: "Sessão expirada",
+        description: "Por favor, faça login novamente para continuar.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    console.log('[CHECKOUT] ✅ Session verified:', session.user.id);
+
     // VALIDAÇÃO 1: Verificar se o sistema de pagamento está configurado
     console.log('[CHECKOUT] Validating online payment eligibility');
     const eligibility = await validateOnlinePaymentEligibility();
@@ -431,6 +447,9 @@ const Checkout = () => {
 
     // FASE 2: CRIAR PEDIDO PRIMEIRO usando create-order-optimized
     console.log('[CHECKOUT] Creating order via edge function before payment redirect');
+    console.log('[CHECKOUT] Session token:', session?.access_token?.substring(0, 20) + '...');
+    console.log('[CHECKOUT] Delivery method:', orderData.delivery_method);
+    console.log('[CHECKOUT] Address ID:', orderData.addressData?.id);
     
     const { data: createdOrder, error: createError } = await supabase.functions.invoke(
       'create-order-optimized',
@@ -446,6 +465,9 @@ const Checkout = () => {
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           notes: orderData.notes || ''
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         }
       }
     );
