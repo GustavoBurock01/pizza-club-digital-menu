@@ -51,6 +51,8 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
           .reduce((sum: number, extraName: string) => sum + getExtraPrice(extraName), 0);
 
         const basePrice = item.unit_price;
+        const itemSubtotal = basePrice * item.quantity;
+        const calculatedTotal = itemSubtotal + crustPrice + extrasTotal;
 
         return (
           <div
@@ -59,10 +61,10 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
           >
             {/* Nome do produto com quantidade e preço unitário */}
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-normal text-foreground">
+              <h3 className="text-xl font-bold text-foreground">
                 {item.quantity} x {item.products?.name || 'Produto'}
               </h3>
-              <span className="text-lg font-normal text-foreground ml-4">
+              <span className="text-xl font-bold text-foreground ml-4">
                 {basePrice.toFixed(2)}
               </span>
             </div>
@@ -70,10 +72,10 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
             {/* Borda recheada */}
             {item.customizations?.crustName && (
               <div className="flex items-start justify-between mb-2">
-                <span className="text-base font-normal text-foreground">
+                <span className="text-sm font-normal text-muted-foreground">
                   borda recheada: {item.customizations.crustName.toLowerCase()}
                 </span>
-                <span className="text-base font-normal text-foreground">
+                <span className="text-sm font-normal text-foreground">
                   + {crustPrice.toFixed(2)}
                 </span>
               </div>
@@ -82,10 +84,10 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
             {/* Adicionais */}
             {item.customizations?.extrasNames && item.customizations.extrasNames.length > 0 && (
               <div className="flex items-start justify-between mb-2">
-                <span className="text-base font-normal text-foreground">
+                <span className="text-sm font-normal text-muted-foreground">
                   Adicionais: {item.customizations.extrasNames.join(', ').toLowerCase()}
                 </span>
-                <span className="text-base font-normal text-foreground">
+                <span className="text-sm font-normal text-foreground">
                   + {extrasTotal.toFixed(2)}
                 </span>
               </div>
@@ -108,7 +110,7 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
                   Total do item:
                 </span>
                 <span className="text-xl font-semibold text-foreground">
-                  R$ {(item.total_price || 0).toFixed(2)}
+                  R$ {calculatedTotal.toFixed(2)}
                 </span>
               </div>
             </div>
