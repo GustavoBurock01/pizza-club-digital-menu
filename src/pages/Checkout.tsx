@@ -620,13 +620,19 @@ const Checkout = () => {
     }
 
     // Create order
-    // FASE 1: Determinar payment_status corretamente baseado no método de pagamento
+    // FASE 1: Determinar status e payment_status corretos baseado no método de pagamento
     const isPresencialPayment = ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(paymentMethod);
+    
+    // FASE 1 IMPLEMENTADA: Pedidos presenciais vão direto para 'confirmed' e 'to_collect'
+    const orderStatus = isPresencialPayment ? 'confirmed' : 'pending';
+    const orderPaymentStatus = isPresencialPayment ? 'to_collect' : 'pending';
     
     // PASSO 2: LOG ESTRUTURADO - Auditoria antes do insert
     console.log('[CHECKOUT] 📝 Criando pedido:', {
       payment_method: paymentMethod,
-      payment_status: 'pending', // SEMPRE pending no início
+      payment_status: orderPaymentStatus,
+      status: orderStatus,
+      is_presencial: isPresencialPayment,
       delivery_method: deliveryMethod,
       total_amount: total,
       user_id: user?.id
@@ -642,10 +648,12 @@ const Checkout = () => {
       total_amount: total,
       delivery_fee: calculatedDeliveryFee,
       delivery_method: deliveryMethod,
-      status: 'pending',
-      payment_status: 'pending', // Todos começam pending, online muda via webhook
+      status: orderStatus, // ✅ 'confirmed' para presencial, 'pending' para online
+      payment_status: orderPaymentStatus, // ✅ 'to_collect' para presencial, 'pending' para online
       customer_name: customerName,
       customer_phone: customerPhone,
+      customer_cpf: profile?.cpf || null, // ✅ FASE 2: Salvar CPF
+      customer_email: user?.email || null, // ✅ FASE 2: Salvar Email
       payment_method: paymentMethod,
       notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
     }).select().single();

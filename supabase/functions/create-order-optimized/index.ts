@@ -258,21 +258,40 @@ serve(async (req) => {
     reserveStock(orderData.items, user.id);
 
     try {
+      // FASE 2: Buscar perfil completo do usuário (CPF e email)
+      console.log('[CREATE-ORDER] 📋 Buscando perfil do usuário para CPF e email');
+      const { data: userProfile } = await supabaseClient
+        .from('profiles')
+        .select('full_name, phone, cpf')
+        .eq('id', user.id)
+        .single();
+      
+      if (userProfile) {
+        console.log('[CREATE-ORDER] ✅ Perfil encontrado:', {
+          has_cpf: !!userProfile.cpf,
+          has_phone: !!userProfile.phone
+        });
+      }
+
       // Buscar endereço se for delivery e tiver address_id
       let delivery_address_snapshot = null;
       if (orderData.delivery_method === 'delivery' && orderData.address_id) {
-        console.log('[CREATE-ORDER] Fetching address snapshot for delivery order');
+        console.log('[CREATE-ORDER] 📍 Fetching address snapshot for delivery order');
         const { data: addr, error: addrError } = await supabaseClient
           .from('addresses')
-          .select('street, number, neighborhood, city, state, zip_code, complement')
+          .select('street, number, neighborhood, city, state, zip_code, complement, reference_point')
           .eq('id', orderData.address_id)
           .single();
         
         if (!addrError && addr) {
           delivery_address_snapshot = addr;
-          console.log('[CREATE-ORDER] ✅ Address snapshot created:', addr.neighborhood);
+          console.log('[CREATE-ORDER] ✅ Address snapshot created:', {
+            neighborhood: addr.neighborhood,
+            street: addr.street,
+            has_complement: !!addr.complement
+          });
         } else {
-          console.warn('[CREATE-ORDER] Could not fetch address:', addrError);
+          console.warn('[CREATE-ORDER] ⚠️ Could not fetch address:', addrError);
         }
       }
 
@@ -289,6 +308,8 @@ serve(async (req) => {
           delivery_address_snapshot: delivery_address_snapshot,
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
+          customer_cpf: userProfile?.cpf || null, // ✅ FASE 2: Salvar CPF
+          customer_email: user.email || null, // ✅ FASE 2: Salvar Email
           notes: orderData.notes,
           status: 'pending',
           payment_status: 'pending'
