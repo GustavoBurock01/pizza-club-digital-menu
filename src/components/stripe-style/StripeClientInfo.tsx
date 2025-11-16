@@ -28,7 +28,7 @@ export const StripeClientInfo = ({ order }: StripeClientInfoProps) => {
             CPF
           </label>
           <p className="text-sm text-gray-900 mt-1">
-            {order.profiles?.cpf || '—'}
+            {order.customer_cpf || '—'}
           </p>
         </div>
         <div>
@@ -36,7 +36,7 @@ export const StripeClientInfo = ({ order }: StripeClientInfoProps) => {
             Email
           </label>
           <p className="text-sm text-gray-900 mt-1 truncate">
-            {order.profiles?.email || '—'}
+            {order.customer_email || '—'}
           </p>
         </div>
       </div>
