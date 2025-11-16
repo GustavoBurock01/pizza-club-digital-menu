@@ -220,7 +220,137 @@ serve(async (req) => {
     }
     
     const requestData = JSON.parse(body);
-    const { orderData } = requestData;
+    
+    // FASE 4: Suportar tanto orderId (novo fluxo) quanto orderData (legacy)
+    const { orderId, orderData } = requestData;
+    
+    // ============= NOVO FLUXO: GERAR PIX PARA PEDIDO EXISTENTE =============
+    if (orderId) {
+      console.log('[CREATE-ORDER-PIX] 🆕 NEW FLOW: Generating PIX for existing order:', orderId);
+      
+      // Buscar pedido existente
+      const { data: existingOrder, error: orderFetchError } = await supabaseServiceClient
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .eq('user_id', user.id) // Segurança: só permite gerar PIX para pedidos próprios
+        .single();
+      
+      if (orderFetchError || !existingOrder) {
+        console.error('[CREATE-ORDER-PIX] ❌ Order not found:', orderId);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Pedido não encontrado' 
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('[CREATE-ORDER-PIX] ✅ Order found, generating PIX:', {
+        orderId: existingOrder.id,
+        total: existingOrder.total_amount,
+        status: existingOrder.status
+      });
+      
+      // Buscar perfil para dados do pagador
+      const { data: profile } = await supabaseServiceClient
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      // Criar PIX no MercadoPago
+      const paymentData = {
+        transaction_amount: parseFloat(existingOrder.total_amount),
+        description: `Pedido PizzaClub #${existingOrder.id.slice(-8)}`,
+        payment_method_id: 'pix',
+        payer: {
+          email: profile?.email || user.email,
+          first_name: profile?.full_name?.split(' ')[0] || 'Cliente',
+          last_name: profile?.full_name?.split(' ').slice(1).join(' ') || 'PizzaClub',
+          identification: {
+            type: 'CPF',
+            number: profile?.cpf?.replace(/\D/g, '') || '00000000000'
+          }
+        },
+        external_reference: existingOrder.id,
+        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
+      };
+      
+      console.log('[CREATE-ORDER-PIX] 🌐 Creating PIX payment for existing order');
+      
+      const mercadoPagoResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mercadoPagoToken}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': `pix-${orderId}-${Date.now()}`
+        },
+        body: JSON.stringify(paymentData)
+      });
+      
+      if (!mercadoPagoResponse.ok) {
+        const errorText = await mercadoPagoResponse.text();
+        console.error('[CREATE-ORDER-PIX] ❌ MercadoPago API error:', errorText);
+        throw new Error('Erro ao gerar PIX no MercadoPago');
+      }
+      
+      const mercadoPagoResult = await mercadoPagoResponse.json();
+      const pixTransactionData = mercadoPagoResult.point_of_interaction.transaction_data;
+      
+      console.log('[CREATE-ORDER-PIX] ✅ PIX generated for existing order');
+      
+      // Armazenar transação PIX
+      const transactionId = `MP-${mercadoPagoResult.id}`;
+      const expiresAt = mercadoPagoResult.date_of_expiration || 
+                        new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      
+      await supabaseServiceClient
+        .from('pix_transactions')
+        .insert({
+          id: transactionId,
+          order_id: existingOrder.id,
+          user_id: user.id,
+          amount: parseFloat(existingOrder.total_amount),
+          br_code: pixTransactionData.qr_code,
+          status: 'pending',
+          expires_at: expiresAt,
+          mercadopago_payment_id: mercadoPagoResult.id.toString()
+        });
+      
+      // Gerar QR Code
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(pixTransactionData.qr_code)}`;
+      
+      const pixData = {
+        transactionId,
+        brCode: pixTransactionData.qr_code,
+        qrCodeUrl,
+        qrCodeBase64: pixTransactionData.qr_code_base64 || null,
+        amount: parseFloat(existingOrder.total_amount).toFixed(2),
+        expiresAt,
+        mercadoPagoId: mercadoPagoResult.id,
+        ticketUrl: pixTransactionData.ticket_url || null
+      };
+      
+      console.log('[CREATE-ORDER-PIX] 🎉 PIX generated for existing order successfully');
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          orderId: existingOrder.id,
+          pixData,
+          message: 'PIX gerado com sucesso'
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    // ============= FLUXO LEGADO: CRIAR PEDIDO + PIX =============
+    console.log('[CREATE-ORDER-PIX] 📋 LEGACY FLOW: Creating order with PIX');
 
     // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
     const storeStatus = await validateStoreIsOpen(
@@ -245,14 +375,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Parse request body
-    const body = await req.text();
-    if (!body.trim()) {
-      throw new Error('Empty request body');
-    }
-    
-    const orderData = JSON.parse(body);
     
     console.log('[CREATE-ORDER-PIX] 📋 Order data received:', {
       items_count: orderData.items?.length,
