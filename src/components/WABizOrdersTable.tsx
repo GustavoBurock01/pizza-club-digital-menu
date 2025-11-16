@@ -177,7 +177,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
                   </Badge>
                   
                   {/* Badge "A COBRAR" para pedidos presenciais com pagamento pendente */}
-                  {order.payment_status === 'pending' && 
+                  {(order.payment_status === 'pending' || order.payment_status === 'to_collect') && 
                    ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(order.payment_method) && (
                     <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50 ml-2">
                       💰 A COBRAR
