@@ -31,6 +31,9 @@ interface AttendantOrder {
   updated_at: string;
   items_count: number;
   total_items: number;
+  // Snapshot completo do endereço no momento do pedido
+  delivery_address_snapshot?: any;
+  // Campos derivados para listagens simples
   street?: string;
   number?: string;
   neighborhood?: string;
@@ -118,6 +121,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           payment_status,
           created_at,
           updated_at,
+          delivery_address_snapshot,
           notes,
           addresses!orders_address_id_fkey (
             street,
@@ -157,16 +161,17 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         updated_at: order.updated_at,
         items_count: order.order_items?.length || 0,
         total_items: order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
-        street: order.addresses?.street,
-        number: order.addresses?.number,
-        neighborhood: order.addresses?.neighborhood,
-        city: order.addresses?.city,
+        delivery_address_snapshot: order.delivery_address_snapshot,
+        street: order.delivery_address_snapshot?.street || order.addresses?.street,
+        number: order.delivery_address_snapshot?.number || order.addresses?.number,
+        neighborhood: order.delivery_address_snapshot?.neighborhood || order.addresses?.neighborhood,
+        city: order.delivery_address_snapshot?.city || order.addresses?.city,
         notes: order.notes
       }));
 
       // Calcular estatísticas a partir dos dados já carregados
       const stats: AttendantStats = {
-        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        pendingOrders: orders.filter(o => o.status === 'pending' || o.status === 'pending_payment').length,
         preparingOrders: orders.filter(o => ['confirmed', 'preparing'].includes(o.status)).length,
         avgDeliveryTime: 35, // Será calculado com dados reais posteriormente
         todayCustomers: new Set(
