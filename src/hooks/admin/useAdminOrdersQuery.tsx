@@ -70,7 +70,14 @@ async function fetchOrdersOptimized(status?: string, limit: number = 50): Promis
       payment_status,
       created_at,
       updated_at,
-      notes
+      notes,
+      delivery_address_snapshot,
+      address_id,
+      delivery_method,
+      customer_name,
+      customer_phone,
+      discount_amount,
+      coupon_code
     `)
     .order('created_at', { ascending: false });
 
