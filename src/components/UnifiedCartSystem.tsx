@@ -117,7 +117,8 @@ export const UnifiedCartSystem = ({
     
     // Usar crustName ao invés de crust
     if (customizations.crustName) {
-      parts.push(`Borda: ${customizations.crustName}`);
+      const crustDisplay = customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim();
+      parts.push(`Borda recheada: ${crustDisplay}`);
     } else if (customizations.crust && customizations.crust !== 'tradicional') {
       // Fallback caso crustName não exista (dados antigos do carrinho)
       parts.push(`Borda: ${customizations.crust}`);

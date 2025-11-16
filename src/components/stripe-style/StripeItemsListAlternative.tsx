@@ -112,7 +112,7 @@ export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAl
               {item.customizations?.crustName && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
                   <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    🍕 Borda Recheada: <span className="font-normal">{item.customizations.crustName}</span>
+                    🍕 Borda recheada: <span className="font-normal">{item.customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim()}</span>
                   </p>
               {crustPriceUnit > 0 && (
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">

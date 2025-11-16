@@ -75,7 +75,7 @@ export const StripeItemsList = ({ items, loading }: StripeItemsListProps) => {
             {item.customizations?.crustName && (
               <div className="flex items-start justify-between mb-2">
                 <span className="text-sm font-normal text-muted-foreground">
-                  borda recheada: {item.customizations.crustName.toLowerCase()}
+                  Borda recheada: {item.customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim()}
                 </span>
                 <span className="text-sm font-normal text-foreground">
                   + {crustPriceUnit.toFixed(2)} {item.quantity > 1 && `x ${item.quantity} = ${crustPrice.toFixed(2)}`}
