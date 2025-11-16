@@ -1,17 +1,6 @@
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  User, 
-  MapPin, 
-  CreditCard, 
-  Receipt,
-  DollarSign,
-  ExternalLink,
-  Package,
-  Truck,
-  Store
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useCatalogPricing } from "@/hooks/useCatalogPricing";
 
 interface StripeInfoCardsProps {
@@ -95,184 +84,133 @@ export const StripeInfoCards = ({ order, items = [] }: StripeInfoCardsProps) => 
   const totalAmount = subtotal + deliveryFee - discountAmount;
 
   return (
-    <div className="space-y-6">
-      {/* CARD: Cliente */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-4 w-4 text-gray-500" />
-          <h3 className="text-base font-semibold text-gray-900">Cliente</h3>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Nome
-            </label>
-            <p className="text-sm text-gray-900 mt-1">
-              {order.customer_name || 'Não informado'}
-            </p>
+    <div className="font-mono text-sm space-y-0">
+      {/* CLIENTE */}
+      <div className="border-t-2 border-b-2 border-gray-800 py-3 mb-4">
+        <h3 className="font-bold text-gray-900 text-center text-base mb-3">CLIENTE</h3>
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Nome:</span>
+            <span className="text-gray-900 font-medium">{order.customer_name || 'Não informado'}</span>
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Telefone
-            </label>
-            <a 
-              href={`tel:${order.customer_phone}`}
-              className="text-sm text-blue-600 hover:text-blue-700 mt-1 block"
-            >
+          <div className="flex justify-between">
+            <span className="text-gray-600">Telefone:</span>
+            <a href={`tel:${order.customer_phone}`} className="text-blue-600 hover:underline">
               {order.customer_phone || 'Não informado'}
             </a>
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              CPF
-            </label>
-            <p className="text-sm text-gray-900 mt-1">
-              {order.profiles?.cpf || '—'}
-            </p>
+          <div className="flex justify-between">
+            <span className="text-gray-600">E-mail:</span>
+            <span className="text-gray-900 truncate max-w-[180px]">{order.profiles?.email || '—'}</span>
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Email
-            </label>
-            <p className="text-sm text-gray-900 mt-1 truncate">
-              {order.profiles?.email || '—'}
-            </p>
+          <div className="flex justify-between">
+            <span className="text-gray-600">CPF:</span>
+            <span className="text-gray-900">{order.profiles?.cpf || '—'}</span>
           </div>
         </div>
       </div>
 
-      <Separator className="my-6" />
-
-      {/* CARD: Entrega / Retirada */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          {order.delivery_method === 'delivery' ? (
-            <Truck className="h-4 w-4 text-gray-500" />
-          ) : (
-            <Store className="h-4 w-4 text-gray-500" />
-          )}
-          <h3 className="text-base font-semibold text-gray-900">
-            {order.delivery_method === 'delivery' ? 'Entrega' : 'Retirada'}
-          </h3>
-          <Badge variant="outline" className="text-xs ml-2 flex items-center gap-1">
-            {order.delivery_method === 'delivery' ? (
-              <>
-                <Truck className="h-3 w-3" />
-                <span>Delivery</span>
-              </>
-            ) : (
-              <>
-                <Store className="h-3 w-3" />
-                <span>Retirada</span>
-              </>
-            )}
-          </Badge>
-        </div>
-
+      {/* ENTREGA / RETIRADA */}
+      <div className="border-t-2 border-b-2 border-gray-800 py-3 mb-4">
+        <h3 className="font-bold text-gray-900 text-center text-base mb-3">
+          {order.delivery_method === 'delivery' ? 'ENTREGA' : 'RETIRADA'}
+        </h3>
+        
         {order.delivery_method === 'delivery' ? (
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {order.delivery_address_snapshot ? (
               <>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Endereço
-                  </label>
-                  <p className="text-sm text-gray-900 mt-1">
+                  <p className="text-gray-900 font-medium">
                     {order.delivery_address_snapshot.street}, {order.delivery_address_snapshot.number}
                   </p>
                   {order.delivery_address_snapshot.complement && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      {order.delivery_address_snapshot.complement}
-                    </p>
+                    <p className="text-gray-600 text-xs">{order.delivery_address_snapshot.complement}</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-gray-600 text-xs">
                     {order.delivery_address_snapshot.neighborhood} - {order.delivery_address_snapshot.city}/{order.delivery_address_snapshot.state}
                   </p>
                   {order.delivery_address_snapshot.zip_code && (
-                    <p className="text-xs text-gray-500">
-                      CEP: {order.delivery_address_snapshot.zip_code}
-                    </p>
+                    <p className="text-gray-600 text-xs">CEP: {order.delivery_address_snapshot.zip_code}</p>
                   )}
                 </div>
                 {order.delivery_address_snapshot.reference_point && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Ponto de Referência
-                    </label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {order.delivery_address_snapshot.reference_point}
-                    </p>
+                  <div className="pt-2 border-t border-dashed border-gray-300">
+                    <p className="text-gray-600 text-xs">Ref: {order.delivery_address_snapshot.reference_point}</p>
                   </div>
                 )}
               </>
             ) : (
-              <p className="text-sm text-gray-600">Endereço não informado</p>
-            )}
-            
-            {order.delivery_fee > 0 && (
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-500">Taxa de entrega</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  R$ {order.delivery_fee.toFixed(2)}
-                </span>
-              </div>
+              <p className="text-gray-600 text-center">Endereço não informado</p>
             )}
           </div>
         ) : (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900 font-medium">Cliente irá retirar o pedido no balcão</p>
+          <div className="text-center">
+            <p className="text-gray-900 font-medium">Cliente vai retirar no balcão</p>
             {order.estimated_delivery_time && (
-              <p className="text-xs text-blue-700 mt-1">
-                Tempo estimado: {order.estimated_delivery_time} minutos
-              </p>
+              <p className="text-gray-600 text-xs mt-1">Tempo estimado: {order.estimated_delivery_time} min</p>
             )}
-          </div>
-        )}
-
-        {order.notes && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs font-medium text-amber-900 mb-1">Observações do Pedido</p>
-            <p className="text-sm text-amber-800">{order.notes}</p>
           </div>
         )}
       </div>
 
-      <Separator className="my-6" />
-
-      {/* CARD: Pagamento */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <CreditCard className="h-4 w-4 text-gray-500" />
-          <h3 className="text-base font-semibold text-gray-900">Pagamento</h3>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Método
-              </label>
-              <p className="text-sm text-gray-900 mt-1">
-                {getPaymentMethodLabel(order.payment_method)}
-              </p>
-            </div>
-            <div>
-              {getPaymentStatusBadge()}
-            </div>
+      {/* PEDIDO */}
+      <div className="border-t-2 border-b-2 border-gray-800 py-3 mb-4">
+        <h3 className="font-bold text-gray-900 text-center text-base mb-3">PEDIDO</h3>
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Valor do pedido:</span>
+            <span className="text-gray-900 font-medium">R$ {subtotal.toFixed(2)}</span>
           </div>
-
-          {order.payment_method === 'cash' && order.change_amount && (
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600">Troco para</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  R$ {order.change_amount.toFixed(2)}
-                </span>
-              </div>
+          
+          {order.delivery_fee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Taxa de entrega:</span>
+              <span className="text-gray-900 font-medium">R$ {order.delivery_fee.toFixed(2)}</span>
             </div>
           )}
+          
+          {order.discount_amount > 0 && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-green-600">Descontos:</span>
+                <span className="text-green-600 font-medium">-R$ {order.discount_amount.toFixed(2)}</span>
+              </div>
+              {order.coupon_code && (
+                <div className="text-xs text-gray-500 text-right">Cupom: {order.coupon_code}</div>
+              )}
+            </>
+          )}
+          
+          <div className="pt-2 mt-2 border-t-2 border-gray-800">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-900 font-bold text-base">Total:</span>
+              <span className="text-gray-900 font-bold text-lg">R$ {totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* PAGAMENTO */}
+      <div className="border-t-2 border-b-2 border-gray-800 py-3 mb-4">
+        <h3 className="font-bold text-gray-900 text-center text-base mb-3">PAGAMENTO</h3>
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Forma:</span>
+            <span className="text-gray-900 font-medium">{getPaymentMethodLabel(order.payment_method)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Status:</span>
+            <div>{getPaymentStatusBadge()}</div>
+          </div>
+          
+          {order.payment_method === 'cash' && order.change_amount && (
+            <div className="flex justify-between pt-2 border-t border-dashed border-gray-300">
+              <span className="text-gray-600">Troco para:</span>
+              <span className="text-gray-900 font-bold">R$ {order.change_amount.toFixed(2)}</span>
+            </div>
+          )}
+          
           {order.external_payment_id && (
             <div className="pt-2">
               <Button 
@@ -282,63 +220,20 @@ export const StripeInfoCards = ({ order, items = [] }: StripeInfoCardsProps) => 
                 onClick={() => window.open(`https://dashboard.stripe.com/payments/${order.external_payment_id}`, '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-2" />
-                Ver transação no Stripe
+                Ver transação
               </Button>
             </div>
           )}
         </div>
       </div>
 
-      <Separator className="my-6" />
-
-      {/* CARD: Resumo Financeiro */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Receipt className="h-4 w-4 text-gray-500" />
-          <h3 className="text-base font-semibold text-gray-900">Resumo do Pedido</h3>
+      {/* OBSERVAÇÕES */}
+      {order.notes && (
+        <div className="border-t-2 border-b-2 border-gray-800 py-3">
+          <h3 className="font-bold text-gray-900 text-center text-base mb-2">OBSERVAÇÕES</h3>
+          <p className="text-gray-900 text-center px-2">{order.notes}</p>
         </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Subtotal</span>
-            <span className="text-gray-900">R$ {subtotal.toFixed(2)}</span>
-          </div>
-          
-          {order.delivery_fee > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Taxa de entrega</span>
-              <span className="text-gray-900">R$ {order.delivery_fee.toFixed(2)}</span>
-            </div>
-          )}
-          
-          {order.discount_amount > 0 && (
-            <>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-green-600">Desconto</span>
-                <span className="text-green-600">- R$ {order.discount_amount.toFixed(2)}</span>
-              </div>
-              {order.coupon_code && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Cupom aplicado</span>
-                  <span className="text-gray-500 font-mono">{order.coupon_code}</span>
-                </div>
-              )}
-            </>
-          )}
-          
-          <div className="pt-3 border-t border-gray-200 mt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Total
-              </span>
-              <span className="text-2xl font-bold text-gray-900">
-                R$ {totalAmount.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
