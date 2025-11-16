@@ -114,7 +114,7 @@ export default function AttendantUnified() {
     // Pedidos presenciais pendentes (aguardando cobrança do cliente)
     const isPresencialToCobrar = 
       ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method) && 
-      o.payment_status === 'pending';
+      (o.payment_status === 'pending' || o.payment_status === 'to_collect');
     
     // Pedidos online aguardando pagamento (ex.: PIX) também devem aparecer como "Novos"
     const isOnlinePendingPayment = o.status === 'pending_payment';

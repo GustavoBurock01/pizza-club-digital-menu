@@ -179,6 +179,18 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
         };
       });
 
+      // ✅ LOGS DE DIAGNÓSTICO
+      console.log('[ATTENDANT] 📊 Pedidos carregados:', {
+        total: orders.length,
+        confirmed: orders.filter(o => o.status === 'confirmed').length,
+        to_collect: orders.filter(o => o.payment_status === 'to_collect').length,
+        presencial: orders.filter(o => ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method)).length,
+        confirmed_presencial: orders.filter(o => 
+          o.status === 'confirmed' && 
+          ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method)
+        ).length
+      });
+
       // Calcular estatísticas a partir dos dados já carregados
       const stats: AttendantStats = {
         pendingOrders: orders.filter(o => o.status === 'pending' || o.status === 'pending_payment').length,
