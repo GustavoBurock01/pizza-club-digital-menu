@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WABizHeader } from "@/components/WABizHeader";
 import { WABizOrdersTable } from "@/components/WABizOrdersTable";
-import { WABizOrderDetailsRefactored as WABizOrderDetails } from "@/components/WABizOrderDetailsRefactored";
+import { StripeOrderModal } from "@/components/stripe-style/StripeOrderModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ThermalPrintQueue } from "@/components/ThermalPrintQueue";
 import { PendingPaymentModal } from "@/components/PendingPaymentModal";
@@ -313,7 +313,7 @@ export default function AttendantUnified() {
       
       {/* Modal de Detalhes do Pedido */}
       {selectedOrder && (
-        <WABizOrderDetails
+        <StripeOrderModal
           order={selectedOrder}
           onClose={handleCloseDetails}
           onConfirm={() => handleOrderAction('confirm', selectedOrder?.id)}
