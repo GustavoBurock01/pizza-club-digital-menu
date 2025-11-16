@@ -25,7 +25,7 @@ import { useOrderChat } from "@/hooks/useOrderChat";
 import { OrderChatPanel } from "@/components/OrderChatPanel";
 import { OrderTimeline } from "@/components/OrderTimeline";
 import { StripeItemsList } from "./StripeItemsList";
-import { StripeItemsListAlternative } from "./StripeItemsListAlternative";
+
 import { StripeInfoCards } from "./StripeInfoCards";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +63,7 @@ export const StripeOrderModal = ({
   const [showChat, setShowChat] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [itemsVariant, setItemsVariant] = useState<'default' | 'alternative'>('default');
+  
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 

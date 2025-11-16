@@ -116,7 +116,10 @@ export default function AttendantUnified() {
       ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method) && 
       o.payment_status === 'pending';
     
-    return isConfirmedOnlinePaid || isPresencialToCobrar;
+    // Pedidos online aguardando pagamento (ex.: PIX) também devem aparecer como "Novos"
+    const isOnlinePendingPayment = o.status === 'pending_payment';
+    
+    return isConfirmedOnlinePaid || isPresencialToCobrar || isOnlinePendingPayment;
   });
   
   // ✅ FASE 3: Tocar som configurável quando novo pedido chega
