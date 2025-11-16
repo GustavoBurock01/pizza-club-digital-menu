@@ -107,9 +107,18 @@ export default function AttendantUnified() {
 
   // Separar pedidos por categoria seguindo padrão WABiz
   // ✅ NOVOS: Pedidos confirmados aguardando início do preparo
-  const novosOrders = filteredOrders.filter(o => 
-    o.status === 'confirmed' && o.payment_status !== 'pending_payment'
-  );
+  // PASSO 3: FALLBACK - Incluir pedidos presenciais pendentes (proteção contra race condition)
+  const novosOrders = filteredOrders.filter(o => {
+    // Regra principal: pedidos confirmados sem pendência de pagamento
+    const isConfirmed = o.status === 'confirmed' && o.payment_status !== 'pending_payment';
+    
+    // Fallback: pedidos presenciais ainda pendentes (trigger pode levar 1-2s)
+    const isPresencialPending = 
+      o.status === 'pending' && 
+      ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method);
+    
+    return isConfirmed || isPresencialPending;
+  });
   
   // ✅ FASE 3: Tocar som configurável quando novo pedido chega
   useEffect(() => {
