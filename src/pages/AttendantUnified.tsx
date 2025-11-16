@@ -321,7 +321,7 @@ export default function AttendantUnified() {
           onClose={handleCloseDetails}
           onConfirmOrder={() => handleOrderAction('confirm', selectedOrder?.id)}
           onStartPreparation={() => handleOrderAction('startPreparation', selectedOrder?.id)}
-          onMarkReady={() => handleOrderAction('markReady', selectedOrder?.id)}
+          onMarkReady={(orderId) => handleOrderAction('markReady', orderId)}
           onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
           onCancelOrder={() => handleOrderAction('cancel', selectedOrder?.id)}
         />

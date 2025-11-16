@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { Search, Clock, Eye } from 'lucide-react';
+import { Search, Clock, Eye, Truck, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -77,9 +77,16 @@ const Orders = () => {
   };
 
   const formatAddress = (order: any) => {
+    if (order.delivery_method === 'pickup') {
+      return 'Rei da Pizza d Paraty Delivery - Paraty';
+    }
     const addr = order.addresses || order.delivery_address_snapshot;
     if (!addr) return 'Retirada no local';
-    return `${addr.neighborhood}, ${addr.city}`;
+    return `${addr.street}, ${addr.number}${addr.neighborhood ? ` - ${addr.neighborhood}` : ''}, ${addr.city}`;
+  };
+
+  const getDeliveryIcon = (order: any) => {
+    return order.delivery_method === 'pickup' ? Store : Truck;
   };
 
   const filteredOrders = orders.filter(order => {
@@ -179,7 +186,16 @@ const Orders = () => {
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 <div>📅 {new Date(order.created_at).toLocaleString('pt-BR')}</div>
-                                <div>📍 {formatAddress(order)}</div>
+                                <div className="flex items-center gap-1.5">
+                                  {(() => {
+                                    const Icon = getDeliveryIcon(order);
+                                    return <Icon className="h-4 w-4" />;
+                                  })()}
+                                  <span>
+                                    {order.delivery_method === 'pickup' ? 'Retirada: ' : 'Delivery: '}
+                                    {formatAddress(order)}
+                                  </span>
+                                </div>
                                 <div>🍕 {order.order_items?.length || 0} itens</div>
                               </div>
                             </div>
@@ -227,7 +243,16 @@ const Orders = () => {
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 <div>📅 {new Date(order.created_at).toLocaleString('pt-BR')}</div>
-                                <div>📍 {formatAddress(order)}</div>
+                                <div className="flex items-center gap-1.5">
+                                  {(() => {
+                                    const Icon = getDeliveryIcon(order);
+                                    return <Icon className="h-4 w-4" />;
+                                  })()}
+                                  <span>
+                                    {order.delivery_method === 'pickup' ? 'Retirada: ' : 'Delivery: '}
+                                    {formatAddress(order)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
