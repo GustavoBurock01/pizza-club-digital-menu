@@ -176,11 +176,11 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
                     {getStatusLabel(order.status)}
                   </Badge>
                   
-                  {/* PASSO 3: Badge visual para pedidos presenciais pendentes (aguardando trigger) */}
-                  {order.status === 'pending' && 
+                  {/* Badge "A COBRAR" para pedidos presenciais com pagamento pendente */}
+                  {order.payment_status === 'pending' && 
                    ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(order.payment_method) && (
-                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50">
-                      ⚡ Auto-confirmando
+                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50 ml-2">
+                      💰 A COBRAR
                     </Badge>
                   )}
                 </div>
