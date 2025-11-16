@@ -36,7 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, MapPin, Clock, Check, Banknote, Wallet, Trash2, Plus, Minus, Truck, Store } from 'lucide-react';
 import { PaymentCategory, PaymentMethod } from '@/types';
 interface CustomerData {
   street: string;
@@ -891,7 +891,7 @@ const Checkout = () => {
                             <RadioGroupItem value="delivery" id="delivery" />
                             <Label htmlFor="delivery" className="flex-1 cursor-pointer">
                               <div className="flex items-center gap-3">
-                                <MapPin className="h-5 w-5 text-primary" />
+                                <Truck className="h-5 w-5 text-primary" />
                                 <div>
                                   <div className="font-medium">Entrega</div>
                                   <div className="text-sm text-muted-foreground">Entregamos em sua casa</div>
@@ -904,7 +904,7 @@ const Checkout = () => {
                             <RadioGroupItem value="pickup" id="pickup" />
                             <Label htmlFor="pickup" className="flex-1 cursor-pointer">
                               <div className="flex items-center gap-3">
-                                <Clock className="h-5 w-5 text-primary" />
+                                <Store className="h-5 w-5 text-primary" />
                                 <div>
                                   <div className="font-medium">Retirada</div>
                                   <div className="text-sm text-muted-foreground">Retire no balcão</div>

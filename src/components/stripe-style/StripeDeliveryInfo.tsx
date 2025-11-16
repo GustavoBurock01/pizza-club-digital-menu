@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Truck, Store } from 'lucide-react';
 
 interface StripeDeliveryInfoProps {
   order: any;
@@ -13,8 +14,18 @@ export const StripeDeliveryInfo = ({ order }: StripeDeliveryInfoProps) => {
         <h3 className="text-sm font-semibold text-gray-900">
           {isDelivery ? 'Entrega' : 'Retirada'}
         </h3>
-        <Badge variant="outline" className="text-xs">
-          {isDelivery ? '🚚 Delivery' : '🏪 Retirada'}
+        <Badge variant="outline" className="text-xs flex items-center gap-1">
+          {isDelivery ? (
+            <>
+              <Truck className="h-3 w-3" />
+              <span>Delivery</span>
+            </>
+          ) : (
+            <>
+              <Store className="h-3 w-3" />
+              <span>Retirada</span>
+            </>
+          )}
         </Badge>
       </div>
       

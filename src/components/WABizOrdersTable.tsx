@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Eye, Phone, MapPin } from "lucide-react";
+import { Eye, Phone, MapPin, Truck, Store } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -145,8 +145,12 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
               
               <TableCell>
                 <div className="text-sm">
-                  <div className="font-medium text-gray-900 flex items-center">
-                    <MapPin className="h-3 w-3 mr-1" />
+                  <div className="font-medium text-gray-900 flex items-center gap-1">
+                    {getDeliveryType(order) === 'Entrega' ? (
+                      <Truck className="h-3 w-3" />
+                    ) : (
+                      <Store className="h-3 w-3" />
+                    )}
                     {getDeliveryType(order)}
                   </div>
                   {order.neighborhood && (
