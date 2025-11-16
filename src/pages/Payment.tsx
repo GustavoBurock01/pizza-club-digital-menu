@@ -64,7 +64,22 @@ const Payment = () => {
     try {
       console.log('[PAYMENT] Initializing payment...', { paymentType, orderId });
       
-      // Verificar se há dados do pedido com SecureStorage
+      // FASE 2: Se tem orderId na URL, usar ele diretamente (novo fluxo)
+      if (orderId) {
+        console.log('[PAYMENT] Using orderId from URL:', orderId);
+        setOrderData({ orderId }); // Passar orderId para os componentes
+        
+        if (paymentType === 'card') {
+          console.log('[PAYMENT] Setting up card payment form with orderId');
+          setPaymentStatus('form');
+        } else if (paymentType === 'pix') {
+          console.log('[PAYMENT] Creating PIX payment for existing order');
+          await createOrderAndPixPayment({ orderId });
+        }
+        return;
+      }
+      
+      // Verificar se há dados do pedido com SecureStorage (fluxo legado)
       const stateOrderData = location.state?.orderData;
       const pendingOrderData = await SecureStorage.get('pendingOrder');
       
@@ -96,11 +111,6 @@ const Payment = () => {
           items: dataToUse.items?.length,
           total: dataToUse.total
         });
-      } else if (orderId) {
-        // Buscar pedido existente (fluxo legacy)
-        console.log('[PAYMENT] Fetching existing order:', orderId);
-        await fetchExistingOrder(orderId);
-        return; // fetchExistingOrder já trata o resto
       }
 
       // Processar pagamento de acordo com o tipo

@@ -228,13 +228,23 @@ export const RealCardPayment = ({ orderData, onPaymentSuccess }: RealCardPayment
     setPaymentStatus('processing');
 
     try {
+      // FASE 3: Verificar se orderData tem orderId
+      if (!orderData?.orderId) {
+        console.error('[CARD] Missing orderId in orderData');
+        throw new Error('ID do pedido não encontrado. Refaça o processo de checkout.');
+      }
+
+      console.log('[CARD] Processing payment for order:', orderData.orderId);
+      
       // Create card token with MercadoPago
       const cardToken = await createCardToken();
       
-      // Send payment data to backend  
+      console.log('[CARD] Card token created, processing payment');
+      
+      // Send payment data to backend with orderId
       const { data, error } = await supabase.functions.invoke('process-card-payment', {
         body: {
-          orderData,
+          orderId: orderData.orderId, // ✅ CORRETO agora!
           cardToken,
           installments: parseInt(cardData.installments),
           payer: {
@@ -247,11 +257,15 @@ export const RealCardPayment = ({ orderData, onPaymentSuccess }: RealCardPayment
         }
       });
 
+      console.log('[CARD] Payment response:', data);
+
       if (error) {
+        console.error('[CARD] Payment error:', error);
         throw new Error(error.message);
       }
 
       if (data.status === 'approved') {
+        console.log('[CARD] Payment approved');
         setPaymentStatus('success');
         toast({
           title: "Pagamento aprovado!",
@@ -259,6 +273,7 @@ export const RealCardPayment = ({ orderData, onPaymentSuccess }: RealCardPayment
         });
         onPaymentSuccess();
       } else {
+        console.error('[CARD] Payment not approved:', data.status);
         throw new Error(data.message || 'Pagamento rejeitado');
       }
 

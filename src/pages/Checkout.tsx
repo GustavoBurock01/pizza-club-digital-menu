@@ -151,6 +151,11 @@ const Checkout = () => {
   };
 
   // ===== PAYMENT LOGIC =====
+  /**
+   * Determina se o pagamento requer processamento online (gateway externo).
+   * Pagamentos presenciais (cash, credit_card_delivery, debit_card_delivery) 
+   * não passam por processamento online.
+   */
   const isOnlinePayment = () => {
     return ['pix', 'credit_card_online', 'debit_card_online'].includes(paymentMethod);
   };
@@ -424,20 +429,43 @@ const Checkout = () => {
       customer_phone: orderData.customer_phone
     });
 
-    // Salvar no SecureStorage com criptografia e navegar para pagamento
-    await SecureStorage.set('pendingOrder', orderData, {
-      expiresIn: 30 * 60 * 1000 // 30 minutos
-    });
-    // NÃO limpar o carrinho até o pagamento ser aprovado
-    // clearCart(); // Movido para depois da confirmação do pagamento
+    // FASE 2: CRIAR PEDIDO PRIMEIRO usando create-order-optimized
+    console.log('[CHECKOUT] Creating order via edge function before payment redirect');
+    
+    const { data: createdOrder, error: createError } = await supabase.functions.invoke(
+      'create-order-optimized',
+      {
+        body: {
+          user_id: user?.id,
+          items: orderData.items,
+          total_amount: orderData.total_amount,
+          delivery_fee: orderData.delivery_fee,
+          payment_method: orderData.payment_method,
+          delivery_method: orderData.delivery_method,
+          address_id: orderData.addressData?.id || null,
+          customer_name: orderData.customer_name,
+          customer_phone: orderData.customer_phone,
+          notes: orderData.notes || ''
+        }
+      }
+    );
 
-    if (paymentMethod === 'pix') {
-      console.log('[CHECKOUT] Navigating to PIX payment page');
-      navigate('/payment/pix');
-    } else if (paymentMethod === 'credit_card_online' || paymentMethod === 'debit_card_online') {
-      console.log('[CHECKOUT] Navigating to card payment page');
-      navigate('/payment/card');
+    if (createError || !createdOrder?.orderId) {
+      console.error('[CHECKOUT] Error creating order:', createError);
+      throw new Error(createError?.message || 'Erro ao criar pedido');
     }
+
+    console.log('[CHECKOUT] ✅ Order created successfully:', createdOrder.orderId);
+
+    // Navegar para página de pagamento COM orderId
+    if (paymentMethod === 'pix') {
+      console.log('[CHECKOUT] Navigating to PIX payment page with orderId');
+      navigate(`/payment/pix?order=${createdOrder.orderId}`);
+    } else if (paymentMethod === 'credit_card_online' || paymentMethod === 'debit_card_online') {
+      console.log('[CHECKOUT] Navigating to card payment page with orderId');
+      navigate(`/payment/card?order=${createdOrder.orderId}`);
+    }
+    
     toast({
       title: "Redirecionando para pagamento",
       description: "Complete o pagamento para confirmar seu pedido."
@@ -570,6 +598,9 @@ const Checkout = () => {
     }
 
     // Create order
+    // FASE 1: Determinar payment_status corretamente baseado no método de pagamento
+    const isPresencialPayment = ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(paymentMethod);
+    
     const {
       data: orderData,
       error: orderError
@@ -581,7 +612,7 @@ const Checkout = () => {
       delivery_fee: calculatedDeliveryFee,
       delivery_method: deliveryMethod,
       status: 'pending',
-      payment_status: 'pending',
+      payment_status: isPresencialPayment ? 'paid' : 'pending', // ✅ Corrigido!
       customer_name: customerName,
       customer_phone: customerPhone,
       payment_method: paymentMethod,

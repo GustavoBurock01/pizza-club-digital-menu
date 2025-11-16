@@ -122,7 +122,39 @@ export const PixPayment = ({ orderData, onPaymentSuccess }: PixPaymentProps) => 
     
     try {
       setLoading(true);
-      console.log('[PIX-UNIFIED] Creating order and PIX payment:', orderData);
+      
+      // FASE 3: Verificar se já tem orderId (vindo da query string/orderData)
+      if (orderData?.orderId) {
+        console.log('[PIX-UNIFIED] Processing PIX for existing order:', orderData.orderId);
+        
+        // Apenas gerar PIX para o pedido existente
+        const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
+          body: {
+            orderId: orderData.orderId
+          }
+        });
+        
+        if (isUnmountedRef.current) return;
+        
+        if (error) {
+          console.error('[PIX-UNIFIED] Error generating PIX:', error);
+          throw error;
+        }
+        
+        console.log('[PIX-UNIFIED] PIX generated for order:', data.orderId);
+        setPixData(data.pixData);
+        setPaymentStatus('pending');
+        setLoading(false);
+        
+        toast({
+          title: "PIX gerado com sucesso!",
+          description: "Escaneie o QR Code ou copie o código PIX para pagar.",
+        });
+        return;
+      }
+      
+      // LEGADO: Suporte para fluxo antigo (criar pedido + PIX)
+      console.log('[PIX-UNIFIED] Creating order with PIX (legacy flow):', orderData);
       
       const { data, error } = await supabase.functions.invoke('create-order-with-pix', {
         body: orderData
