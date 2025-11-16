@@ -601,6 +601,15 @@ const Checkout = () => {
     // FASE 1: Determinar payment_status corretamente baseado no método de pagamento
     const isPresencialPayment = ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(paymentMethod);
     
+    // PASSO 2: LOG ESTRUTURADO - Auditoria antes do insert
+    console.log('[CHECKOUT] 📝 Criando pedido presencial:', {
+      payment_method: paymentMethod,
+      payment_status: isPresencialPayment ? 'paid' : 'pending',
+      delivery_method: deliveryMethod,
+      total_amount: total,
+      user_id: user?.id
+    });
+    
     const {
       data: orderData,
       error: orderError
@@ -619,6 +628,15 @@ const Checkout = () => {
       notes: deliveryMethod === 'pickup' ? 'Retirada no balcão' : undefined
     }).select().single();
     if (orderError) throw orderError;
+
+    // PASSO 2: LOG ESTRUTURADO - Auditoria após insert
+    console.log('[CHECKOUT] ✅ Pedido criado no banco:', {
+      order_id: orderData.id,
+      payment_status: orderData.payment_status,
+      status: orderData.status,
+      payment_method: orderData.payment_method,
+      delivery_method: orderData.delivery_method
+    });
 
     // Create order items
     const orderItems = items.map(item => ({

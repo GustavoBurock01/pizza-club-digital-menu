@@ -169,11 +169,21 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
               </TableCell>
               
               <TableCell>
-                <Badge 
-                  className={`${getStatusColor(order.status)} text-white border-0 font-medium`}
-                >
-                  {getStatusLabel(order.status)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    className={`${getStatusColor(order.status)} text-white border-0 font-medium`}
+                  >
+                    {getStatusLabel(order.status)}
+                  </Badge>
+                  
+                  {/* PASSO 3: Badge visual para pedidos presenciais pendentes (aguardando trigger) */}
+                  {order.status === 'pending' && 
+                   ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(order.payment_method) && (
+                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50">
+                      ⚡ Auto-confirmando
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
               
               <TableCell onClick={(e) => e.stopPropagation()}>
