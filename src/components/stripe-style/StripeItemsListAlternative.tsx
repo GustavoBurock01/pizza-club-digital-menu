@@ -7,7 +7,7 @@ interface StripeItemsListAlternativeProps {
 }
 
 export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAlternativeProps) => {
-  const { crustByName, extraByName, loading: pricingLoading } = useCatalogPricing();
+  const { crustById, crustByName, extraByName, loading: pricingLoading } = useCatalogPricing();
 
   const getCrustPrice = (crustName: string): number => {
     if (!crustName) return 0;
@@ -43,9 +43,9 @@ export const StripeItemsListAlternative = ({ items, loading }: StripeItemsListAl
   return (
     <div className="space-y-4">
       {items.map((item: any, index: number) => {
-        const crustPriceUnit = item.customizations?.crustName 
-          ? getCrustPrice(item.customizations.crustName) 
-          : 0;
+        const crustPriceUnit = item.customizations?.crust
+          ? (crustById[item.customizations.crust]?.price ?? (item.customizations?.crustName ? getCrustPrice(item.customizations.crustName) : 0))
+          : (item.customizations?.crustName ? getCrustPrice(item.customizations.crustName) : 0);
         
         const extrasTotalUnit = (item.customizations?.extrasNames || [])
           .reduce((sum: number, extraName: string) => sum + getExtraPrice(extraName), 0);
