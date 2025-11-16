@@ -19,6 +19,7 @@ import { useOrderItems } from '@/hooks/useOrderItems';
 import { useOrderChat } from '@/hooks/useOrderChat';
 import { useThermalPrint } from '@/hooks/useThermalPrint';
 import { toast } from 'sonner';
+import { supabase } from '@/services/supabase';
 
 interface OrderDetailsProps {
   order: any;
@@ -80,10 +81,43 @@ export const WABizOrderDetailsRefactored = ({
     }
   };
 
+  const handleConfirmPayment = async () => {
+    if (!order) return;
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ payment_status: 'paid' })
+        .eq('id', order.id);
+      
+      if (error) throw error;
+      toast.success('Pagamento confirmado! Pedido será confirmado automaticamente.');
+      onClose();
+    } catch (error) {
+      console.error('[ORDER_DETAILS] Erro ao confirmar pagamento:', error);
+      toast.error('Erro ao confirmar pagamento');
+    }
+  };
+
   const getActionButtons = () => {
     if (!order) return null;
     
     const buttons = [];
+    const isPresencialPayment = ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(order.payment_method);
+
+    // Botão de confirmação de pagamento presencial
+    if (order.payment_status === 'pending' && isPresencialPayment) {
+      buttons.push(
+        <Button 
+          key="confirm-payment"
+          onClick={handleConfirmPayment}
+          className="bg-green-600 hover:bg-green-700"
+          size="sm"
+        >
+          <Check className="h-4 w-4 mr-2" />
+          Confirmar Pagamento Recebido
+        </Button>
+      );
+    }
 
     // Botões sempre visíveis
     buttons.push(

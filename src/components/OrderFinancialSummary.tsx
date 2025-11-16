@@ -20,17 +20,23 @@ export const OrderFinancialSummary = ({ order }: OrderFinancialSummaryProps) => 
     return methods[method] || method;
   };
 
-  const getPaymentStatusLabel = (status: string) => {
+  const getPaymentStatusLabel = (status: string, method?: string) => {
+    // Diferenciar pending presencial (a cobrar) de pending online (aguardando)
+    const isPresencial = method && ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(method);
+    
+    if (status === 'pending' && isPresencial) {
+      return { label: '💰 A COBRAR DO CLIENTE', variant: 'default' as const };
+    }
+    
     const statuses: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-      paid: { label: '✅ Pago', variant: 'default' },
-      pending: { label: '⏳ Pendente', variant: 'secondary' },
-      pending_payment: { label: '⏳ Aguardando Pagamento', variant: 'secondary' },
+      paid: { label: '✅ PAGO', variant: 'default' },
+      pending: { label: '⏳ Aguardando Pagamento Online', variant: 'secondary' },
       failed: { label: '❌ Falhou', variant: 'destructive' },
     };
     return statuses[status] || { label: status, variant: 'secondary' };
   };
 
-  const paymentStatus = getPaymentStatusLabel(order.payment_status || 'pending');
+  const paymentStatus = getPaymentStatusLabel(order.payment_status || 'pending', order.payment_method);
 
   return (
     <div className="space-y-3">

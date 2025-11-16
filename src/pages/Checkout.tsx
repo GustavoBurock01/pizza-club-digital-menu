@@ -602,9 +602,9 @@ const Checkout = () => {
     const isPresencialPayment = ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(paymentMethod);
     
     // PASSO 2: LOG ESTRUTURADO - Auditoria antes do insert
-    console.log('[CHECKOUT] 📝 Criando pedido presencial:', {
+    console.log('[CHECKOUT] 📝 Criando pedido:', {
       payment_method: paymentMethod,
-      payment_status: isPresencialPayment ? 'paid' : 'pending',
+      payment_status: 'pending', // SEMPRE pending no início
       delivery_method: deliveryMethod,
       total_amount: total,
       user_id: user?.id
@@ -621,7 +621,7 @@ const Checkout = () => {
       delivery_fee: calculatedDeliveryFee,
       delivery_method: deliveryMethod,
       status: 'pending',
-      payment_status: isPresencialPayment ? 'paid' : 'pending', // ✅ Corrigido!
+      payment_status: 'pending', // Todos começam pending, online muda via webhook
       customer_name: customerName,
       customer_phone: customerPhone,
       payment_method: paymentMethod,
