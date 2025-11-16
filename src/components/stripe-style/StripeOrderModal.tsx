@@ -25,6 +25,7 @@ import { useOrderChat } from "@/hooks/useOrderChat";
 import { OrderChatPanel } from "@/components/OrderChatPanel";
 import { OrderTimeline } from "@/components/OrderTimeline";
 import { StripeItemsList } from "./StripeItemsList";
+import { StripeItemsListAlternative } from "./StripeItemsListAlternative";
 import { StripeInfoCards } from "./StripeInfoCards";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,7 @@ export const StripeOrderModal = ({
   const [showChat, setShowChat] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [itemsVariant, setItemsVariant] = useState<'default' | 'alternative'>('default');
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -416,7 +418,32 @@ export const StripeOrderModal = ({
             <div className="w-[35%] border-r border-gray-200 bg-gray-50">
               <ScrollArea className="h-full">
                 <div className="p-6">
-                  <StripeItemsList items={items || []} loading={itemsLoading} />
+                  {/* Toggle entre estilos */}
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                    <Button
+                      variant={itemsVariant === 'default' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setItemsVariant('default')}
+                      className="flex-1 text-xs"
+                    >
+                      Simples
+                    </Button>
+                    <Button
+                      variant={itemsVariant === 'alternative' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setItemsVariant('alternative')}
+                      className="flex-1 text-xs"
+                    >
+                      Card
+                    </Button>
+                  </div>
+
+                  {/* Renderizar componente baseado na variante */}
+                  {itemsVariant === 'alternative' ? (
+                    <StripeItemsListAlternative items={items || []} loading={itemsLoading} />
+                  ) : (
+                    <StripeItemsList items={items || []} loading={itemsLoading} />
+                  )}
                 </div>
               </ScrollArea>
             </div>
