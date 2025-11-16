@@ -21,6 +21,7 @@ interface AttendantOrder {
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
+  customer_cpf?: string;
   status: string;
   delivery_method: string;
   total_amount: number;
@@ -130,7 +131,9 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
             city
           ),
           profiles!orders_user_id_fkey (
-            email
+            email,
+            cpf,
+            full_name
           ),
           order_items!order_items_order_id_fkey (
             id,
@@ -154,6 +157,7 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           customer_name: order.customer_name,
           customer_phone: order.customer_phone,
           customer_email: order.profiles?.email,
+          customer_cpf: order.profiles?.cpf,
           status: order.status,
           delivery_method: order.delivery_method || 'delivery',
           total_amount: order.total_amount,
