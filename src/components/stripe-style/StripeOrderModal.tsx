@@ -46,7 +46,7 @@ interface StripeOrderModalProps {
   onClose: () => void;
   onConfirmOrder?: (orderId: string) => void;
   onStartPreparation?: (orderId: string) => void;
-  onMarkReady?: (orderId: string) => void;
+  onMarkReady?: (orderId: string, deliveryMethod: string) => void;
   onMarkDelivered?: (orderId: string) => void;
   onCancelOrder?: (orderId: string) => void;
 }
@@ -174,7 +174,7 @@ export const StripeOrderModal = ({
         onStartPreparation?.(order.id);
         break;
       case 'preparing':
-        onMarkReady?.(order.id);
+        onMarkReady?.(order.id, order.delivery_method);
         break;
       case 'ready':
       case 'in_delivery':
@@ -218,7 +218,7 @@ export const StripeOrderModal = ({
         return (
           <Button 
             size="lg"
-            onClick={() => onMarkReady?.(order.id)}
+            onClick={() => onMarkReady?.(order.id, order.delivery_method)}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <Check className="h-4 w-4 mr-2" />
