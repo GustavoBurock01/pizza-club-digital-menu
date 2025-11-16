@@ -114,6 +114,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           user_id,
           customer_name,
           customer_phone,
+          customer_email,
+          customer_cpf,
           delivery_method,
           status,
           total_amount,
@@ -156,8 +158,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
           user_id: order.user_id,
           customer_name: order.customer_name,
           customer_phone: order.customer_phone,
-          customer_email: order.profiles?.email,
-          customer_cpf: order.profiles?.cpf,
+          customer_email: order.customer_email || order.profiles?.email, // ✅ Priorizar campo direto
+          customer_cpf: order.customer_cpf || order.profiles?.cpf, // ✅ Priorizar campo direto
           status: order.status,
           delivery_method: order.delivery_method || 'delivery',
           total_amount: order.total_amount,

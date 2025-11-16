@@ -1461,6 +1461,8 @@ export type Database = {
           coupon_code: string | null
           coupon_id: string | null
           created_at: string | null
+          customer_cpf: string | null
+          customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
           delivery_address_snapshot: Json | null
@@ -1482,6 +1484,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string | null
+          customer_cpf?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_address_snapshot?: Json | null
@@ -1503,6 +1507,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string | null
+          customer_cpf?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_address_snapshot?: Json | null
