@@ -8,7 +8,9 @@ import {
   Receipt,
   DollarSign,
   ExternalLink,
-  Package
+  Package,
+  Truck,
+  Store
 } from "lucide-react";
 import { useCatalogPricing } from "@/hooks/useCatalogPricing";
 
@@ -146,15 +148,25 @@ export const StripeInfoCards = ({ order, items = [] }: StripeInfoCardsProps) => 
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           {order.delivery_method === 'delivery' ? (
-            <MapPin className="h-4 w-4 text-gray-500" />
+            <Truck className="h-4 w-4 text-gray-500" />
           ) : (
-            <Package className="h-4 w-4 text-gray-500" />
+            <Store className="h-4 w-4 text-gray-500" />
           )}
           <h3 className="text-base font-semibold text-gray-900">
             {order.delivery_method === 'delivery' ? 'Entrega' : 'Retirada'}
           </h3>
-          <Badge variant="outline" className="text-xs ml-2">
-            {order.delivery_method === 'delivery' ? '🚚 Delivery' : '🏪 Retirada'}
+          <Badge variant="outline" className="text-xs ml-2 flex items-center gap-1">
+            {order.delivery_method === 'delivery' ? (
+              <>
+                <Truck className="h-3 w-3" />
+                <span>Delivery</span>
+              </>
+            ) : (
+              <>
+                <Store className="h-3 w-3" />
+                <span>Retirada</span>
+              </>
+            )}
           </Badge>
         </div>
 

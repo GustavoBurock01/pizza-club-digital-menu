@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard } from 'lucide-react';
+import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard, Truck, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/services/supabase';
 import { SecureStorage } from '@/utils/secureStorage';
@@ -604,8 +604,18 @@ const Payment = () => {
                   </div>
                   
                   {/* Método de entrega */}
-                  <div className="text-xs text-muted-foreground pt-2">
-                    {orderData.delivery_method === 'delivery' ? '📍 Entrega' : '🏪 Retirada no balcão'}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2">
+                    {orderData.delivery_method === 'delivery' ? (
+                      <>
+                        <Truck className="h-3 w-3" />
+                        <span>Entrega</span>
+                      </>
+                    ) : (
+                      <>
+                        <Store className="h-3 w-3" />
+                        <span>Retirada no balcão</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>

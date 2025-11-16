@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Clock, CheckCircle, Truck, MapPin, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, Truck, MapPin, MessageCircle, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -364,8 +364,17 @@ const OrderStatus = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Endereço de Entrega
+                  {order.delivery_method === 'delivery' ? (
+                    <>
+                      <Truck className="h-5 w-5" />
+                      Endereço de Entrega
+                    </>
+                  ) : (
+                    <>
+                      <Store className="h-5 w-5" />
+                      Retirada no Local
+                    </>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
