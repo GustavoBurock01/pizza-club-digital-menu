@@ -418,32 +418,7 @@ export const StripeOrderModal = ({
             <div className="w-[35%] border-r border-gray-200 bg-gray-50">
               <ScrollArea className="h-full">
                 <div className="p-6">
-                  {/* Toggle entre estilos */}
-                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
-                    <Button
-                      variant={itemsVariant === 'default' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setItemsVariant('default')}
-                      className="flex-1 text-xs"
-                    >
-                      Simples
-                    </Button>
-                    <Button
-                      variant={itemsVariant === 'alternative' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setItemsVariant('alternative')}
-                      className="flex-1 text-xs"
-                    >
-                      Card
-                    </Button>
-                  </div>
-
-                  {/* Renderizar componente baseado na variante */}
-                  {itemsVariant === 'alternative' ? (
-                    <StripeItemsListAlternative items={items || []} loading={itemsLoading} />
-                  ) : (
-                    <StripeItemsList items={items || []} loading={itemsLoading} />
-                  )}
+                  <StripeItemsList items={items || []} loading={itemsLoading} />
                 </div>
               </ScrollArea>
             </div>
