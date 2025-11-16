@@ -56,7 +56,10 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
     queryFn: async () => {
       console.log('[ATTENDANT] 🔍 Fetching orders...');
 
-      // Build query
+      // Build query - apenas pedidos das últimas 24 horas
+      const last24Hours = new Date();
+      last24Hours.setHours(last24Hours.getHours() - 24);
+      
       let ordersQuery = supabase
         .from('orders')
         .select(`
@@ -66,6 +69,7 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
             products (name, image_url)
           )
         `)
+        .gte('created_at', last24Hours.toISOString())
         .order('created_at', { ascending: false })
         .limit(limit);
 
