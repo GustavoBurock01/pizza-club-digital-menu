@@ -452,7 +452,7 @@ export const StripeOrderModal = ({
             <div className="flex-1 bg-white">
               <ScrollArea className="h-full" ref={rightColumnRef}>
                 <div className="p-8">
-                  <StripeInfoCards order={order} />
+                  <StripeInfoCards order={order} items={items} />
                 </div>
               </ScrollArea>
             </div>
