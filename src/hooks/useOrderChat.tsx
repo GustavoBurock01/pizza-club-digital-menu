@@ -17,7 +17,7 @@ export interface OrderMessage {
   updated_at: string;
 }
 
-export const useOrderChat = (orderId: string, senderType: 'customer' | 'attendant' = 'attendant') => {
+export const useOrderChat = (orderId: string | undefined, senderType: 'customer' | 'attendant' = 'attendant') => {
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -68,7 +68,8 @@ export const useOrderChat = (orderId: string, senderType: 'customer' | 'attendan
 
   // ✅ FASE 2: Setup com AbortController
   useEffect(() => {
-    if (!orderId) {
+    // Validação robusta do orderId
+    if (!orderId || orderId === '' || orderId === 'null' || orderId === 'undefined') {
       setMessages([]);
       setLoading(false);
       setUnreadCount(0);

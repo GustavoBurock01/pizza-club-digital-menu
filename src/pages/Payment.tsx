@@ -356,7 +356,7 @@ const Payment = () => {
                 <div className="space-y-2 text-left">
                   <div className="flex justify-between">
                     <span className="font-medium">Pedido:</span>
-                    <span>#{paymentResult.order.id.slice(0, 8)}</span>
+                    <span>#{paymentResult.order.order_number}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">Valor:</span>

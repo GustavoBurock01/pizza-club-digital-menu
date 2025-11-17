@@ -430,7 +430,7 @@ const OrderStatus = () => {
               <CardHeader>
                 <CardTitle>Detalhes do Pedido</CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Pedido #{order.id.slice(-8)}
+                  Pedido #{order.order_number}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {new Date(order.created_at).toLocaleString('pt-BR')}

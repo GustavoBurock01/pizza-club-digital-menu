@@ -27,6 +27,7 @@ export interface User {
 
 export interface Order {
   id: string;
+  order_number: number;
   user_id: string;
   total_amount: number;
   status: string;
@@ -147,6 +148,7 @@ export interface AdminStats {
 
 export interface RecentOrder {
   id: string;
+  order_number: number;
   created_at: string;
   total_amount: number;
   status: string;

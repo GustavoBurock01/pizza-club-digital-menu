@@ -375,7 +375,7 @@ export const useThermalPrint = () => {
 
       return {
         ...order,
-        order_number: order.id.slice(0, 8),
+        order_number: order.order_number || order.id.slice(0, 8),
         customer_phone: order.customer_phone || 'Não informado',
         delivery_address: order.addresses,
         items: order.order_items?.map((item: any) => ({
