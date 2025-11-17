@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ProgressBar } from '@/components/order-status/ProgressBar';
 import { TimelineEvents } from '@/components/order-status/TimelineEvents';
 import { DeliveryInfo } from '@/components/order-status/DeliveryInfo';
 import { OrderItemsList } from '@/components/order-status/OrderItemsList';
 import { FinancialSummary } from '@/components/order-status/FinancialSummary';
 import { PaymentInfo } from '@/components/order-status/PaymentInfo';
-import { getOrderStatusInfo, calculateEstimatedDelivery, formatWhatsAppMessage } from '@/utils/orderStatusHelpers';
+import { OrderChatPanel } from '@/components/OrderChatPanel';
+import { useOrderChat } from '@/hooks/useOrderChat';
+import { getOrderStatusInfo, calculateEstimatedDelivery } from '@/utils/orderStatusHelpers';
 import { useOrderItems } from '@/hooks/useOrderItems';
 
 const OrderStatusModern = () => {
@@ -26,10 +29,14 @@ const OrderStatusModern = () => {
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [showChat, setShowChat] = useState(false);
   const orderChannelRef = useRef<any>(null);
   
   // Usar o hook para buscar items com suporte a resolução de nomes de bordas
   const { items: orderItems, loading: loadingItems, getCrustName } = useOrderItems(order?.id, true);
+  
+  // Hook de chat para contagem de não lidas
+  const { unreadCount } = useOrderChat(order?.id || '', 'customer');
 
   useEffect(() => {
     if (!orderId || !user) return;
@@ -140,10 +147,8 @@ const OrderStatusModern = () => {
     };
   };
 
-  const handleWhatsApp = () => {
-    const phone = '5511999999999'; // TODO: Get from store settings
-    const message = formatWhatsAppMessage(orderId!);
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  const handleOpenChat = () => {
+    setShowChat(true);
   };
 
   const handleNewOrder = () => {
@@ -259,12 +264,17 @@ const OrderStatusModern = () => {
         <div className="max-w-2xl mx-auto">
           {isOrderActive ? (
             <Button
-              onClick={handleWhatsApp}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleOpenChat}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white relative"
               size="lg"
             >
               <MessageCircle className="h-5 w-5 mr-2" />
-              Falar com a Loja
+              Chat com a Loja
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white h-6 w-6 flex items-center justify-center rounded-full">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
           ) : (
             <Button
@@ -278,6 +288,25 @@ const OrderStatusModern = () => {
           )}
         </div>
       </div>
+
+      {/* Sheet do Chat */}
+      <Sheet open={showChat} onOpenChange={setShowChat}>
+        <SheetContent side="right" className="w-full sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Chat com {storeInfo?.name || 'a Loja'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 h-[calc(100vh-120px)]">
+            <OrderChatPanel 
+              orderId={order?.id || ''} 
+              customerName="Atendente"
+              isCustomerView={true}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
