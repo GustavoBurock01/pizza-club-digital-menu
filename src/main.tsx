@@ -1,10 +1,13 @@
-import { StrictMode } from "react";
+import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { queryClient } from "@/config/queryClient";
-import App from "./App";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import "./index.css";
+
+// Lazy load App for faster initial load
+const App = lazy(() => import("./App"));
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Failed to find the root element");
@@ -36,7 +39,13 @@ root.render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        }>
+          <App />
+        </Suspense>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>

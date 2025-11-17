@@ -108,9 +108,27 @@ serve(async (req) => {
       const isValidSignature = await validateWebhookSignature(payload, signature, webhookSecret);
       if (!isValidSignature) {
         logger.security('INVALID SIGNATURE - POTENTIAL ATTACK', { threat_level: 'HIGH' });
+        
+        // Log failed verification to database
+        await supabaseService.from('webhook_signatures').insert({
+          webhook_type: 'mercadopago',
+          signature: signature || 'missing',
+          payload: JSON.parse(payload),
+          verified: false
+        }).catch(err => logger.error('Failed to log webhook signature', { error: err.message }));
+        
         return new Response('Unauthorized', { status: 401, headers: corsHeaders });
       }
       logger.success('Signature validation passed');
+      
+      // Log successful verification
+      await supabaseService.from('webhook_signatures').insert({
+        webhook_type: 'mercadopago',
+        signature: signature,
+        payload: JSON.parse(payload),
+        verified: true,
+        verified_at: new Date().toISOString()
+      }).catch(err => logger.error('Failed to log webhook signature', { error: err.message }));
     }
 
     const clientIp = realIp || 'unknown';
