@@ -161,6 +161,21 @@ export interface RecentOrder {
   }[];
 }
 
+export interface StoreInfo {
+  id: string;
+  name: string;
+  address: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  phone: string;
+  email: string;
+  whatsapp?: string;
+  is_open?: boolean;
+  closed_message?: string;
+}
+
 // ===== TIPOS PARA VISUALIZAÇÕES =====
 export type CurrentView = 'categories' | 'subcategories' | 'products';
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'out_for_delivery' | 'delivered' | 'cancelled';

@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
+import { formatCrustName, formatExtraNames } from '@/utils/orderStatusHelpers';
 
 interface OrderItemsListProps {
   items: any[];
@@ -22,10 +23,14 @@ export const OrderItemsList = ({ items }: OrderItemsListProps) => {
       customizationsList.push(`Tamanho: ${customizations.size}`);
     }
     if (customizations.crust) {
-      customizationsList.push(`Borda: ${customizations.crust}`);
+      const crustName = formatCrustName(customizations.crust);
+      customizationsList.push(`Borda recheada: ${crustName}`);
     }
     if (customizations.extras && customizations.extras.length > 0) {
-      customizationsList.push(`Adicionais: ${customizations.extras.join(', ')}`);
+      const formattedExtras = formatExtraNames(customizations.extras);
+      formattedExtras.forEach(extra => {
+        customizationsList.push(`+ ${extra}`);
+      });
     }
     if (customizations.notes) {
       customizationsList.push(`Obs: ${customizations.notes}`);

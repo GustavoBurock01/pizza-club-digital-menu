@@ -2247,6 +2247,7 @@ export type Database = {
       store_info: {
         Row: {
           address: string | null
+          city: string | null
           created_at: string
           description: string | null
           email: string
@@ -2255,12 +2256,16 @@ export type Database = {
           instagram: string | null
           logo_url: string | null
           name: string
+          neighborhood: string | null
           phone: string
+          state: string | null
           updated_at: string
           whatsapp: string | null
+          zip_code: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           email?: string
@@ -2269,12 +2274,16 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           name?: string
+          neighborhood?: string | null
           phone?: string
+          state?: string | null
           updated_at?: string
           whatsapp?: string | null
+          zip_code?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           email?: string
@@ -2283,9 +2292,12 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           name?: string
+          neighborhood?: string | null
           phone?: string
+          state?: string | null
           updated_at?: string
           whatsapp?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }

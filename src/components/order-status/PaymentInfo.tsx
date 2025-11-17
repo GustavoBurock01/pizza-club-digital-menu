@@ -62,31 +62,35 @@ export const PaymentInfo = ({ order }: PaymentInfoProps) => {
 
   return (
     <Card className="border-border">
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PaymentIcon className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-base text-foreground">{methodInfo.label}</span>
-            </div>
-            <Badge variant={statusInfo.variant} className="flex items-center gap-1">
-              <StatusIcon className={`h-3 w-3 ${statusInfo.color}`} />
-              <span className={statusInfo.color}>{statusInfo.label}</span>
-            </Badge>
-          </div>
-
-          {order.payment_method === 'pix' && order.payment_status === 'pending' && (
-            <p className="text-xs text-muted-foreground">
-              Aguardando confirmação do pagamento via PIX
-            </p>
-          )}
-
-          {order.payment_method === 'cash' && order.notes && (
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Observação:</span> {order.notes}
-            </p>
-          )}
+      <CardContent className="p-4 space-y-3">
+        {/* Header com título e badge de status */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-base text-foreground">Pagamento</h3>
+          <Badge variant={statusInfo.variant} className="flex items-center gap-1">
+            <StatusIcon className={`h-3 w-3 ${statusInfo.color}`} />
+            <span className={statusInfo.color}>{statusInfo.label}</span>
+          </Badge>
         </div>
+        
+        {/* Forma de pagamento */}
+        <div className="flex items-center gap-2 text-sm">
+          <PaymentIcon className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Forma de pagamento:</span>
+          <span className="font-medium text-foreground">{methodInfo.label}</span>
+        </div>
+
+        {/* Mensagens condicionais */}
+        {order.payment_method === 'pix' && order.payment_status === 'pending' && (
+          <p className="text-xs text-muted-foreground pt-1">
+            Aguardando confirmação do pagamento via PIX
+          </p>
+        )}
+
+        {order.payment_method === 'cash' && order.notes && (
+          <p className="text-xs text-muted-foreground pt-1">
+            <span className="font-medium">Troco para:</span> {order.notes}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

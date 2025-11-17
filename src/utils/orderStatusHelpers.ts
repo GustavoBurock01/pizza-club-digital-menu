@@ -105,3 +105,52 @@ export const formatWhatsAppMessage = (orderId: string): string => {
   const message = `Olá! Gostaria de acompanhar meu pedido #${orderId.slice(0, 8)}`;
   return encodeURIComponent(message);
 };
+
+export const formatCrustName = (crustIdentifier: string): string => {
+  // Mapeamento de slugs para nomes legíveis
+  const crustMap: Record<string, string> = {
+    'catupiry': 'Catupiry',
+    'cheddar': 'Cheddar',
+    'chocolate': 'Chocolate',
+    'goiabada': 'Goiabada',
+    'mussarela': 'Mussarela',
+    'prestigio': 'Prestígio',
+    'presunto_queijo': 'Presunto e Queijo',
+    'presunto': 'Presunto',
+  };
+  
+  const normalized = crustIdentifier.toLowerCase().trim();
+  return crustMap[normalized] || crustIdentifier
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+export const formatExtraNames = (extras: string[]): string[] => {
+  const extraMap: Record<string, string> = {
+    'bacon': 'Bacon',
+    'calabresa': 'Calabresa',
+    'catupiry': 'Catupiry',
+    'cebola': 'Cebola',
+    'cebola_roxa': 'Cebola Roxa',
+    'champignon': 'Champignon',
+    'cheddar': 'Cheddar',
+    'milho': 'Milho',
+    'mussarela': 'Mussarela',
+    'oregano': 'Orégano',
+    'palmito': 'Palmito',
+    'parmesao': 'Parmesão',
+    'pepperoni': 'Pepperoni',
+    'pimentao': 'Pimentão',
+    'tomate': 'Tomate',
+    'azeitona': 'Azeitona',
+  };
+  
+  return extras.map(extra => {
+    const normalized = extra.toLowerCase().trim();
+    return extraMap[normalized] || extra
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  });
+};
