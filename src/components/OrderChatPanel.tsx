@@ -15,6 +15,15 @@ interface OrderChatPanelProps {
 }
 
 export const OrderChatPanel = ({ orderId, customerName, isCustomerView = false }: OrderChatPanelProps) => {
+  // Validação adicional no início
+  if (!orderId) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Carregando chat...</p>
+      </div>
+    );
+  }
+
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const senderType = isCustomerView ? 'customer' : 'attendant';

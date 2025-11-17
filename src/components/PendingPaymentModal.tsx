@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 interface PendingOrder {
   id: string;
+  order_number: number;
   customer_name: string;
   customer_phone: string;
   total_amount: number;
@@ -36,7 +37,7 @@ export const PendingPaymentModal = ({ isOpen, onClose, onViewDetails }: PendingP
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, customer_name, customer_phone, total_amount, payment_method, created_at')
+        .select('id, order_number, customer_name, customer_phone, total_amount, payment_method, created_at')
         .eq('payment_status', 'pending_payment')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
@@ -116,7 +117,7 @@ export const PendingPaymentModal = ({ isOpen, onClose, onViewDetails }: PendingP
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">
-                            #{order.id.slice(-6).toUpperCase()}
+                            #{order.order_number}
                           </span>
                           <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                             <Clock className="h-3 w-3 mr-1" />

@@ -1472,6 +1472,7 @@ export type Database = {
           estimated_delivery_time: number | null
           id: string
           notes: string | null
+          order_number: number
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: string | null
           status: Database["public"]["Enums"]["order_status"] | null
@@ -1495,6 +1496,7 @@ export type Database = {
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -1518,6 +1520,7 @@ export type Database = {
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
+          order_number?: number
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null

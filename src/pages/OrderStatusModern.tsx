@@ -34,9 +34,9 @@ const OrderStatusModern = () => {
   
   // Usar o hook para buscar items com suporte a resolução de nomes de bordas
   const { items: orderItems, loading: loadingItems, getCrustName } = useOrderItems(order?.id, true);
-  
-  // Hook de chat para contagem de não lidas
-  const { unreadCount } = useOrderChat(order?.id || '', 'customer');
+
+  // Hook de chat para contagem de não lidas - APENAS SE ORDER EXISTIR
+  const { unreadCount } = useOrderChat(order?.id, 'customer');
 
   useEffect(() => {
     if (!orderId || !user) return;
@@ -203,7 +203,7 @@ const OrderStatusModern = () => {
             </Button>
             <div className="flex-1">
               <h1 className="text-lg font-bold text-foreground">
-                Pedido #{order.id.slice(0, 8)}
+                Pedido #{order.order_number}
               </h1>
             </div>
           </div>

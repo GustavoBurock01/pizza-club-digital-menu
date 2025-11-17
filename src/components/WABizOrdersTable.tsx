@@ -124,7 +124,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
               onClick={() => onViewDetails(order)}
             >
               <TableCell className="font-mono text-sm font-medium">
-                #{order.id.slice(-6).toUpperCase()}
+                #{order.order_number}
               </TableCell>
               
               <TableCell>
