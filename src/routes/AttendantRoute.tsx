@@ -18,6 +18,16 @@ export const AttendantRoute = ({ children }: AttendantRouteProps) => {
 
   const isLoading = authLoading || roleLoading;
 
+  // Log de diagnóstico
+  console.log('[ATTENDANT-ROUTE] 🔐 Role check:', {
+    user: user?.email,
+    role,
+    isAdmin,
+    isAttendant,
+    canAccess: isAttendant || isAdmin,
+    loading: isLoading
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
