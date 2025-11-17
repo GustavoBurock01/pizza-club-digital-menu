@@ -65,6 +65,18 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
       .slice(0, 2);
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      pix: 'PIX',
+      credit_card: 'Cartão de Crédito',
+      debit_card: 'Cartão de Débito',
+      cash: 'Dinheiro',
+      credit_card_delivery: 'Cartão de Crédito',
+      debit_card_delivery: 'Cartão de Débito',
+    };
+    return labels[method] || 'Não informado';
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border">
@@ -167,7 +179,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
                     R$ {order.total_amount.toFixed(2)}
                   </div>
                   <div className="text-gray-500 text-xs">
-                    {order.payment_method}
+                    {getPaymentMethodLabel(order.payment_method)}
                   </div>
                 </div>
               </TableCell>
