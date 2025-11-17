@@ -158,9 +158,9 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
         stats
       };
     },
-    staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: 1000 * 30,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Always refetch when invalidated
+    refetchInterval: false, // Realtime handles updates
+    refetchOnWindowFocus: true,
   });
 
   return {
