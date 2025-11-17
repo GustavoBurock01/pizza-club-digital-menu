@@ -110,17 +110,21 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, email')
+          .select('id, email, cpf')
           .in('id', userIds);
         
         profiles = profilesData || [];
       }
 
-      // Merge orders with profiles - priorizar customer_email do pedido
-      const ordersWithProfiles = orders?.map(order => ({
-        ...order,
-        customer_email: order.customer_email || profiles.find(p => p.id === order.user_id)?.email
-      })) as AttendantOrder[];
+      // Merge orders with profiles - priorizar dados do pedido
+      const ordersWithProfiles = orders?.map(order => {
+        const profile = profiles.find(p => p.id === order.user_id);
+        return {
+          ...order,
+          customer_email: order.customer_email || profile?.email,
+          customer_cpf: order.customer_cpf || profile?.cpf || undefined
+        };
+      }) as AttendantOrder[];
 
       // Calculate stats
       const stats: AttendantStats = {
