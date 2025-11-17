@@ -50,12 +50,13 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
   };
 
   const getDeliveryType = (order: any) => {
-    if (order.street || order.neighborhood) {
-      return "Entrega";
-    }
-    return "Retirada";
+    const method = (order.delivery_method || '').toString().toLowerCase();
+    if (['delivery', 'entrega', 'delivery_service'].includes(method)) return 'Entrega';
+    if (['pickup', 'retirada', 'takeaway', 'store_pickup'].includes(method)) return 'Retirada';
+    // Fallback por presença de endereço
+    if (order.address_id || order.delivery_address_snapshot || order.street || order.neighborhood) return 'Entrega';
+    return 'Retirada';
   };
-
   const getInitials = (name: string) => {
     return name
       .split(' ')
