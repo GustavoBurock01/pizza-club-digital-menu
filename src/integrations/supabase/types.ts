@@ -3028,6 +3028,7 @@ export type Database = {
         | "delivering"
         | "delivered"
         | "cancelled"
+        | "picked_up"
       payment_method:
         | "credit_card"
         | "debit_card"
@@ -3175,6 +3176,7 @@ export const Constants = {
         "delivering",
         "delivered",
         "cancelled",
+        "picked_up",
       ],
       payment_method: [
         "credit_card",

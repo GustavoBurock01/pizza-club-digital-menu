@@ -187,7 +187,7 @@ export const useRealtimeOrders = () => {
   // Função para atualizar status do pedido (admin/attendant)
   const updateOrderStatus = useCallback(async (
     orderId: string, 
-    newStatus: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled'
+    newStatus: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivered' | 'cancelled'
   ) => {
     console.log(`📦 Updating order ${orderId} status to: ${newStatus}`);
     

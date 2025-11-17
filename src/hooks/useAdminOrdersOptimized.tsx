@@ -69,7 +69,7 @@ export const useAdminOrdersOptimized = (options: UseAdminOrdersOptions = {}) => 
     confirmOrder: actions.confirmOrder,
     startPreparing: actions.startPreparing,
     markReady: actions.markReady,
-    markDelivering: actions.markDelivering,
+    markInDelivery: actions.markInDelivery,
     markDelivered: actions.markDelivered,
     cancelOrder: actions.cancelOrder,
   };

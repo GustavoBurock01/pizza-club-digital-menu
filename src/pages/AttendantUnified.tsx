@@ -106,20 +106,19 @@ export default function AttendantUnified() {
   }) || [];
 
   // Separar pedidos por categoria seguindo padrão WABiz
-  // ✅ NOVOS: Pedidos confirmados (online pagos) OU presenciais pending (a cobrar)
+  // ✅ NOVOS: Apenas pedidos recém-confirmados ou pendentes
   const novosOrders = filteredOrders.filter(o => {
-    // Pedidos online confirmados e pagos
-    const isConfirmedOnlinePaid = o.status === 'confirmed' && o.payment_status === 'paid';
-    
-    // Pedidos presenciais pendentes (aguardando cobrança do cliente)
-    const isPresencialToCobrar = 
-      ['cash', 'credit_card_delivery', 'debit_card_delivery'].includes(o.payment_method) && 
-      (o.payment_status === 'pending' || o.payment_status === 'to_collect');
-    
-    // Pedidos online aguardando pagamento (ex.: PIX) também devem aparecer como "Novos"
-    const isOnlinePendingPayment = o.status === 'pending_payment';
-    
-    return isConfirmedOnlinePaid || isPresencialToCobrar || isOnlinePendingPayment;
+    return o.status === 'pending' || o.status === 'confirmed';
+  });
+  
+  // ✅ EM ANDAMENTO: Todas as etapas de preparo, retirada e entrega
+  const emAndamentoOrders = filteredOrders.filter(o => {
+    return o.status === 'preparing' || o.status === 'ready' || o.status === 'picked_up' || o.status === 'in_delivery';
+  });
+  
+  // ✅ FINALIZADOS: Apenas pedidos concluídos ou cancelados
+  const finalizadosOrders = filteredOrders.filter(o => {
+    return o.status === 'delivered' || o.status === 'cancelled';
   });
   
   // ✅ FASE 3: Tocar som configurável quando novo pedido chega
@@ -133,15 +132,6 @@ export default function AttendantUnified() {
     
     previousPendingCount.current = currentPending;
   }, [novosOrders.length, soundSettings.enabled, playNewOrderSound]);
-  // ✅ EM ANDAMENTO: Todas as etapas de preparo e entrega
-  const emAndamentoOrders = filteredOrders.filter(o => 
-    o.status === 'preparing' || o.status === 'ready' || o.status === 'in_delivery'
-  );
-  
-  // ✅ FINALIZADOS: Apenas pedidos concluídos
-  const finalizadosOrders = filteredOrders.filter(o => 
-    o.status === 'delivered' || o.status === 'cancelled'
-  );
 
   // Ações do modal
   const handleOrderAction = async (action: string, orderId: string) => {
