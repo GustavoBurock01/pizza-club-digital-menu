@@ -18,6 +18,8 @@ interface AttendantContextType {
   confirmOrder: (orderId: string) => Promise<void>;
   startPreparation: (orderId: string) => Promise<void>;
   markReady: (orderId: string, deliveryMethod?: string) => Promise<void>;
+  markPickedUp: (orderId: string) => Promise<void>;
+  markInDelivery: (orderId: string) => Promise<void>;
   markDelivered: (orderId: string) => Promise<void>;
   cancelOrder: (orderId: string, reason?: string) => Promise<void>;
   updatePaymentStatus: (orderId: string, status: string) => Promise<void>;
@@ -50,6 +52,14 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     await actions.markReady(orderId, deliveryMethod);
   };
 
+  const handleMarkPickedUp = async (orderId: string): Promise<void> => {
+    await actions.markPickedUp(orderId);
+  };
+
+  const handleMarkInDelivery = async (orderId: string): Promise<void> => {
+    await actions.markInDelivery(orderId);
+  };
+
   const handleMarkDelivered = async (orderId: string): Promise<void> => {
     await actions.markDelivered(orderId);
   };
@@ -73,6 +83,8 @@ export const AttendantProvider = ({ children }: { children: ReactNode }) => {
     confirmOrder: handleConfirmOrder,
     startPreparation: handleStartPreparation,
     markReady: handleMarkReady,
+    markPickedUp: handleMarkPickedUp,
+    markInDelivery: handleMarkInDelivery,
     markDelivered: handleMarkDelivered,
     cancelOrder: handleCancelOrder,
     updatePaymentStatus: handleUpdatePaymentStatus,

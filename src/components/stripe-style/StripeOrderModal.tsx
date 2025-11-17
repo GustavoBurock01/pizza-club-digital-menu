@@ -47,6 +47,8 @@ interface StripeOrderModalProps {
   onConfirmOrder?: (orderId: string) => void;
   onStartPreparation?: (orderId: string) => void;
   onMarkReady?: (orderId: string, deliveryMethod: string) => void;
+  onMarkPickedUp?: (orderId: string) => void;
+  onMarkInDelivery?: (orderId: string) => void;
   onMarkDelivered?: (orderId: string) => void;
   onCancelOrder?: (orderId: string) => void;
 }
@@ -57,6 +59,8 @@ export const StripeOrderModal = ({
   onConfirmOrder,
   onStartPreparation,
   onMarkReady,
+  onMarkPickedUp,
+  onMarkInDelivery,
   onMarkDelivered,
   onCancelOrder,
 }: StripeOrderModalProps) => {
@@ -230,7 +234,7 @@ export const StripeOrderModal = ({
         return order.delivery_method === 'delivery' ? (
           <Button 
             size="lg"
-            onClick={() => onMarkDelivered?.(order.id)}
+            onClick={() => onMarkInDelivery?.(order.id)}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             <Truck className="h-4 w-4 mr-2" />
@@ -239,7 +243,7 @@ export const StripeOrderModal = ({
         ) : (
           <Button 
             size="lg"
-            onClick={() => onMarkDelivered?.(order.id)}
+            onClick={() => onMarkPickedUp?.(order.id)}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <Package className="h-4 w-4 mr-2" />
@@ -247,6 +251,7 @@ export const StripeOrderModal = ({
           </Button>
         );
       
+      case 'picked_up':
       case 'in_delivery':
         return (
           <Button 
@@ -255,7 +260,7 @@ export const StripeOrderModal = ({
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            Confirmar Entrega
+            Finalizar Pedido
           </Button>
         );
       
@@ -292,6 +297,7 @@ export const StripeOrderModal = ({
       confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
       preparing: 'bg-orange-50 text-orange-700 border-orange-200',
       ready: 'bg-green-50 text-green-700 border-green-200',
+      picked_up: 'bg-teal-50 text-teal-700 border-teal-200',
       in_delivery: 'bg-purple-50 text-purple-700 border-purple-200',
       delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       cancelled: 'bg-red-50 text-red-700 border-red-200',
@@ -305,6 +311,7 @@ export const StripeOrderModal = ({
       confirmed: 'Confirmado',
       preparing: 'Em Preparo',
       ready: 'Pronto',
+      picked_up: 'Retirado',
       in_delivery: 'A Caminho',
       delivered: 'Entregue',
       cancelled: 'Cancelado',
