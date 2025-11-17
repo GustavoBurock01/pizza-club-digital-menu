@@ -1,0 +1,281 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, MessageCircle, ShoppingCart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProgressBar } from '@/components/order-status/ProgressBar';
+import { TimelineEvents } from '@/components/order-status/TimelineEvents';
+import { DeliveryInfo } from '@/components/order-status/DeliveryInfo';
+import { OrderItemsList } from '@/components/order-status/OrderItemsList';
+import { FinancialSummary } from '@/components/order-status/FinancialSummary';
+import { PaymentInfo } from '@/components/order-status/PaymentInfo';
+import { getOrderStatusInfo, calculateEstimatedDelivery, formatWhatsAppMessage } from '@/utils/orderStatusHelpers';
+
+const OrderStatusModern = () => {
+  const { orderId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useUnifiedAuth();
+  const { toast } = useToast();
+  const [order, setOrder] = useState<any>(null);
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const orderChannelRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!orderId || !user) return;
+    fetchOrder();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
+  }, [orderId, user]);
+
+  const fetchOrder = async () => {
+    try {
+      setLoading(true);
+      
+      if (retryCount === 0) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          addresses (*)
+        `)
+        .eq('id', orderId)
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (orderError) throw orderError;
+      
+      if (!orderData) {
+        if (retryCount < 3) {
+          setRetryCount(retryCount + 1);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return fetchOrder();
+        }
+        
+        toast({
+          title: "Pedido não encontrado",
+          description: "Este pedido não existe ou você não tem permissão para visualizá-lo.",
+          variant: "destructive"
+        });
+        navigate('/orders');
+        return;
+      }
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          products (name, image_url)
+        `)
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+
+      setOrder(orderData);
+      setOrderItems(itemsData || []);
+      setRetryCount(0);
+    } catch (error: any) {
+      console.error('Erro ao carregar pedido:', error);
+      
+      if (retryCount < 3) {
+        setRetryCount(retryCount + 1);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return fetchOrder();
+      }
+      
+      toast({
+        title: "Erro ao carregar pedido",
+        description: error.message,
+        variant: "destructive",
+      });
+      navigate('/orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupRealtimeSubscription = () => {
+    if (orderChannelRef.current) {
+      return () => {};
+    }
+
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          console.log('Order updated:', payload);
+          setOrder(payload.new);
+          
+          toast({
+            title: "Status atualizado",
+            description: getOrderStatusInfo(payload.new.status).label,
+          });
+        }
+      )
+      .subscribe();
+
+    orderChannelRef.current = channel;
+
+    return () => {
+      if (orderChannelRef.current) {
+        supabase.removeChannel(orderChannelRef.current);
+        orderChannelRef.current = null;
+      }
+    };
+  };
+
+  const handleWhatsApp = () => {
+    const phone = '5511999999999'; // TODO: Get from store settings
+    const message = formatWhatsAppMessage(orderId!);
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  };
+
+  const handleNewOrder = () => {
+    navigate('/menu');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center space-y-4">
+            <p className="text-muted-foreground">Pedido não encontrado</p>
+            <Button onClick={() => navigate('/orders')} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar para meus pedidos
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const statusInfo = getOrderStatusInfo(order.status);
+  const estimatedTime = calculateEstimatedDelivery(order);
+  const isOrderActive = order.status !== 'delivered' && order.status !== 'cancelled';
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/orders')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-lg font-bold text-foreground">
+                Pedido #{order.id.slice(0, 8)}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Badge className={`${statusInfo.bgColor} ${statusInfo.color} border-0`}>
+              {statusInfo.label}
+            </Badge>
+            {estimatedTime && (
+              <p className="text-sm text-muted-foreground">
+                Previsão: <span className="font-semibold text-foreground">{estimatedTime}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {/* Progress Bar */}
+        {order.status !== 'cancelled' && (
+          <Card className="border-border">
+            <CardContent className="p-4">
+              <ProgressBar 
+                currentStatus={order.status} 
+                deliveryMethod={order.delivery_method}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Timeline */}
+        <Card className="border-border">
+          <CardContent className="p-4">
+            <TimelineEvents order={order} />
+          </CardContent>
+        </Card>
+
+        {/* Delivery Info */}
+        <DeliveryInfo order={order} address={order.addresses} />
+
+        {/* Order Items */}
+        <OrderItemsList items={orderItems} />
+
+        {/* Financial Summary */}
+        <FinancialSummary order={order} />
+
+        {/* Payment Info */}
+        <PaymentInfo order={order} />
+      </div>
+
+      {/* Fixed Footer Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-20">
+        <div className="max-w-2xl mx-auto">
+          {isOrderActive ? (
+            <Button
+              onClick={handleWhatsApp}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              size="lg"
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Falar com a Loja
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNewOrder}
+              className="w-full"
+              size="lg"
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              Fazer Novo Pedido
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OrderStatusModern;
