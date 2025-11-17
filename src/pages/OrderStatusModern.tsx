@@ -15,6 +15,7 @@ import { OrderItemsList } from '@/components/order-status/OrderItemsList';
 import { FinancialSummary } from '@/components/order-status/FinancialSummary';
 import { PaymentInfo } from '@/components/order-status/PaymentInfo';
 import { getOrderStatusInfo, calculateEstimatedDelivery, formatWhatsAppMessage } from '@/utils/orderStatusHelpers';
+import { useOrderItems } from '@/hooks/useOrderItems';
 
 const OrderStatusModern = () => {
   const { orderId } = useParams();
@@ -22,11 +23,13 @@ const OrderStatusModern = () => {
   const { user } = useUnifiedAuth();
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
-  const [orderItems, setOrderItems] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const orderChannelRef = useRef<any>(null);
+  
+  // Usar o hook para buscar items com suporte a resolução de nomes de bordas
+  const { items: orderItems, loading: loadingItems, getCrustName } = useOrderItems(order?.id, true);
 
   useEffect(() => {
     if (!orderId || !user) return;
@@ -71,16 +74,6 @@ const OrderStatusModern = () => {
         return;
       }
 
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('order_items')
-        .select(`
-          *,
-          products (name, image_url)
-        `)
-        .eq('order_id', orderId);
-
-      if (itemsError) throw itemsError;
-
       // Buscar informações da loja
       const { data: storeData } = await supabase
         .from('store_info')
@@ -88,7 +81,6 @@ const OrderStatusModern = () => {
         .single();
 
       setOrder(orderData);
-      setOrderItems(itemsData || []);
       setStoreInfo(storeData);
       setRetryCount(0);
     } catch (error: any) {
@@ -253,7 +245,7 @@ const OrderStatusModern = () => {
         />
 
         {/* Order Items */}
-        <OrderItemsList items={orderItems} />
+        <OrderItemsList items={orderItems} getCrustName={getCrustName} />
 
         {/* Financial Summary */}
         <FinancialSummary order={order} />
