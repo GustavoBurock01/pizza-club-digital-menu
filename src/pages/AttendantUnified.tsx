@@ -115,7 +115,7 @@ export default function AttendantUnified() {
   
   // ✅ EM ANDAMENTO: Todas as etapas de preparo, retirada e entrega
   const emAndamentoOrders = filteredOrders.filter(o => {
-    return o.status === 'preparing' || o.status === 'ready' || o.status === 'picked_up' || o.status === 'in_delivery';
+    return o.status === 'preparing' || o.status === 'ready' || o.status === 'in_delivery';
   });
   
   // ✅ FINALIZADOS: Apenas pedidos concluídos ou cancelados

@@ -178,7 +178,11 @@ export const StripeOrderModal = ({
         onStartPreparation?.(order.id);
         break;
       case 'preparing':
-        onMarkReady?.(order.id, order.delivery_method);
+        if (order.delivery_method === 'delivery') {
+          onMarkInDelivery?.(order.id);
+        } else {
+          onMarkReady?.(order.id, order.delivery_method);
+        }
         break;
       case 'ready':
       case 'in_delivery':
@@ -219,18 +223,6 @@ export const StripeOrderModal = ({
         );
       
       case 'preparing':
-        return (
-          <Button 
-            size="lg"
-            onClick={() => onMarkReady?.(order.id, order.delivery_method)}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Check className="h-4 w-4 mr-2" />
-            Marcar como Pronto
-          </Button>
-        );
-      
-      case 'ready':
         return order.delivery_method === 'delivery' ? (
           <Button 
             size="lg"
@@ -238,20 +230,20 @@ export const StripeOrderModal = ({
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             <Truck className="h-4 w-4 mr-2" />
-            Saiu para Entrega
+            Em Rota de Entrega
           </Button>
         ) : (
           <Button 
             size="lg"
-            onClick={() => onMarkPickedUp?.(order.id)}
+            onClick={() => onMarkReady?.(order.id, order.delivery_method)}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
-            <Package className="h-4 w-4 mr-2" />
-            Cliente Retirou
+            <Check className="h-4 w-4 mr-2" />
+            Pronto para Retirada
           </Button>
         );
       
-      case 'picked_up':
+      case 'ready':
       case 'in_delivery':
         return (
           <Button 
