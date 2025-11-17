@@ -12,9 +12,15 @@ export const useAttendantRealtime = () => {
   const { isConnected, metrics } = useBaseRealtime({
     channelName: 'attendant-unified',
     tables: ['orders', 'order_items'],
-    debounceMs: 300,
+    debounceMs: 100, // Reduced from 300ms for faster updates
     onEvent: (payload) => {
       console.log('[ATTENDANT REALTIME] 📡 Event:', payload.eventType, payload.table);
+      console.log('[ATTENDANT REALTIME] 🔔 Event processed:', {
+        table: payload.table,
+        eventType: payload.eventType,
+        timestamp: new Date().toISOString(),
+        triggeredRefetch: true
+      });
 
       // Debounced invalidation (no refetch)
       debouncedInvalidate(queryClient, ['attendant-data'], 300);
