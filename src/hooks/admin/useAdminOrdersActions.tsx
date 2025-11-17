@@ -84,8 +84,8 @@ export const useAdminOrdersActions = (options: ActionsOptions) => {
   const markReady = useCallback((orderId: string) => 
     updateOrderStatus(orderId, 'ready'), [updateOrderStatus]);
 
-  const markDelivering = useCallback((orderId: string) => 
-    updateOrderStatus(orderId, 'delivering'), [updateOrderStatus]);
+  const markInDelivery = useCallback((orderId: string) => 
+    updateOrderStatus(orderId, 'in_delivery'), [updateOrderStatus]);
 
   const markDelivered = useCallback((orderId: string) => 
     updateOrderStatus(orderId, 'delivered'), [updateOrderStatus]);
@@ -98,7 +98,7 @@ export const useAdminOrdersActions = (options: ActionsOptions) => {
     confirmOrder,
     startPreparing,
     markReady,
-    markDelivering,
+    markInDelivery,
     markDelivered,
     cancelOrder,
   };

@@ -163,7 +163,7 @@ export interface RecentOrder {
 
 // ===== TIPOS PARA VISUALIZAÇÕES =====
 export type CurrentView = 'categories' | 'subcategories' | 'products';
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'out_for_delivery' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type UserRole = 'admin' | 'customer';
 export type SubscriptionStatus = 'active' | 'inactive' | 'pending' | 'cancelled';

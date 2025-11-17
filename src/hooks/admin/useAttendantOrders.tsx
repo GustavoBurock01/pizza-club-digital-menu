@@ -81,7 +81,7 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
         .limit(limit);
 
       // Apply status filter if provided
-      if (status && ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered', 'cancelled', 'pending_payment'].includes(status)) {
+      if (status && ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_delivery', 'delivered', 'cancelled', 'pending_payment'].includes(status)) {
         ordersQuery = ordersQuery.eq('status', status as any);
       }
 

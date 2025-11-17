@@ -13,7 +13,7 @@ import { memoryCache } from '@/utils/performance';
 export interface AdminOrder {
   id: string;
   user_id: string;
-  status: 'pending_payment' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+  status: 'pending_payment' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivered' | 'cancelled';
   total_amount: number;
   delivery_fee: number;
   payment_method: string;
@@ -90,7 +90,7 @@ async function fetchOrdersOptimized(status?: string, limit: number = 50): Promis
       // Nova aba para pedidos aguardando pagamento
       query = query.eq('payment_status', 'pending');
     } else {
-      query = query.eq('status', status as 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled');
+      query = query.eq('status', status as 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivered' | 'cancelled');
     }
   } else {
     // Por padrão, filtrar apenas pedidos com pagamento confirmado ou processado

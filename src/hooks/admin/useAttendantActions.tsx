@@ -9,7 +9,7 @@ export const useAttendantActions = () => {
 
   const updateOrderStatus = async (
     orderId: string,
-    newStatus: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | 'pending_payment',
+    newStatus: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivered' | 'cancelled' | 'pending_payment',
     additionalData: Record<string, any> = {}
   ) => {
     setIsUpdating(true);
@@ -52,17 +52,21 @@ export const useAttendantActions = () => {
 
   const markReady = async (orderId: string, deliveryMethod?: string) => {
     console.log('[ATTENDANT] 🎉 Marking as ready:', orderId, deliveryMethod);
-    
-    // Se for retirada, marcar como delivered (não existe 'completed')
-    if (deliveryMethod === 'Retirada') {
-      return await updateOrderStatus(orderId, 'delivered');
-    }
-    
     return await updateOrderStatus(orderId, 'ready');
   };
 
+  const markPickedUp = async (orderId: string) => {
+    console.log('[ATTENDANT] 📦 Marking as picked up:', orderId);
+    return await updateOrderStatus(orderId, 'picked_up');
+  };
+
+  const markInDelivery = async (orderId: string) => {
+    console.log('[ATTENDANT] 🚚 Marking as in delivery:', orderId);
+    return await updateOrderStatus(orderId, 'in_delivery');
+  };
+
   const markDelivered = async (orderId: string) => {
-    console.log('[ATTENDANT] 🚚 Marking as delivered:', orderId);
+    console.log('[ATTENDANT] ✅ Marking as delivered:', orderId);
     return await updateOrderStatus(orderId, 'delivered');
   };
 
@@ -107,6 +111,8 @@ export const useAttendantActions = () => {
     confirmOrder,
     startPreparation,
     markReady,
+    markPickedUp,
+    markInDelivery,
     markDelivered,
     cancelOrder,
     updatePaymentStatus,

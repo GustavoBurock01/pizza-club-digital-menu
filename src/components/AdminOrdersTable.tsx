@@ -123,7 +123,7 @@ export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTablePro
             <SelectItem value="confirmed">Confirmado</SelectItem>
             <SelectItem value="preparing">Preparando</SelectItem>
             <SelectItem value="ready">Pronto</SelectItem>
-            <SelectItem value="delivering">Entregando</SelectItem>
+            <SelectItem value="in_delivery">Em Entrega</SelectItem>
             <SelectItem value="delivered">Entregue</SelectItem>
             <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
