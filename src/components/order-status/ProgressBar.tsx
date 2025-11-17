@@ -17,17 +17,17 @@ export const ProgressBar = ({ currentStatus, deliveryMethod }: ProgressBarProps)
   const currentIndex = statusOrder.indexOf(currentStatus);
 
   const stepsPickup: Step[] = [
-    { status: 'confirmed', label: 'Confirmado', icon: CheckCircle },
+    { status: 'confirmed', label: 'Pedido recebido', icon: CheckCircle },
     { status: 'preparing', label: 'Em Preparo', icon: ChefHat },
-    { status: 'ready', label: 'Pronto', icon: Package },
-    { status: 'delivered', label: 'Retirado', icon: Check },
+    { status: 'ready', label: 'Pronto para Retirada', icon: Package },
+    { status: 'delivered', label: 'Pedido Concluído', icon: Check },
   ];
 
   const stepsDelivery: Step[] = [
-    { status: 'confirmed', label: 'Confirmado', icon: CheckCircle },
+    { status: 'confirmed', label: 'Pedido recebido', icon: CheckCircle },
     { status: 'preparing', label: 'Em Preparo', icon: ChefHat },
-    { status: 'in_delivery', label: 'Em Rota', icon: Truck },
-    { status: 'delivered', label: 'Entregue', icon: Check },
+    { status: 'in_delivery', label: 'Saiu para entrega', icon: Truck },
+    { status: 'delivered', label: 'Pedido Concluído', icon: Check },
   ];
 
   const steps = deliveryMethod === 'pickup' ? stepsPickup : stepsDelivery;
