@@ -101,11 +101,11 @@ export const StripeInfoCards = ({ order, items = [] }: StripeInfoCardsProps) => 
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">E-mail:</span>
-            <span className="text-gray-900 truncate max-w-[180px]">{order.profiles?.email || '—'}</span>
+            <span className="text-gray-900 truncate max-w-[180px]">{order.customer_email || '—'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">CPF:</span>
-            <span className="text-gray-900">{order.profiles?.cpf || '—'}</span>
+            <span className="text-gray-900">{order.customer_cpf || '—'}</span>
           </div>
         </div>
       </div>

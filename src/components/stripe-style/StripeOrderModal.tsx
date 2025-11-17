@@ -398,15 +398,6 @@ export const StripeOrderModal = ({
                 >
                   <Clock className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={onClose}
-                  title="Fechar (ESC)"
-                  className="text-gray-600 hover:text-gray-900 ml-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </div>
