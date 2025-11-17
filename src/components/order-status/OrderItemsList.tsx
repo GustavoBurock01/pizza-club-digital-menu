@@ -31,9 +31,7 @@ export const OrderItemsList = ({ items, getCrustName }: OrderItemsListProps) => 
     }
     if (customizations.extras && customizations.extras.length > 0) {
       const formattedExtras = formatExtraNames(customizations.extras);
-      formattedExtras.forEach(extra => {
-        customizationsList.push(`+ ${extra}`);
-      });
+      customizationsList.push(`Adicionais: ${formattedExtras.join(', ')}`);
     }
     if (customizations.notes) {
       customizationsList.push(`Obs: ${customizations.notes}`);
