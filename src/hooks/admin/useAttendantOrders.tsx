@@ -116,10 +116,10 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
         profiles = profilesData || [];
       }
 
-      // Merge orders with profiles
+      // Merge orders with profiles - priorizar customer_email do pedido
       const ordersWithProfiles = orders?.map(order => ({
         ...order,
-        customer_email: profiles.find(p => p.id === order.user_id)?.email
+        customer_email: order.customer_email || profiles.find(p => p.id === order.user_id)?.email
       })) as AttendantOrder[];
 
       // Calculate stats
