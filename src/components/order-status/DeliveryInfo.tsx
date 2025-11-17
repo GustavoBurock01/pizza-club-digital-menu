@@ -6,9 +6,10 @@ import { formatWhatsAppMessage } from '@/utils/orderStatusHelpers';
 interface DeliveryInfoProps {
   order: any;
   address?: any;
+  storeInfo?: any;
 }
 
-export const DeliveryInfo = ({ order, address }: DeliveryInfoProps) => {
+export const DeliveryInfo = ({ order, address, storeInfo }: DeliveryInfoProps) => {
   const handleWhatsApp = () => {
     const phone = '5511999999999'; // TODO: Get from store settings
     const message = formatWhatsAppMessage(order.id);
@@ -25,10 +26,17 @@ export const DeliveryInfo = ({ order, address }: DeliveryInfoProps) => {
           </div>
 
           <div className="space-y-1 text-sm">
-            <p className="font-medium text-foreground">Pizzaria Bella Massa</p>
-            <p className="text-muted-foreground">Rua das Pizzas, 123</p>
-            <p className="text-muted-foreground">Centro - São Paulo, SP</p>
-            <p className="text-muted-foreground">CEP: 01000-000</p>
+            <p className="font-medium text-foreground">{storeInfo?.name || 'Restaurante'}</p>
+            <p className="text-muted-foreground">{storeInfo?.address}</p>
+            {storeInfo?.neighborhood && (
+              <p className="text-muted-foreground">{storeInfo.neighborhood}</p>
+            )}
+            {storeInfo?.city && storeInfo?.state && (
+              <p className="text-muted-foreground">{storeInfo.city} - {storeInfo.state}</p>
+            )}
+            {storeInfo?.zip_code && (
+              <p className="text-muted-foreground">CEP: {storeInfo.zip_code}</p>
+            )}
           </div>
 
           {order.status !== 'delivered' && order.status !== 'cancelled' && (

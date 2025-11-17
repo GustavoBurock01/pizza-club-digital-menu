@@ -23,6 +23,7 @@ const OrderStatusModern = () => {
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [storeInfo, setStoreInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const orderChannelRef = useRef<any>(null);
@@ -80,8 +81,15 @@ const OrderStatusModern = () => {
 
       if (itemsError) throw itemsError;
 
+      // Buscar informações da loja
+      const { data: storeData } = await supabase
+        .from('store_info')
+        .select('*')
+        .single();
+
       setOrder(orderData);
       setOrderItems(itemsData || []);
+      setStoreInfo(storeData);
       setRetryCount(0);
     } catch (error: any) {
       console.error('Erro ao carregar pedido:', error);
@@ -238,7 +246,11 @@ const OrderStatusModern = () => {
         </Card>
 
         {/* Delivery Info */}
-        <DeliveryInfo order={order} address={order.addresses} />
+        <DeliveryInfo 
+          order={order} 
+          address={order.addresses}
+          storeInfo={storeInfo}
+        />
 
         {/* Order Items */}
         <OrderItemsList items={orderItems} />
