@@ -54,7 +54,14 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
   const { data: combinedData, isLoading, error, refetch } = useQuery({
     queryKey: ['attendant-data', status],
     queryFn: async () => {
-      console.log('[ATTENDANT] 🔍 Fetching orders...');
+      // Diagnóstico de autenticação
+      const { data: session } = await supabase.auth.getSession();
+      console.log('[ATTENDANT] 🔍 Diagnóstico completo:', {
+        userId: session?.session?.user?.id,
+        userEmail: session?.session?.user?.email,
+        sessionValid: !!session?.session,
+        attempting: 'fetch orders with RLS'
+      });
 
       // Build query - apenas pedidos das últimas 24 horas
       const last24Hours = new Date();
@@ -84,6 +91,17 @@ export const useAttendantOrders = (options: UseAttendantOrdersOptions = {}) => {
         console.error('[ATTENDANT] ❌ Error fetching orders:', ordersError);
         throw ordersError;
       }
+
+      console.log('[ATTENDANT] 📊 Query result:', {
+        ordersCount: orders?.length || 0,
+        hasError: !!ordersError,
+        errorMessage: ordersError?.message,
+        first3Orders: orders?.slice(0, 3).map(o => ({
+          id: o.id,
+          status: o.status,
+          customer: o.customer_name
+        }))
+      });
 
       // Fetch user profiles for email
       const userIds = [...new Set(orders?.map(o => o.user_id).filter(Boolean))];

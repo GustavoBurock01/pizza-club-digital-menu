@@ -103,6 +103,14 @@ export const useUnifiedProfile = () => {
             .limit(1)
             .maybeSingle();
 
+          console.log('[PROFILE] 🎭 Role fetched:', {
+            userId: currentUser.id,
+            userEmail: currentUser.email,
+            roleData,
+            roleError: roleError?.message,
+            finalRole: (roleData?.role as UserRole) || 'customer'
+          });
+
           if (roleError) {
             console.error('Error fetching role:', roleError);
           }
