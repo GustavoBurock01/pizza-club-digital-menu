@@ -1,12 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
-import { formatCrustName, formatExtraNames } from '@/utils/orderStatusHelpers';
+import { formatExtraNames } from '@/utils/orderStatusHelpers';
 
 interface OrderItemsListProps {
   items: any[];
+  getCrustName: (customizations: any) => string | null;
 }
 
-export const OrderItemsList = ({ items }: OrderItemsListProps) => {
+export const OrderItemsList = ({ items, getCrustName }: OrderItemsListProps) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -23,8 +24,10 @@ export const OrderItemsList = ({ items }: OrderItemsListProps) => {
       customizationsList.push(`Tamanho: ${customizations.size}`);
     }
     if (customizations.crust) {
-      const crustName = formatCrustName(customizations.crust);
-      customizationsList.push(`Borda recheada: ${crustName}`);
+      const crustName = getCrustName(customizations);
+      if (crustName) {
+        customizationsList.push(`Borda recheada: ${crustName}`);
+      }
     }
     if (customizations.extras && customizations.extras.length > 0) {
       const formattedExtras = formatExtraNames(customizations.extras);

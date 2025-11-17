@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { OrderChatPanel } from '@/components/OrderChatPanel';
 import { useOrderChat } from '@/hooks/useOrderChat';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useQuery } from '@tanstack/react-query';
 
 const OrderStatus = () => {
   const { orderId } = useParams();
@@ -27,6 +28,36 @@ const OrderStatus = () => {
   const orderChannelRef = useRef<any>(null);
   // ✅ ERRO 6: Hook para chat com contador de mensagens não lidas
   const { unreadCount } = useOrderChat(orderId || '');
+
+  // Buscar bordas para resolver nomes
+  const { data: crusts = [] } = useQuery({
+    queryKey: ['product-crusts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_crusts')
+        .select('id, name')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Helper para resolver nome da borda
+  const getCrustName = (customizations: any): string | null => {
+    if (!customizations?.crust) return null;
+    
+    if (customizations.crustName) {
+      return customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim();
+    }
+    
+    const crust = crusts.find((c: any) => c.id === customizations.crust);
+    if (crust) {
+      return crust.name.replace(/^(borda recheada -?|borda -?)/i, '').trim();
+    }
+    
+    return customizations.crust;
+  };
 
   useEffect(() => {
     if (!orderId || !user) return;
@@ -438,7 +469,7 @@ const OrderStatus = () => {
                                   <div>Meio a meio: {item.customizations.halfAndHalf.firstHalf} / {item.customizations.halfAndHalf.secondHalf}</div>
                                 )}
                                 {item.customizations.crust && item.customizations.crust !== 'tradicional' && (
-                                  <div>Borda: {item.customizations.crust}</div>
+                                  <div>Borda recheada: {getCrustName(item.customizations) || item.customizations.crust}</div>
                                 )}
                                 {item.customizations.extras && Array.isArray(item.customizations.extras) && item.customizations.extras.length > 0 && (
                                   <div>Extras: {item.customizations.extras.join(', ')}</div>
