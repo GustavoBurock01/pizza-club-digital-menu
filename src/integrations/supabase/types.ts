@@ -2734,6 +2734,36 @@ export type Database = {
           },
         ]
       }
+      webhook_signatures: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json
+          signature: string
+          verified: boolean | null
+          verified_at: string | null
+          webhook_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload: Json
+          signature: string
+          verified?: boolean | null
+          verified_at?: string | null
+          webhook_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json
+          signature?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          webhook_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       admin_dashboard_stats: {
@@ -2755,14 +2785,18 @@ export type Database = {
       }
       admin_stats_view: {
         Row: {
-          avg_order_value: number | null
-          completed_orders: number | null
+          active_orders: number | null
+          active_products: number | null
+          average_ticket: number | null
+          orders_this_month: number | null
+          orders_this_week: number | null
+          orders_today: number | null
           pending_orders: number | null
-          today_orders: number | null
-          total_orders: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_customers: number | null
           total_products: number | null
-          total_revenue: number | null
-          total_users: number | null
         }
         Relationships: []
       }
@@ -2856,6 +2890,7 @@ export type Database = {
       cleanup_old_closed_attempts: { Args: never; Returns: number }
       cleanup_old_debug_logs: { Args: never; Returns: number }
       cleanup_old_queue_items: { Args: never; Returns: number }
+      cleanup_old_webhook_signatures: { Args: never; Returns: number }
       cleanup_rate_limits: { Args: never; Returns: number }
       complete_queue_item: {
         Args: { p_order_id?: string; p_queue_id: string; p_result_data?: Json }
