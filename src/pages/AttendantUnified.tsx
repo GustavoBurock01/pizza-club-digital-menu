@@ -30,6 +30,8 @@ export default function AttendantUnified() {
     confirmOrder,
     startPreparation,
     markReady,
+    markPickedUp,
+    markInDelivery,
     markDelivered,
     cancelOrder,
     autoPrintEnabled
@@ -146,6 +148,12 @@ export default function AttendantUnified() {
         case 'markReady':
           const order = filteredOrders.find(o => o.id === orderId);
           await markReady(orderId, order?.delivery_method || 'delivery');
+          break;
+        case 'markPickedUp':
+          await markPickedUp(orderId);
+          break;
+        case 'markInDelivery':
+          await markInDelivery(orderId);
           break;
         case 'markDelivered':
           await markDelivered(orderId);
@@ -312,6 +320,8 @@ export default function AttendantUnified() {
           onConfirmOrder={() => handleOrderAction('confirm', selectedOrder?.id)}
           onStartPreparation={() => handleOrderAction('startPreparation', selectedOrder?.id)}
           onMarkReady={(orderId) => handleOrderAction('markReady', orderId)}
+          onMarkPickedUp={() => handleOrderAction('markPickedUp', selectedOrder?.id)}
+          onMarkInDelivery={() => handleOrderAction('markInDelivery', selectedOrder?.id)}
           onMarkDelivered={() => handleOrderAction('markDelivered', selectedOrder?.id)}
           onCancelOrder={() => handleOrderAction('cancel', selectedOrder?.id)}
         />
