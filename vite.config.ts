@@ -22,66 +22,77 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Core React (100KB)
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react-router')) {
+            return 'react-vendor';
+          }
           
           // React Query (50KB)
-          'query-vendor': ['@tanstack/react-query'],
+          if (id.includes('@tanstack/react-query')) {
+            return 'query-vendor';
+          }
           
           // Supabase (80KB)
-          'supabase-vendor': ['@supabase/supabase-js'],
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase-vendor';
+          }
           
-          // Radix UI Components (150KB) - agrupados por funcionalidade
-          'radix-core': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-          ],
-          'radix-forms': [
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-label',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-slider',
-            '@radix-ui/react-switch',
-          ],
-          'radix-extended': [
-            '@radix-ui/react-accordion',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-collapsible',
-            '@radix-ui/react-context-menu',
-            '@radix-ui/react-hover-card',
-            '@radix-ui/react-menubar',
-            '@radix-ui/react-navigation-menu',
-            '@radix-ui/react-progress',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-toggle',
-            '@radix-ui/react-toggle-group',
-          ],
+          // Radix UI - Core components usados em quase toda página
+          if (id.includes('@radix-ui/react-dialog') ||
+              id.includes('@radix-ui/react-dropdown-menu') ||
+              id.includes('@radix-ui/react-popover') ||
+              id.includes('@radix-ui/react-select') ||
+              id.includes('@radix-ui/react-tabs')) {
+            return 'radix-core';
+          }
           
-          // Charts & Visualizations (70KB)
-          'charts-vendor': ['recharts'],
+          // Radix UI - Forms (lazy)
+          if (id.includes('@radix-ui/react-checkbox') ||
+              id.includes('@radix-ui/react-label') ||
+              id.includes('@radix-ui/react-radio') ||
+              id.includes('@radix-ui/react-slider') ||
+              id.includes('@radix-ui/react-switch')) {
+            return 'radix-forms';
+          }
           
-          // Form & Validation (40KB)
-          'forms-vendor': ['react-hook-form', 'zod', '@hookform/resolvers'],
+          // Radix UI - Extended (lazy)
+          if (id.includes('@radix-ui')) {
+            return 'radix-extended';
+          }
           
-          // Payment & PIX (30KB) - removido pois gera chunk vazio
-          // 'payment-vendor': ['mercadopago', '@mercadopago/sdk-js', 'pix-utils', 'qrcode'],
+          // Charts (lazy load)
+          if (id.includes('recharts')) {
+            return 'charts-vendor';
+          }
           
-          // Utilities (20KB)
-          'utils-vendor': [
-            'date-fns',
-            'clsx',
-            'tailwind-merge',
-            'class-variance-authority',
-            'zustand',
-          ],
+          // Forms & Validation
+          if (id.includes('react-hook-form') || 
+              id.includes('zod') || 
+              id.includes('@hookform/resolvers')) {
+            return 'forms-vendor';
+          }
+          
+          // Utilities
+          if (id.includes('date-fns') ||
+              id.includes('clsx') ||
+              id.includes('tailwind-merge') ||
+              id.includes('class-variance-authority') ||
+              id.includes('zustand')) {
+            return 'utils-vendor';
+          }
+          
+          // Admin routes (lazy)
+          if (id.includes('src/pages/admin/')) {
+            return 'admin-pages';
+          }
+          
+          // Other node_modules
+          if (id.includes('node_modules/')) {
+            return 'vendor-other';
+          }
         },
         // Nomenclatura otimizada para cache
         chunkFileNames: (chunkInfo) => {
