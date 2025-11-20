@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { queryClient } from "@/config/queryClient";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import "./index.css";
 
 // Lazy load App for faster initial load
@@ -35,18 +36,29 @@ if (ENABLE_MONITORING) {
   });
 }
 
+// Run health check in development
+if (import.meta.env.DEV) {
+  import('./utils/healthCheck').then(({ healthChecker }) => {
+    healthChecker.logHealthStatus();
+  }).catch(error => {
+    console.warn('Failed to run health check:', error);
+  });
+}
+
 root.render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Suspense fallback={
-          <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner />
-          </div>
-        }>
-          <App />
-        </Suspense>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ChunkErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <LoadingSpinner />
+            </div>
+          }>
+            <App />
+          </Suspense>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ChunkErrorBoundary>
   </StrictMode>
 );
