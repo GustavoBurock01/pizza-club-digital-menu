@@ -112,15 +112,40 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
       },
+      // Tree-shaking agressivo
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
+      },
     },
+    // Module preload configuration (apenas chunks críticos)
+    modulePreload: {
+      polyfill: true,
+      resolveDependencies: (filename, deps) => {
+        // Preload apenas chunks vendor críticos
+        const criticalChunks = ['react-vendor', 'query-vendor', 'supabase-vendor'];
+        return deps.filter(dep => criticalChunks.some(chunk => dep.includes(chunk)));
+      },
+    },
+    // Asset inlining threshold (8KB)
+    assetsInlineLimit: 8192,
     // Aumentar limite de warning para chunks grandes esperados
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 500,
     // Otimizações de minificação
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: mode === 'production',
         drop_debugger: mode === 'production',
+        pure_funcs: mode === 'production' ? ['console.log', 'console.debug', 'console.trace'] : [],
+        passes: 2,
+      },
+      format: {
+        comments: false,
+      },
+      mangle: {
+        safari10: true,
       },
     },
   },
