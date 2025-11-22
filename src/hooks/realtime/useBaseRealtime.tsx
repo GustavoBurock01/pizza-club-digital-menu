@@ -3,6 +3,11 @@ import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+// ===== SINGLETON PATTERN: Evitar canais duplicados =====
+const activeChannels = new Map<string, RealtimeChannel>();
+
+export const getActiveChannelsCount = () => activeChannels.size;
+
 interface UseBaseRealtimeOptions {
   channelName: string;
   tables: string[];
@@ -98,6 +103,20 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
       return;
     }
 
+    // ✅ SINGLETON CHECK: Verificar se canal já existe globalmente
+    const existingChannel = activeChannels.get(channelName);
+    if (existingChannel?.state === 'joined') {
+      console.log(`[REALTIME] ✅ Reusing existing channel: ${channelName}`);
+      channelRef.current = existingChannel;
+      setIsConnected(true);
+      setMetrics(prev => ({ 
+        ...prev, 
+        connectionStatus: 'connected',
+        activeChannels: activeChannels.size 
+      }));
+      return;
+    }
+
     // CRÍTICO: Prevenir subscrições duplicadas
     if (channelRef.current) {
       const channelState = channelRef.current.state;
@@ -120,7 +139,7 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
       }
     }
 
-    console.log(`[REALTIME] 🚀 Setting up ${channelName} channel`);
+    console.log(`[REALTIME] 🚀 Setting up ${channelName} channel (Active: ${activeChannels.size})`);
 
     const channel = supabase.channel(channelName);
 
@@ -147,7 +166,15 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
         console.log(`[REALTIME] ✅ ${channelName} connected`);
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
-        setMetrics(prev => ({ ...prev, connectionStatus: 'connected' }));
+        
+        // ✅ SINGLETON: Registrar canal ativo globalmente
+        activeChannels.set(channelName, channel);
+        
+        setMetrics(prev => ({ 
+          ...prev, 
+          connectionStatus: 'connected',
+          activeChannels: activeChannels.size
+        }));
       })
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
         console.error(`[REALTIME] ❌ ${channelName} error:`, error);
@@ -185,7 +212,13 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
       // CRÍTICO: Cleanup assíncrono completo
       if (channelRef.current) {
         const channelToRemove = channelRef.current;
+        
+        // ✅ SINGLETON: Remover do registro global
+        activeChannels.delete(channelName);
+        
         channelRef.current = null; // Limpar referência imediatamente
+        
+        console.log(`[REALTIME] 🧹 Removing channel ${channelName} (Remaining: ${activeChannels.size})`);
         
         // Remover canal de forma assíncrona
         supabase.removeChannel(channelToRemove).catch(error => {
