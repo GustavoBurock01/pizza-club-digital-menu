@@ -2766,23 +2766,6 @@ export type Database = {
       }
     }
     Views: {
-      admin_dashboard_stats: {
-        Row: {
-          active_orders: number | null
-          active_products: number | null
-          average_ticket: number | null
-          orders_this_month: number | null
-          orders_this_week: number | null
-          orders_today: number | null
-          pending_orders: number | null
-          revenue_this_month: number | null
-          revenue_this_week: number | null
-          revenue_today: number | null
-          total_customers: number | null
-          total_products: number | null
-        }
-        Relationships: []
-      }
       orders_with_details: {
         Row: {
           address_id: string | null
