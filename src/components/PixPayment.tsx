@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Copy, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 // ===== COMPONENTE PIX OTIMIZADO PARA PERFORMANCE =====
 

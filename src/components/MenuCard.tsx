@@ -7,7 +7,7 @@ import { useState, memo, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnifiedStore } from '@/stores/simpleStore';
 import { ProductCustomizer } from './ProductCustomizer';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { OptimizedImage } from './OptimizedImage';
 
 interface MenuItemProps {

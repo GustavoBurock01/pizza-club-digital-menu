@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { applyStrategy } from '@/config/queryCacheMapping';
 
 export interface DeliveryZone {

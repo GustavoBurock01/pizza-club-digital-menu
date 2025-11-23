@@ -1,21 +1,12 @@
-// ===== PROVIDER GLOBAL DE ASSINATURA =====
-// ✅ PONTO ÚNICO DE ACESSO À SUBSCRIPTION (FASE 2.3)
+// ===== PROVIDER GLOBAL DE ASSINATURA - SIMPLIFICADO =====
+// ✅ PONTO ÚNICO DE ACESSO À SUBSCRIPTION
 //
 // Use apenas via:
 //   const { isActive, status, planName, ... } = useSubscriptionContext()
-//
-// ❌ NÃO use diretamente:
-//   - useSubscription(userId) (DEPRECATED - será removido)
-//   - useUnifiedAuth().subscription (DEPRECATED - use useSubscriptionContext)
-//
-// Benefícios:
-//   - Cache compartilhado entre todos os componentes
-//   - Zero requests duplicados ao Supabase
-//   - Um único canal realtime para sincronização
-//   - Facilidade de debugging
 
 import { createContext, useContext, ReactNode } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionQuery } from '@/hooks/subscription/useSubscriptionQuery';
+import { useSubscriptionActions } from '@/hooks/subscription/useSubscriptionActions';
 import { useAuth } from '@/hooks/auth/useAuth';
 
 interface SubscriptionContextType {
@@ -35,19 +26,22 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const subscription = useSubscription(user?.id);
+  
+  // ✅ FASE 1 FIX: Usar hooks diretamente ao invés do deprecated useSubscription
+  const query = useSubscriptionQuery(user?.id);
+  const actions = useSubscriptionActions(user?.id);
 
   const value: SubscriptionContextType = {
-    isActive: subscription.isActive,
-    status: subscription.status,
-    planName: subscription.planName,
-    planPrice: subscription.planPrice,
-    expiresAt: subscription.expiresAt || null,
-    isLoading: subscription.isLoading,
-    isError: subscription.isError,
-    refresh: subscription.refresh,
-    clearCache: subscription.clearCache,
-    reconcile: subscription.reconcile,
+    isActive: query.isActive,
+    status: query.status,
+    planName: query.planName,
+    planPrice: query.planPrice,
+    expiresAt: query.expiresAt || null,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refresh: actions.refresh,
+    clearCache: actions.clearCache,
+    reconcile: actions.reconcile,
   };
 
   return (
