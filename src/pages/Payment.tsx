@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard, Truck, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { SecureStorage } from '@/utils/secureStorage';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';

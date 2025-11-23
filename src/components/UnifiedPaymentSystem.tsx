@@ -23,7 +23,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { messageSystem, showMessage } from '@/utils/messageSystem';
 

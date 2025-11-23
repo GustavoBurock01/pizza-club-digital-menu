@@ -2,14 +2,10 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/config/queryClient";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
-
-import { AttendantRoute } from "@/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
@@ -108,13 +104,12 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SubscriptionProvider>
-          <UnifiedAuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
+      <SubscriptionProvider>
+        <UnifiedAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={
@@ -333,22 +328,21 @@ const App = () => {
               
               {/* ===== ATTENDANT ROUTE ===== */}
               <Route path="/attendant" element={
-                <AttendantRoute>
+                <ProtectedRoute requireAuth={true} requireRole="attendant">
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
                     <AttendantUnified />
                   </Suspense>
-                </AttendantRoute>
+                </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
             
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
-        <PWAInstallPrompt />
-        {import.meta.env.DEV && <AnalyticsDebugger />}
-            </TooltipProvider>
-          </UnifiedAuthProvider>
-        </SubscriptionProvider>
-      </QueryClientProvider>
+            <PWAInstallPrompt />
+            {import.meta.env.DEV && <AnalyticsDebugger />}
+          </TooltipProvider>
+        </UnifiedAuthProvider>
+      </SubscriptionProvider>
     </ErrorBoundary>
   );
 };
