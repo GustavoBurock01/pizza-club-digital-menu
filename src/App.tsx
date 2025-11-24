@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 
 // Lazy load attendant unified
 const AttendantUnified = lazy(() => import("./pages/AttendantUnified"));
+import { AttendantProvider } from "@/providers/AttendantProvider";
 
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -326,14 +327,16 @@ const App = () => {
                 <Route path="webhooks" element={<IntegracoesWebhooks />} />
               </Route>
               
-              {/* ===== ATTENDANT ROUTE ===== */}
-              <Route path="/attendant" element={
-                <ProtectedRoute requireAuth={true} requireRole="attendant">
-                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <AttendantUnified />
-                  </Suspense>
-                </ProtectedRoute>
-              } />
+          {/* ===== ATTENDANT ROUTE ===== */}
+          <Route path="/attendant" element={
+            <ProtectedRoute requireAuth={true} requireRole="attendant">
+              <AttendantProvider>
+                <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                  <AttendantUnified />
+                </Suspense>
+              </AttendantProvider>
+            </ProtectedRoute>
+          } />
               <Route path="*" element={<NotFound />} />
             </Routes>
             
