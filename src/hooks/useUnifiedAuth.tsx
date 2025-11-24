@@ -1,4 +1,7 @@
-// ===== WRAPPER DE COMPATIBILIDADE - USA useAuth + useSubscription =====
+// ===== UNIFIED AUTH HOOK (WRAPPER) - SIMPLIFICADO =====
+// ⚠️ DEPRECATED: Use useAuth from '@/hooks/auth/useAuth' directly para auth
+// ou useSubscriptionContext() para subscription
+// Este hook será removido em versão futura
 
 import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
@@ -24,7 +27,7 @@ interface UnifiedAuthContextType {
   session: Session | null;
   loading: boolean;
   
-  // Subscription State
+  // Subscription State (DEPRECATED - use useSubscriptionContext)
   subscription: SubscriptionStatus;
   
   // Auth Actions
@@ -112,7 +115,6 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ===== SUBSCRIPTION STATUS (formato antigo para compatibilidade) =====
   // ⚠️ DEPRECATED - Use useSubscriptionContext() directly instead
-  // Este wrapper será removido em versão futura
   const subscriptionStatus: SubscriptionStatus = {
     subscribed: subscription.isActive,
     status: subscription.status,
@@ -155,7 +157,6 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     signUp: auth.signUp,
     signIn: auth.signIn,
     signOut: async () => {
-      // Clear subscription cache on logout
       subscription.clearCache();
       await SecureStorage.clearAll();
       await auth.signOut();
@@ -176,8 +177,13 @@ export const useUnifiedAuth = () => {
   if (context === undefined) {
     throw new Error('useUnifiedAuth must be used within an UnifiedAuthProvider');
   }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[DEPRECATED] useUnifiedAuth is deprecated. Use useAuth or useSubscriptionContext directly.');
+  }
+  
   return context;
 };
 
-// Backward compatibility exports
-export const useAuth = useUnifiedAuth;
+// Export useAuth core como padrão (RECOMENDADO)
+export const useAuth = useAuthCore;

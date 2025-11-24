@@ -29,47 +29,128 @@ interface AttendantContextType {
 const AttendantContext = createContext<AttendantContextType | undefined>(undefined);
 
 export const AttendantProvider = ({ children }: { children: ReactNode }) => {
-  // Compose specialized hooks
-  const { orders, stats, isLoading, refetch } = useAttendantOrders();
-  const actions = useAttendantActions();
-  const { isConnected } = useAttendantRealtime();
-  const { isEnabled: isAutoPrintEnabled } = useAutoPrint();
+  // Compose specialized hooks with error handling
+  let orders: AttendantOrder[] = [];
+  let stats: AttendantStats = { 
+    total_orders: 0,
+    pending_orders: 0, 
+    preparing_orders: 0, 
+    ready_orders: 0,
+    completed_orders: 0,
+    total_revenue: 0,
+    avg_preparation_time: 0,
+    pending_payments: 0,
+    presencial_orders: 0,
+    to_collect_orders: 0
+  };
+  let isLoading = true;
+  let refetch = () => {};
+  let actions: ReturnType<typeof useAttendantActions>;
+  let isConnected = false;
+  let isAutoPrintEnabled = false;
+
+  try {
+    const ordersData = useAttendantOrders();
+    orders = ordersData.orders;
+    stats = ordersData.stats;
+    isLoading = ordersData.isLoading;
+    refetch = ordersData.refetch;
+
+    actions = useAttendantActions();
+    
+    const realtimeData = useAttendantRealtime();
+    isConnected = realtimeData.isConnected;
+
+    const autoPrintData = useAutoPrint();
+    isAutoPrintEnabled = autoPrintData.isEnabled;
+  } catch (error) {
+    console.error('[ATTENDANT PROVIDER] Error initializing hooks:', error);
+    // Fallback to safe defaults
+    actions = {
+      updateOrderStatus: async () => {},
+      confirmOrder: async () => {},
+      startPreparation: async () => {},
+      markReady: async () => {},
+      markPickedUp: async () => {},
+      markInDelivery: async () => {},
+      markDelivered: async () => {},
+      cancelOrder: async () => {},
+      updatePaymentStatus: async () => {},
+      isUpdating: false,
+    } as any;
+  }
 
   // Wrappers to match interface signatures (convert Promise<boolean> to Promise<void>)
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string, deliveryMethod?: string): Promise<void> => {
-    await actions.updateOrderStatus(orderId, newStatus as any, {});
+    try {
+      await actions.updateOrderStatus(orderId, newStatus as any, {});
+    } catch (error) {
+      console.error('[ATTENDANT] Error updating order status:', error);
+    }
   };
 
   const handleConfirmOrder = async (orderId: string): Promise<void> => {
-    await actions.confirmOrder(orderId);
+    try {
+      await actions.confirmOrder(orderId);
+    } catch (error) {
+      console.error('[ATTENDANT] Error confirming order:', error);
+    }
   };
 
   const handleStartPreparation = async (orderId: string): Promise<void> => {
-    await actions.startPreparation(orderId);
+    try {
+      await actions.startPreparation(orderId);
+    } catch (error) {
+      console.error('[ATTENDANT] Error starting preparation:', error);
+    }
   };
 
   const handleMarkReady = async (orderId: string, deliveryMethod?: string): Promise<void> => {
-    await actions.markReady(orderId, deliveryMethod);
+    try {
+      await actions.markReady(orderId, deliveryMethod);
+    } catch (error) {
+      console.error('[ATTENDANT] Error marking ready:', error);
+    }
   };
 
   const handleMarkPickedUp = async (orderId: string): Promise<void> => {
-    await actions.markPickedUp(orderId);
+    try {
+      await actions.markPickedUp(orderId);
+    } catch (error) {
+      console.error('[ATTENDANT] Error marking picked up:', error);
+    }
   };
 
   const handleMarkInDelivery = async (orderId: string): Promise<void> => {
-    await actions.markInDelivery(orderId);
+    try {
+      await actions.markInDelivery(orderId);
+    } catch (error) {
+      console.error('[ATTENDANT] Error marking in delivery:', error);
+    }
   };
 
   const handleMarkDelivered = async (orderId: string): Promise<void> => {
-    await actions.markDelivered(orderId);
+    try {
+      await actions.markDelivered(orderId);
+    } catch (error) {
+      console.error('[ATTENDANT] Error marking delivered:', error);
+    }
   };
 
   const handleCancelOrder = async (orderId: string, reason?: string): Promise<void> => {
-    await actions.cancelOrder(orderId, reason);
+    try {
+      await actions.cancelOrder(orderId, reason);
+    } catch (error) {
+      console.error('[ATTENDANT] Error cancelling order:', error);
+    }
   };
 
   const handleUpdatePaymentStatus = async (orderId: string, status: string): Promise<void> => {
-    await actions.updatePaymentStatus(orderId, status);
+    try {
+      await actions.updatePaymentStatus(orderId, status);
+    } catch (error) {
+      console.error('[ATTENDANT] Error updating payment status:', error);
+    }
   };
 
   const value = {
