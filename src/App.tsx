@@ -5,12 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { UnifiedAuthProvider, useAuth } from "@/hooks/useUnifiedAuth";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
-
-// ✅ Wrapper para passar userId ao SubscriptionProvider (evita deadlock)
-const SubscriptionProviderWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  return <SubscriptionProvider userId={user?.id}>{children}</SubscriptionProvider>;
-};
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
@@ -103,20 +97,16 @@ const IntegracoesWebhooks = lazy(() => import("@/pages/admin/integracoes/Webhook
 // Phase 2 Premium
 const Phase2PremiumExperience = lazy(() => import("./components/Phase2PremiumExperience"));
 
-const App = () => {
-  // Preload de rotas críticas no mount
-  useEffect(() => {
-    smartPreload.preloadCritical();
-  }, []);
-
+// ✅ AppContent - componente interno que usa useAuth dentro do UnifiedAuthProvider
+const AppContent = () => {
+  const { user } = useAuth();
+  
   return (
-      <ErrorBoundary>
-        <UnifiedAuthProvider>
-          <SubscriptionProviderWrapper>
-            <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
+    <SubscriptionProvider userId={user?.id}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={
@@ -349,10 +339,23 @@ const App = () => {
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
             <PWAInstallPrompt />
             {import.meta.env.DEV && <AnalyticsDebugger />}
-            </TooltipProvider>
-          </SubscriptionProviderWrapper>
-        </UnifiedAuthProvider>
-      </ErrorBoundary>
+          </TooltipProvider>
+        </SubscriptionProvider>
+  );
+};
+
+const App = () => {
+  // Preload de rotas críticas no mount
+  useEffect(() => {
+    smartPreload.preloadCritical();
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <UnifiedAuthProvider>
+        <AppContent />
+      </UnifiedAuthProvider>
+    </ErrorBoundary>
   );
 };
 
