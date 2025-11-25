@@ -185,5 +185,6 @@ export const useUnifiedAuth = () => {
   return context;
 };
 
-// Export useAuth core como padrão (RECOMENDADO)
+// ✅ FORÇAR uso direto de @/hooks/auth/useAuth
+// Export removido para eliminar dependências circulares
 export const useAuth = useAuthCore;

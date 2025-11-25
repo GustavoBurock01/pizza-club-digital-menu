@@ -7,7 +7,6 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useSubscriptionQuery } from '@/hooks/subscription/useSubscriptionQuery';
 import { useSubscriptionActions } from '@/hooks/subscription/useSubscriptionActions';
-import { useAuth } from '@/hooks/auth/useAuth';
 
 interface SubscriptionContextType {
   isActive: boolean;
@@ -24,12 +23,16 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  
-  // ✅ FASE 1 FIX: Usar hooks diretamente ao invés do deprecated useSubscription
-  const query = useSubscriptionQuery(user?.id);
-  const actions = useSubscriptionActions(user?.id);
+export const SubscriptionProvider = ({ 
+  children,
+  userId 
+}: { 
+  children: ReactNode;
+  userId?: string;
+}) => {
+  // ✅ CORREÇÃO DEADLOCK: Receber userId como prop ao invés de usar useAuth interno
+  const query = useSubscriptionQuery(userId);
+  const actions = useSubscriptionActions(userId);
 
   const value: SubscriptionContextType = {
     isActive: query.isActive,

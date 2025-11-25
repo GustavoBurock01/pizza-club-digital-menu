@@ -116,16 +116,31 @@ const fetchSubscription = async (userId: string): Promise<SubscriptionData> => {
 
 // ===== HOOK PRINCIPAL =====
 export const useSubscriptionQuery = (userId?: string) => {
+  // ✅ SAFE DEFAULTS: Retornar dados seguros quando userId não existe
+  if (!userId) {
+    return {
+      subscription: null,
+      isActive: false,
+      status: 'inactive',
+      planName: 'Nenhum',
+      planPrice: 0,
+      expiresAt: null,
+      stripeSubscriptionId: null,
+      isLoading: false,
+      isError: false,
+      error: null,
+    };
+  }
+
   // React Query com cache strategy de subscription
   const query = useQuery({
     queryKey: ['subscription', userId],
-    queryFn: () => fetchSubscription(userId!),
-    enabled: !!userId,
+    queryFn: () => fetchSubscription(userId),
+    enabled: true,
     ...applyStrategy('subscription'),
     retry: 2,
     // Usar cache local como initialData
     initialData: () => {
-      if (!userId) return undefined;
       return getLocalCache(userId) || undefined;
     },
   });
