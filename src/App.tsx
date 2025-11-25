@@ -3,8 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
+import { UnifiedAuthProvider, useAuth } from "@/hooks/useUnifiedAuth";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
+
+// ✅ Wrapper para passar userId ao SubscriptionProvider (evita deadlock)
+const SubscriptionProviderWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  return <SubscriptionProvider userId={user?.id}>{children}</SubscriptionProvider>;
+};
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
@@ -104,10 +110,10 @@ const App = () => {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <SubscriptionProvider>
+      <ErrorBoundary>
         <UnifiedAuthProvider>
-          <TooltipProvider>
+          <SubscriptionProviderWrapper>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <Routes>
@@ -343,10 +349,10 @@ const App = () => {
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
             <PWAInstallPrompt />
             {import.meta.env.DEV && <AnalyticsDebugger />}
-          </TooltipProvider>
+            </TooltipProvider>
+          </SubscriptionProviderWrapper>
         </UnifiedAuthProvider>
-      </SubscriptionProvider>
-    </ErrorBoundary>
+      </ErrorBoundary>
   );
 };
 
