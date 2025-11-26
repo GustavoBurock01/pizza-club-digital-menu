@@ -17,7 +17,7 @@ export interface OrderMessage {
   updated_at: string;
 }
 
-export const useOrderChat = (orderId: string) => {
+export const useOrderChat = (orderId: string | undefined, senderType: 'customer' | 'attendant' = 'attendant') => {
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -68,7 +68,8 @@ export const useOrderChat = (orderId: string) => {
 
   // ✅ FASE 2: Setup com AbortController
   useEffect(() => {
-    if (!orderId) {
+    // Validação robusta do orderId
+    if (!orderId || orderId === '' || orderId === 'null' || orderId === 'undefined') {
       setMessages([]);
       setLoading(false);
       setUnreadCount(0);
@@ -120,7 +121,15 @@ export const useOrderChat = (orderId: string) => {
               
               // Tentar tocar som de notificação
               const audio = new Audio('/bell.mp3');
-              audio.play().catch(() => console.log('Não foi possível tocar som'));
+              audio.volume = 0.5;
+              audio.play().catch(() => console.log('Autoplay bloqueado'));
+              
+              // Toast de notificação
+              toast({
+                title: "💬 Nova mensagem!",
+                description: `${newMessage.message.substring(0, 50)}${newMessage.message.length > 50 ? '...' : ''}`,
+                duration: 5000,
+              });
             }
           }
         )
@@ -168,7 +177,7 @@ export const useOrderChat = (orderId: string) => {
         id: tempId,
         order_id: orderId,
         sender_id: null,
-        sender_type: 'attendant',
+        sender_type: senderType,
         message: message.trim(),
         message_type: 'text',
         media_url: null,
@@ -186,7 +195,7 @@ export const useOrderChat = (orderId: string) => {
           .from('order_messages')
           .insert({
             order_id: orderId,
-            sender_type: 'attendant',
+            sender_type: senderType,
             message: message.trim(),
             message_type: 'text',
           })
@@ -214,7 +223,7 @@ export const useOrderChat = (orderId: string) => {
         setSending(false);
       }
     },
-    [orderId, toast]
+    [orderId, senderType, toast]
   );
 
   // Marcar mensagens como lidas

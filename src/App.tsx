@@ -36,6 +36,7 @@ const SubscriptionDebugPage = lazy(() => import("./pages/SubscriptionDebug"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
+const OrderStatusModern = lazy(() => import("./pages/OrderStatusModern"));
 const Payment = lazy(() => import("./pages/Payment"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -197,7 +198,7 @@ const App = () => {
               <Route path="/order-status/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <OrderStatus />
+                    <OrderStatusModern />
                   </Suspense>
                 </ProtectedRoute>
               } />

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 // Definindo o tipo AdminOrder diretamente
 interface AdminOrder {
   id: string;
+  order_number: number;
   status: string;
   total_amount: number;
   payment_method: string;
@@ -89,7 +90,7 @@ export const AdminOrdersTable = ({ orders, onUpdateStatus }: AdminOrdersTablePro
       <div className="flex-1">
         <div className="flex items-center gap-4">
           <div>
-            <p className="font-medium">#{order.id.slice(-8)}</p>
+            <p className="font-medium">#{order.order_number}</p>
             <p className="text-sm text-muted-foreground">
               {order.profiles?.full_name || 'Cliente'} • {formatDateTime(order.created_at)}
             </p>

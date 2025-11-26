@@ -27,6 +27,7 @@ export interface User {
 
 export interface Order {
   id: string;
+  order_number: number;
   user_id: string;
   total_amount: number;
   status: string;
@@ -147,6 +148,7 @@ export interface AdminStats {
 
 export interface RecentOrder {
   id: string;
+  order_number: number;
   created_at: string;
   total_amount: number;
   status: string;
@@ -159,6 +161,21 @@ export interface RecentOrder {
       image_url?: string;
     };
   }[];
+}
+
+export interface StoreInfo {
+  id: string;
+  name: string;
+  address: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  phone: string;
+  email: string;
+  whatsapp?: string;
+  is_open?: boolean;
+  closed_message?: string;
 }
 
 // ===== TIPOS PARA VISUALIZAÇÕES =====

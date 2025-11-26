@@ -5,6 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface ProductCrust {
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface OrderItem {
   id: string;
   product_id: string;
@@ -26,6 +32,21 @@ interface OrderItem {
 
 export const useOrderItems = (orderId: string | undefined, isOpen: boolean) => {
   const { toast } = useToast();
+
+  // Buscar todas as bordas disponíveis
+  const { data: crusts = [] } = useQuery<ProductCrust[]>({
+    queryKey: ['product-crusts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_crusts')
+        .select('id, name, price')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
 
   // ✅ FASE 2: Usar React Query com retry automático
   const { data: items = [], isLoading: loading, error } = useQuery<OrderItem[]>({
@@ -91,5 +112,24 @@ export const useOrderItems = (orderId: string | undefined, isOpen: boolean) => {
     }
   }, [error, toast]);
 
-  return { items, loading };
+  // Helper para resolver nome da borda
+  const getCrustName = (customizations: any): string | null => {
+    if (!customizations?.crust) return null;
+    
+    // Se já tem crustName, usar direto
+    if (customizations.crustName) {
+      return customizations.crustName.replace(/^(borda recheada -?|borda -?)/i, '').trim();
+    }
+    
+    // Se crust é UUID, buscar na lista de bordas
+    const crust = crusts.find(c => c.id === customizations.crust);
+    if (crust) {
+      return crust.name.replace(/^(borda recheada -?|borda -?)/i, '').trim();
+    }
+    
+    // Fallback: retornar o valor original
+    return customizations.crust;
+  };
+
+  return { items, loading, getCrustName };
 };

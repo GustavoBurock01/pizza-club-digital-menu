@@ -325,7 +325,7 @@ export const StripeOrderModal = ({
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Pedido #{order.id.slice(0, 8).toUpperCase()}
+                    Pedido #{order.order_number}
                   </h2>
                   <Badge 
                     variant="outline"
@@ -397,15 +397,6 @@ export const StripeOrderModal = ({
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <Clock className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={onClose}
-                  title="Fechar (ESC)"
-                  className="text-gray-600 hover:text-gray-900 ml-2"
-                >
-                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>

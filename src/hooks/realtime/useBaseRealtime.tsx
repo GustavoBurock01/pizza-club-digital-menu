@@ -92,17 +92,32 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
   };
 
   // Setup realtime channel
-  const setupChannel = () => {
+  const setupChannel = async () => {
     if (!enabled) {
       console.log(`[REALTIME] ⏸️ ${channelName} disabled`);
       return;
     }
 
-    // Cleanup existing channel
+    // CRÍTICO: Prevenir subscrições duplicadas
     if (channelRef.current) {
-      console.log(`[REALTIME] 🧹 Cleaning up existing ${channelName} channel`);
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+      const channelState = channelRef.current.state;
+      
+      // Se já está subscribed, não criar novo
+      if (channelState === 'joined') {
+        console.log(`[REALTIME] ⚠️ ${channelName} already subscribed, skipping`);
+        return;
+      }
+      
+      // Cleanup completo e aguardar
+      console.log(`[REALTIME] 🧹 Cleaning up existing ${channelName} channel (state: ${channelState})`);
+      try {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        // Aguardar cleanup completo
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`[REALTIME] ❌ Error removing channel:`, error);
+      }
     }
 
     console.log(`[REALTIME] 🚀 Setting up ${channelName} channel`);
@@ -160,14 +175,22 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
     setupChannel();
 
     return () => {
+      console.log(`[REALTIME] 🧹 Cleanup ${channelName}`);
+      
+      // Limpar debounce timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-
+      
+      // CRÍTICO: Cleanup assíncrono completo
       if (channelRef.current) {
-        console.log(`[REALTIME] 🧹 Cleanup ${channelName}`);
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+        const channelToRemove = channelRef.current;
+        channelRef.current = null; // Limpar referência imediatamente
+        
+        // Remover canal de forma assíncrona
+        supabase.removeChannel(channelToRemove).catch(error => {
+          console.error(`[REALTIME] ❌ Error during cleanup:`, error);
+        });
       }
     };
   }, [channelName, enabled, ...tables]);

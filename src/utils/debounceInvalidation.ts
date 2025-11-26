@@ -17,7 +17,10 @@ export const debouncedInvalidate = (
   // Create new timer
   const timer = setTimeout(() => {
     console.log('[DEBOUNCE] ⏱️ Invalidating query:', queryKey);
-    queryClient.invalidateQueries({ queryKey });
+    queryClient.invalidateQueries({ 
+      queryKey,
+      refetchType: 'active' // Force refetch of active queries
+    });
     invalidationTimers.delete(key);
   }, delayMs);
   

@@ -76,8 +76,26 @@ serve(async (req) => {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       logger.success("Webhook signature verified", { eventType: event.type, eventId: event.id });
+      
+      // Log verified webhook to database
+      await supabaseClient.from('webhook_signatures').insert({
+        webhook_type: 'stripe',
+        signature: signature,
+        payload: JSON.parse(body),
+        verified: true,
+        verified_at: new Date().toISOString()
+      });
     } catch (err: any) {
       logger.error("Webhook signature verification failed", { error: err.message });
+      
+      // Log failed verification
+      await supabaseClient.from('webhook_signatures').insert({
+        webhook_type: 'stripe',
+        signature: signature || 'missing',
+        payload: { error: 'signature_verification_failed', message: err.message },
+        verified: false
+      });
+      
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,

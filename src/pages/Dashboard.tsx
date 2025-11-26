@@ -46,6 +46,7 @@ const Dashboard = () => {
         .from('orders')
         .select(`
           id,
+          order_number,
           created_at,
           total_amount,
           status,
@@ -372,7 +373,7 @@ const Dashboard = () => {
                         <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">
-                              Pedido #{order.id.slice(-6)}
+                              Pedido #{order.order_number}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {new Date(order.created_at).toLocaleDateString('pt-BR')} • R$ {order.total_amount.toFixed(2)}
