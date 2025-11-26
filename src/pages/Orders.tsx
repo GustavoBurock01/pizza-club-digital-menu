@@ -180,7 +180,7 @@ const Orders = () => {
                           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div className="space-y-2">
                               <div className="flex items-center gap-3">
-                                <h3 className="font-medium">Pedido #{order.order_number}</h3>
+                                <h3 className="font-medium">Pedido #{order.id.slice(-8)}</h3>
                                 <Badge className={`${statusInfo.color} text-white`}>
                                   {statusInfo.label}
                                 </Badge>
@@ -237,7 +237,7 @@ const Orders = () => {
                           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div className="space-y-2">
                               <div className="flex items-center gap-3">
-                                <h3 className="font-medium">Pedido #{order.order_number}</h3>
+                                <h3 className="font-medium">Pedido #{order.id.slice(-8)}</h3>
                                 <Badge className={`${statusInfo.color} text-white`}>
                                   {statusInfo.label}
                                 </Badge>

@@ -18,11 +18,7 @@ interface Profile {
 type UserRole = 'customer' | 'admin' | 'seller' | 'attendant';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const profileCache = new Map<string, { 
-  profile: Profile; 
-  role: UserRole;
-  timestamp: number 
-}>();
+const profileCache = new Map<string, { data: Profile; timestamp: number }>();
 
 export const useUnifiedProfile = () => {
   const { user } = useUnifiedAuth();
@@ -71,27 +67,13 @@ export const useUnifiedProfile = () => {
         setLoading(true);
         setError(null);
 
-        // ✅ Limpar cache de outros usuários ao trocar de conta
-        profileCache.forEach((value, key) => {
-          if (key !== currentUser.id) {
-            profileCache.delete(key);
-          }
-        });
-
         // Check cache first
         const cacheKey = currentUser.id;
         const cached = profileCache.get(cacheKey);
         const now = Date.now();
 
         if (cached && (now - cached.timestamp) < CACHE_TTL) {
-          console.log('[PROFILE] 📦 Using cached data:', {
-            userId: currentUser.id,
-            profile: cached.profile.full_name,
-            role: cached.role,
-            cacheAge: Math.round((now - cached.timestamp) / 1000) + 's'
-          });
-          setProfile(cached.profile);
-          setUserRole(cached.role);
+          setProfile(cached.data);
           setLoading(false);
           return;
         }
@@ -135,22 +117,11 @@ export const useUnifiedProfile = () => {
 
           const role = (roleData?.role as UserRole) || 'customer';
           
-          console.log('[PROFILE] 🎭 Fetched from database:', {
-            userId: currentUser.id,
-            profile: profileData.full_name,
-            role: role,
-            source: 'database'
-          });
-          
           setProfile(profileData);
           setUserRole(role);
           
-          // Cache the result with role
-          profileCache.set(cacheKey, { 
-            profile: profileData, 
-            role: role,
-            timestamp: now 
-          });
+          // Cache the result
+          profileCache.set(cacheKey, { data: profileData, timestamp: now });
           
           // Clean old cache entries
           profileCache.forEach((value, key) => {
@@ -187,12 +158,8 @@ export const useUnifiedProfile = () => {
 
       setProfile(data);
       
-      // Update cache with current role
-      profileCache.set(currentUser.id, { 
-        profile: data, 
-        role: userRole || 'customer',
-        timestamp: Date.now() 
-      });
+      // Update cache
+      profileCache.set(currentUser.id, { data, timestamp: Date.now() });
       
       return data;
     } catch (err: any) {

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Clock, QrCode, Copy, CheckCircle, XCircle, ArrowLeft, CreditCard, Truck, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { SecureStorage } from '@/utils/secureStorage';
 import { formatCurrency } from '@/utils/formatting';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -356,7 +356,7 @@ const Payment = () => {
                 <div className="space-y-2 text-left">
                   <div className="flex justify-between">
                     <span className="font-medium">Pedido:</span>
-                    <span>#{paymentResult.order.order_number}</span>
+                    <span>#{paymentResult.order.id.slice(0, 8)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">Valor:</span>

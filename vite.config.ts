@@ -22,77 +22,66 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
+        manualChunks: {
           // Core React (100KB)
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') || 
-              id.includes('node_modules/react-router')) {
-            return 'react-vendor';
-          }
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           
           // React Query (50KB)
-          if (id.includes('@tanstack/react-query')) {
-            return 'query-vendor';
-          }
+          'query-vendor': ['@tanstack/react-query'],
           
           // Supabase (80KB)
-          if (id.includes('@supabase/supabase-js')) {
-            return 'supabase-vendor';
-          }
+          'supabase-vendor': ['@supabase/supabase-js'],
           
-          // Radix UI - Core components usados em quase toda página
-          if (id.includes('@radix-ui/react-dialog') ||
-              id.includes('@radix-ui/react-dropdown-menu') ||
-              id.includes('@radix-ui/react-popover') ||
-              id.includes('@radix-ui/react-select') ||
-              id.includes('@radix-ui/react-tabs')) {
-            return 'radix-core';
-          }
+          // Radix UI Components (150KB) - agrupados por funcionalidade
+          'radix-core': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+          'radix-forms': [
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-label',
+            '@radix-ui/react-radio-group',
+            '@radix-ui/react-slider',
+            '@radix-ui/react-switch',
+          ],
+          'radix-extended': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-collapsible',
+            '@radix-ui/react-context-menu',
+            '@radix-ui/react-hover-card',
+            '@radix-ui/react-menubar',
+            '@radix-ui/react-navigation-menu',
+            '@radix-ui/react-progress',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-toggle',
+            '@radix-ui/react-toggle-group',
+          ],
           
-          // Radix UI - Forms (lazy)
-          if (id.includes('@radix-ui/react-checkbox') ||
-              id.includes('@radix-ui/react-label') ||
-              id.includes('@radix-ui/react-radio') ||
-              id.includes('@radix-ui/react-slider') ||
-              id.includes('@radix-ui/react-switch')) {
-            return 'radix-forms';
-          }
+          // Charts & Visualizations (70KB)
+          'charts-vendor': ['recharts'],
           
-          // Radix UI - Extended (lazy)
-          if (id.includes('@radix-ui')) {
-            return 'radix-extended';
-          }
+          // Form & Validation (40KB)
+          'forms-vendor': ['react-hook-form', 'zod', '@hookform/resolvers'],
           
-          // Charts (lazy load)
-          if (id.includes('recharts')) {
-            return 'charts-vendor';
-          }
+          // Payment & PIX (30KB) - removido pois gera chunk vazio
+          // 'payment-vendor': ['mercadopago', '@mercadopago/sdk-js', 'pix-utils', 'qrcode'],
           
-          // Forms & Validation
-          if (id.includes('react-hook-form') || 
-              id.includes('zod') || 
-              id.includes('@hookform/resolvers')) {
-            return 'forms-vendor';
-          }
-          
-          // Utilities
-          if (id.includes('date-fns') ||
-              id.includes('clsx') ||
-              id.includes('tailwind-merge') ||
-              id.includes('class-variance-authority') ||
-              id.includes('zustand')) {
-            return 'utils-vendor';
-          }
-          
-          // Admin routes (lazy)
-          if (id.includes('src/pages/admin/')) {
-            return 'admin-pages';
-          }
-          
-          // Other node_modules
-          if (id.includes('node_modules/')) {
-            return 'vendor-other';
-          }
+          // Utilities (20KB)
+          'utils-vendor': [
+            'date-fns',
+            'clsx',
+            'tailwind-merge',
+            'class-variance-authority',
+            'zustand',
+          ],
         },
         // Nomenclatura otimizada para cache
         chunkFileNames: (chunkInfo) => {
@@ -112,40 +101,15 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
       },
-      // Tree-shaking agressivo
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        tryCatchDeoptimization: false,
-      },
     },
-    // Module preload configuration (apenas chunks críticos)
-    modulePreload: {
-      polyfill: true,
-      resolveDependencies: (filename, deps) => {
-        // Preload apenas chunks vendor críticos
-        const criticalChunks = ['react-vendor', 'query-vendor', 'supabase-vendor'];
-        return deps.filter(dep => criticalChunks.some(chunk => dep.includes(chunk)));
-      },
-    },
-    // Asset inlining threshold (8KB)
-    assetsInlineLimit: 8192,
     // Aumentar limite de warning para chunks grandes esperados
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 600,
     // Otimizações de minificação
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: mode === 'production',
         drop_debugger: mode === 'production',
-        pure_funcs: mode === 'production' ? ['console.log', 'console.debug', 'console.trace'] : [],
-        passes: 2,
-      },
-      format: {
-        comments: false,
-      },
-      mangle: {
-        safari10: true,
       },
     },
   },

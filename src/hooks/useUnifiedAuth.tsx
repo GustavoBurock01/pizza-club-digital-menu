@@ -1,7 +1,4 @@
-// ===== UNIFIED AUTH HOOK (WRAPPER) - SIMPLIFICADO =====
-// ⚠️ DEPRECATED: Use useAuth from '@/hooks/auth/useAuth' directly para auth
-// ou useSubscriptionContext() para subscription
-// Este hook será removido em versão futura
+// ===== WRAPPER DE COMPATIBILIDADE - USA useAuth + useSubscription =====
 
 import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
@@ -27,7 +24,7 @@ interface UnifiedAuthContextType {
   session: Session | null;
   loading: boolean;
   
-  // Subscription State (DEPRECATED - use useSubscriptionContext)
+  // Subscription State
   subscription: SubscriptionStatus;
   
   // Auth Actions
@@ -114,7 +111,8 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth.user, auth.session, toast]);
 
   // ===== SUBSCRIPTION STATUS (formato antigo para compatibilidade) =====
-  // ⚠️ DEPRECATED - Use useSubscriptionContext() directly instead
+  // ⚠️ DEPRECATED (FASE 2.3) - Use useSubscriptionContext() directly instead
+  // Este wrapper será removido em versão futura
   const subscriptionStatus: SubscriptionStatus = {
     subscribed: subscription.isActive,
     status: subscription.status,
@@ -124,6 +122,15 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     loading: subscription.isLoading,
     hasSubscriptionHistory: subscription.isActive,
   };
+  
+  // Log deprecation warning when accessing subscription via UnifiedAuth
+  if (process.env.NODE_ENV === 'development' && subscription.isActive !== undefined) {
+    console.warn(
+      '[DEPRECATED] useUnifiedAuth().subscription is deprecated.',
+      '\nUse useSubscriptionContext() directly instead.',
+      '\nSee docs/MIGRATION_SUBSCRIPTION.md for migration guide.'
+    );
+  }
 
   // ===== UTILITY FUNCTIONS =====
   const isAuthenticated = useCallback(() => {
@@ -157,6 +164,7 @@ export const UnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
     signUp: auth.signUp,
     signIn: auth.signIn,
     signOut: async () => {
+      // Clear subscription cache on logout
       subscription.clearCache();
       await SecureStorage.clearAll();
       await auth.signOut();
@@ -177,14 +185,8 @@ export const useUnifiedAuth = () => {
   if (context === undefined) {
     throw new Error('useUnifiedAuth must be used within an UnifiedAuthProvider');
   }
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('[DEPRECATED] useUnifiedAuth is deprecated. Use useAuth or useSubscriptionContext directly.');
-  }
-  
   return context;
 };
 
-// ✅ FORÇAR uso direto de @/hooks/auth/useAuth
-// Export removido para eliminar dependências circulares
-export const useAuth = useAuthCore;
+// Backward compatibility exports
+export const useAuth = useUnifiedAuth;

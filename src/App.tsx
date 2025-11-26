@@ -2,10 +2,14 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/config/queryClient";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { UnifiedAuthProvider, useAuth } from "@/hooks/useUnifiedAuth";
+import { UnifiedAuthProvider } from "@/hooks/useUnifiedAuth";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
+
+import { AttendantRoute } from "@/routes/AttendantRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense, useEffect } from "react";
 import { OptimizedLoadingSpinner } from "@/components/OptimizedLoadingSpinner";
@@ -24,7 +28,6 @@ import NotFound from "./pages/NotFound";
 
 // Lazy load attendant unified
 const AttendantUnified = lazy(() => import("./pages/AttendantUnified"));
-import { AttendantProvider } from "@/providers/AttendantProvider";
 
 // Lazy loaded pages - apenas secundárias (otimizado)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -33,7 +36,6 @@ const SubscriptionDebugPage = lazy(() => import("./pages/SubscriptionDebug"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
-const OrderStatusModern = lazy(() => import("./pages/OrderStatusModern"));
 const Payment = lazy(() => import("./pages/Payment"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -97,16 +99,21 @@ const IntegracoesWebhooks = lazy(() => import("@/pages/admin/integracoes/Webhook
 // Phase 2 Premium
 const Phase2PremiumExperience = lazy(() => import("./components/Phase2PremiumExperience"));
 
-// ✅ AppContent - componente interno que usa useAuth dentro do UnifiedAuthProvider
-const AppContent = () => {
-  const { user } = useAuth();
-  
+const App = () => {
+  // Preload de rotas críticas no mount
+  useEffect(() => {
+    smartPreload.preloadCritical();
+  }, []);
+
   return (
-    <SubscriptionProvider userId={user?.id}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionProvider>
+          <UnifiedAuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={
@@ -190,7 +197,7 @@ const AppContent = () => {
               <Route path="/order-status/:orderId" element={
                 <ProtectedRoute requireAuth={true} requireRole="customer" requireSubscription={true}>
                   <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                    <OrderStatusModern />
+                    <OrderStatus />
                   </Suspense>
                 </ProtectedRoute>
               } />
@@ -323,38 +330,24 @@ const AppContent = () => {
                 <Route path="webhooks" element={<IntegracoesWebhooks />} />
               </Route>
               
-          {/* ===== ATTENDANT ROUTE ===== */}
-          <Route path="/attendant" element={
-            <ProtectedRoute requireAuth={true} requireRole="attendant">
-              <AttendantProvider>
-                <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
-                  <AttendantUnified />
-                </Suspense>
-              </AttendantProvider>
-            </ProtectedRoute>
-          } />
+              {/* ===== ATTENDANT ROUTE ===== */}
+              <Route path="/attendant" element={
+                <AttendantRoute>
+                  <Suspense fallback={<OptimizedLoadingSpinner variant="minimal" />}>
+                    <AttendantUnified />
+                  </Suspense>
+                </AttendantRoute>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
             
             {/* ===== PHASE 4: PWA & ANALYTICS COMPONENTS ===== */}
-            <PWAInstallPrompt />
-            {import.meta.env.DEV && <AnalyticsDebugger />}
-          </TooltipProvider>
+        <PWAInstallPrompt />
+        {import.meta.env.DEV && <AnalyticsDebugger />}
+            </TooltipProvider>
+          </UnifiedAuthProvider>
         </SubscriptionProvider>
-  );
-};
-
-const App = () => {
-  // Preload de rotas críticas no mount
-  useEffect(() => {
-    smartPreload.preloadCritical();
-  }, []);
-
-  return (
-    <ErrorBoundary>
-      <UnifiedAuthProvider>
-        <AppContent />
-      </UnifiedAuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

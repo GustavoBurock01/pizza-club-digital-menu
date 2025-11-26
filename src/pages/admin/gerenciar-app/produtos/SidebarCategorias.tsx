@@ -4,7 +4,7 @@ import { Plus, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ModalAdicionarCategoria } from './ModalAdicionarCategoria';
 

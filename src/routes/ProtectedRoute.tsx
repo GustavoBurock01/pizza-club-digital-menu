@@ -1,6 +1,6 @@
 // ===== ROUTE GUARD ÚNICO E OTIMIZADO =====
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useRole } from '@/hooks/useUnifiedProfile';
@@ -26,26 +26,11 @@ export const ProtectedRoute = ({
   const { isActive: hasSubscription, isLoading: subLoading } = useSubscriptionContext();
   const location = useLocation();
 
-  // ===== SAFETY TIMEOUT =====
-  // ✅ Prevenir loading infinito com timeout de 10 segundos
-  const [safetyTimeout, setSafetyTimeout] = useState(false);
-
   // ===== LOADING STATE =====
   // ✅ CORREÇÃO: Sempre esperar role carregar para decisões de redirecionamento corretas
   const isLoading = authLoading || roleLoading;
 
-  useEffect(() => {
-    if (!isLoading) return;
-    
-    const timer = setTimeout(() => {
-      console.warn('[ROUTE-GUARD] ⚠️ Loading timeout após 10s - forçando render');
-      setSafetyTimeout(true);
-    }, 10000);
-    
-    return () => clearTimeout(timer);
-  }, [isLoading]);
-
-  if (isLoading && !safetyTimeout) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">

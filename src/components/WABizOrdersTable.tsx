@@ -50,13 +50,12 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
   };
 
   const getDeliveryType = (order: any) => {
-    const method = (order.delivery_method || '').toString().toLowerCase();
-    if (['delivery', 'entrega', 'delivery_service'].includes(method)) return 'Entrega';
-    if (['pickup', 'retirada', 'takeaway', 'store_pickup'].includes(method)) return 'Retirada';
-    // Fallback por presença de endereço
-    if (order.address_id || order.delivery_address_snapshot || order.street || order.neighborhood) return 'Entrega';
-    return 'Retirada';
+    if (order.street || order.neighborhood) {
+      return "Entrega";
+    }
+    return "Retirada";
   };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -64,18 +63,6 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      pix: 'PIX',
-      credit_card: 'Cartão de Crédito',
-      debit_card: 'Cartão de Débito',
-      cash: 'Dinheiro',
-      credit_card_delivery: 'Cartão de Crédito',
-      debit_card_delivery: 'Cartão de Débito',
-    };
-    return labels[method] || 'Não informado';
   };
 
   if (loading) {
@@ -125,7 +112,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
               onClick={() => onViewDetails(order)}
             >
               <TableCell className="font-mono text-sm font-medium">
-                #{order.order_number}
+                #{order.id.slice(-6).toUpperCase()}
               </TableCell>
               
               <TableCell>
@@ -180,7 +167,7 @@ export const WABizOrdersTable = ({ orders, onViewDetails, loading }: OrdersTable
                     R$ {order.total_amount.toFixed(2)}
                   </div>
                   <div className="text-gray-500 text-xs">
-                    {getPaymentMethodLabel(order.payment_method)}
+                    {order.payment_method}
                   </div>
                 </div>
               </TableCell>

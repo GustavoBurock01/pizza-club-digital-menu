@@ -33,14 +33,10 @@ export const MessagesHub = ({ isOpen, onClose, onOpenOrder }: MessagesHubProps) 
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    fetchConversations();
-    const cleanup = setupRealtime();
-    return () => {
-      // Garantir cleanup do canal ao fechar
-      if (typeof cleanup === 'function') cleanup();
-    };
+    if (isOpen) {
+      fetchConversations();
+      setupRealtime();
+    }
   }, [isOpen]);
 
   const fetchConversations = async () => {

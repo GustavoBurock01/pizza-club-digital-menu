@@ -15,7 +15,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { SubscriptionReconciling } from '@/components/SubscriptionReconciling';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/supabase";
 import { RecentOrder } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils/formatting";
 import { useToast } from "@/hooks/use-toast";
@@ -34,14 +34,6 @@ const Dashboard = () => {
   const lastRecon = user ? Number(sessionStorage.getItem(`reconciled_${user.id}`) || '0') : 0;
   const hasReconciledRecently = lastRecon && (Date.now() - lastRecon < 60_000);
 
-  // ✅ FASE 1 FIX: Logs de debug para rastrear loading states
-  console.log('[DASHBOARD] State:', { 
-    subscriptionLoading, 
-    isActive, 
-    hasReconciledRecently,
-    userId: user?.id 
-  });
-
   useEffect(() => {
     fetchRecentOrders();
   }, [user]);
@@ -54,7 +46,6 @@ const Dashboard = () => {
         .from('orders')
         .select(`
           id,
-          order_number,
           created_at,
           total_amount,
           status,
@@ -158,22 +149,6 @@ const Dashboard = () => {
     () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário',
     [user]
   );
-
-  // ✅ FASE 1 FIX: Timeout de segurança para evitar loading infinito
-  useEffect(() => {
-    if (subscriptionLoading) {
-      const timeout = setTimeout(() => {
-        console.warn('[DASHBOARD] Loading timeout - forçando renderização');
-        toast({
-          title: "Carregando devagar?",
-          description: "Se persistir, tente fazer logout e login novamente.",
-          variant: "default",
-        });
-      }, 10000); // 10 segundos
-
-      return () => clearTimeout(timeout);
-    }
-  }, [subscriptionLoading, toast]);
 
   if (subscriptionLoading) {
     return (
@@ -397,7 +372,7 @@ const Dashboard = () => {
                         <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">
-                              Pedido #{order.order_number}
+                              Pedido #{order.id.slice(-6)}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {new Date(order.created_at).toLocaleDateString('pt-BR')} • R$ {order.total_amount.toFixed(2)}

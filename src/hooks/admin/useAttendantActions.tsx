@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 

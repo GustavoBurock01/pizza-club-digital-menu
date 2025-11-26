@@ -11,7 +11,7 @@ import { useUnifiedStore } from '@/stores/simpleStore';
 import { CartCustomization } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, Minus, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { useQuery } from '@tanstack/react-query';
 
 interface ProductCustomizerProps {

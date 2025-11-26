@@ -31,8 +31,8 @@ export default function AdminDashboard() {
       description="Visão geral do negócio e principais métricas"
       onRefresh={refreshAllData}
     >
-      {/* KPI Cards - Mobile & Tablet Optimized */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pedidos Hoje</CardTitle>
@@ -86,8 +86,8 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions - Mobile Optimized */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

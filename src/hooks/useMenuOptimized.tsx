@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { supabase, QUERY_KEYS } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
+import { QUERY_KEYS } from '@/services/supabase';
 import { applyStrategy } from '@/config/queryCacheMapping';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Category, Subcategory, CurrentView } from '@/types';

@@ -1472,7 +1472,6 @@ export type Database = {
           estimated_delivery_time: number | null
           id: string
           notes: string | null
-          order_number: number
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: string | null
           status: Database["public"]["Enums"]["order_status"] | null
@@ -1496,7 +1495,6 @@ export type Database = {
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
-          order_number?: number
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -1520,7 +1518,6 @@ export type Database = {
           estimated_delivery_time?: number | null
           id?: string
           notes?: string | null
-          order_number?: number
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -2250,7 +2247,6 @@ export type Database = {
       store_info: {
         Row: {
           address: string | null
-          city: string | null
           created_at: string
           description: string | null
           email: string
@@ -2259,16 +2255,12 @@ export type Database = {
           instagram: string | null
           logo_url: string | null
           name: string
-          neighborhood: string | null
           phone: string
-          state: string | null
           updated_at: string
           whatsapp: string | null
-          zip_code: string | null
         }
         Insert: {
           address?: string | null
-          city?: string | null
           created_at?: string
           description?: string | null
           email?: string
@@ -2277,16 +2269,12 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           name?: string
-          neighborhood?: string | null
           phone?: string
-          state?: string | null
           updated_at?: string
           whatsapp?: string | null
-          zip_code?: string | null
         }
         Update: {
           address?: string | null
-          city?: string | null
           created_at?: string
           description?: string | null
           email?: string
@@ -2295,12 +2283,9 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           name?: string
-          neighborhood?: string | null
           phone?: string
-          state?: string | null
           updated_at?: string
           whatsapp?: string | null
-          zip_code?: string | null
         }
         Relationships: []
       }
@@ -2734,38 +2719,38 @@ export type Database = {
           },
         ]
       }
-      webhook_signatures: {
+    }
+    Views: {
+      admin_dashboard_stats: {
         Row: {
-          created_at: string | null
-          id: string
-          payload: Json
-          signature: string
-          verified: boolean | null
-          verified_at: string | null
-          webhook_type: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          payload: Json
-          signature: string
-          verified?: boolean | null
-          verified_at?: string | null
-          webhook_type: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          payload?: Json
-          signature?: string
-          verified?: boolean | null
-          verified_at?: string | null
-          webhook_type?: string
+          active_orders: number | null
+          active_products: number | null
+          average_ticket: number | null
+          orders_this_month: number | null
+          orders_this_week: number | null
+          orders_today: number | null
+          pending_orders: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_customers: number | null
+          total_products: number | null
         }
         Relationships: []
       }
-    }
-    Views: {
+      admin_stats_view: {
+        Row: {
+          avg_order_value: number | null
+          completed_orders: number | null
+          pending_orders: number | null
+          today_orders: number | null
+          total_orders: number | null
+          total_products: number | null
+          total_revenue: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
       orders_with_details: {
         Row: {
           address_id: string | null
@@ -2856,7 +2841,6 @@ export type Database = {
       cleanup_old_closed_attempts: { Args: never; Returns: number }
       cleanup_old_debug_logs: { Args: never; Returns: number }
       cleanup_old_queue_items: { Args: never; Returns: number }
-      cleanup_old_webhook_signatures: { Args: never; Returns: number }
       cleanup_rate_limits: { Args: never; Returns: number }
       complete_queue_item: {
         Args: { p_order_id?: string; p_queue_id: string; p_result_data?: Json }
@@ -3014,6 +2998,7 @@ export type Database = {
         Args: { p_external_id: string; p_order_data: Json; p_platform: string }
         Returns: string
       }
+      refresh_admin_stats: { Args: never; Returns: undefined }
       validate_cpf_format: { Args: { cpf_input: string }; Returns: boolean }
       validate_password_strength: {
         Args: { password_input: string }
@@ -3045,7 +3030,6 @@ export type Database = {
         | "cancelled"
         | "picked_up"
         | "in_delivery"
-        | "expired"
       payment_method:
         | "credit_card"
         | "debit_card"
@@ -3195,7 +3179,6 @@ export const Constants = {
         "cancelled",
         "picked_up",
         "in_delivery",
-        "expired",
       ],
       payment_method: [
         "credit_card",

@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { RealtimeChannel } from '@supabase/supabase-js';
-
-// ===== SINGLETON PATTERN: Evitar canais duplicados =====
-const activeChannels = new Map<string, RealtimeChannel>();
-
-export const getActiveChannelsCount = () => activeChannels.size;
 
 interface UseBaseRealtimeOptions {
   channelName: string;
@@ -97,49 +92,20 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
   };
 
   // Setup realtime channel
-  const setupChannel = async () => {
+  const setupChannel = () => {
     if (!enabled) {
       console.log(`[REALTIME] ⏸️ ${channelName} disabled`);
       return;
     }
 
-    // ✅ SINGLETON CHECK: Verificar se canal já existe globalmente
-    const existingChannel = activeChannels.get(channelName);
-    if (existingChannel?.state === 'joined') {
-      console.log(`[REALTIME] ✅ Reusing existing channel: ${channelName}`);
-      channelRef.current = existingChannel;
-      setIsConnected(true);
-      setMetrics(prev => ({ 
-        ...prev, 
-        connectionStatus: 'connected',
-        activeChannels: activeChannels.size 
-      }));
-      return;
-    }
-
-    // CRÍTICO: Prevenir subscrições duplicadas
+    // Cleanup existing channel
     if (channelRef.current) {
-      const channelState = channelRef.current.state;
-      
-      // Se já está subscribed, não criar novo
-      if (channelState === 'joined') {
-        console.log(`[REALTIME] ⚠️ ${channelName} already subscribed, skipping`);
-        return;
-      }
-      
-      // Cleanup completo e aguardar
-      console.log(`[REALTIME] 🧹 Cleaning up existing ${channelName} channel (state: ${channelState})`);
-      try {
-        await supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        // Aguardar cleanup completo
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
-        console.error(`[REALTIME] ❌ Error removing channel:`, error);
-      }
+      console.log(`[REALTIME] 🧹 Cleaning up existing ${channelName} channel`);
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
-    console.log(`[REALTIME] 🚀 Setting up ${channelName} channel (Active: ${activeChannels.size})`);
+    console.log(`[REALTIME] 🚀 Setting up ${channelName} channel`);
 
     const channel = supabase.channel(channelName);
 
@@ -166,15 +132,7 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
         console.log(`[REALTIME] ✅ ${channelName} connected`);
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
-        
-        // ✅ SINGLETON: Registrar canal ativo globalmente
-        activeChannels.set(channelName, channel);
-        
-        setMetrics(prev => ({ 
-          ...prev, 
-          connectionStatus: 'connected',
-          activeChannels: activeChannels.size
-        }));
+        setMetrics(prev => ({ ...prev, connectionStatus: 'connected' }));
       })
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
         console.error(`[REALTIME] ❌ ${channelName} error:`, error);
@@ -202,28 +160,14 @@ export const useBaseRealtime = (options: UseBaseRealtimeOptions) => {
     setupChannel();
 
     return () => {
-      console.log(`[REALTIME] 🧹 Cleanup ${channelName}`);
-      
-      // Limpar debounce timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      
-      // CRÍTICO: Cleanup assíncrono completo
+
       if (channelRef.current) {
-        const channelToRemove = channelRef.current;
-        
-        // ✅ SINGLETON: Remover do registro global
-        activeChannels.delete(channelName);
-        
-        channelRef.current = null; // Limpar referência imediatamente
-        
-        console.log(`[REALTIME] 🧹 Removing channel ${channelName} (Remaining: ${activeChannels.size})`);
-        
-        // Remover canal de forma assíncrona
-        supabase.removeChannel(channelToRemove).catch(error => {
-          console.error(`[REALTIME] ❌ Error during cleanup:`, error);
-        });
+        console.log(`[REALTIME] 🧹 Cleanup ${channelName}`);
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
   }, [channelName, enabled, ...tables]);

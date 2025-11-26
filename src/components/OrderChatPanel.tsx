@@ -11,23 +11,12 @@ import { ptBR } from 'date-fns/locale';
 interface OrderChatPanelProps {
   orderId: string;
   customerName?: string;
-  isCustomerView?: boolean;
 }
 
-export const OrderChatPanel = ({ orderId, customerName, isCustomerView = false }: OrderChatPanelProps) => {
-  // Validação adicional no início
-  if (!orderId) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Carregando chat...</p>
-      </div>
-    );
-  }
-
+export const OrderChatPanel = ({ orderId, customerName }: OrderChatPanelProps) => {
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const senderType = isCustomerView ? 'customer' : 'attendant';
-  const { messages, loading, sending, unreadCount, sendMessage, markAsRead } = useOrderChat(orderId, senderType);
+  const { messages, loading, sending, unreadCount, sendMessage, markAsRead } = useOrderChat(orderId);
 
   // Auto-scroll para última mensagem
   useEffect(() => {
@@ -67,10 +56,7 @@ export const OrderChatPanel = ({ orderId, customerName, isCustomerView = false }
         <MessageCircle className="h-5 w-5 text-primary" />
         <div className="flex-1">
           <p className="font-semibold text-sm">
-            {isCustomerView 
-              ? `Chat com ${customerName || 'Atendente'}` 
-              : `Chat com ${customerName || 'Cliente'}`
-            }
+            Chat com {customerName || 'Cliente'}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -91,9 +77,7 @@ export const OrderChatPanel = ({ orderId, customerName, isCustomerView = false }
             </div>
           ) : (
             messages.map((msg) => {
-              const isAttendant = isCustomerView 
-                ? msg.sender_type === 'customer'
-                : msg.sender_type === 'attendant';
+              const isAttendant = msg.sender_type === 'attendant';
               const isSystem = msg.sender_type === 'system';
 
               return (

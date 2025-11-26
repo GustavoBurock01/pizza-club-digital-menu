@@ -10,7 +10,6 @@ import { StripeOrderModal } from "@/components/stripe-style/StripeOrderModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ThermalPrintQueue } from "@/components/ThermalPrintQueue";
 import { PendingPaymentModal } from "@/components/PendingPaymentModal";
-import { MessagesHub } from "@/components/MessagesHub";
 import { useAttendant } from "@/providers/AttendantProvider";
 import { useThermalPrint } from "@/hooks/useThermalPrint";
 import { useSound } from "@/hooks/useSound";
@@ -59,7 +58,6 @@ export default function AttendantUnified() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPrintQueue, setShowPrintQueue] = useState(false);
   const [showPendingPayments, setShowPendingPayments] = useState(false);
-  const [showMessagesHub, setShowMessagesHub] = useState(false);
   
   // Filtros
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
@@ -80,22 +78,6 @@ export default function AttendantUnified() {
       return count || 0;
     },
     refetchInterval: 30000, // Atualiza a cada 30s
-  });
-
-  // Query para contar mensagens não lidas
-  const { data: unreadMessagesCount } = useQuery({
-    queryKey: ['unread-messages-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('order_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('sender_type', 'customer')
-        .eq('is_read', false);
-      
-      if (error) throw error;
-      return count || 0;
-    },
-    refetchInterval: 10000, // Atualiza a cada 10s
   });
 
   const handleSearch = (query: string) => {
@@ -207,10 +189,8 @@ export default function AttendantUnified() {
           onSearch={handleSearch}
           notificationCount={stats?.pending_orders || 0}
           pendingPaymentsCount={pendingPaymentsCount || 0}
-          unreadMessagesCount={unreadMessagesCount || 0}
           onOpenPendingPayments={() => setShowPendingPayments(true)}
           onOpenPrintQueue={() => setShowPrintQueue(true)}
-          onOpenMessages={() => setShowMessagesHub(true)}
         />
 
       {/* Badge de Impressão Automática */}
@@ -374,19 +354,6 @@ export default function AttendantUnified() {
           const order = orders?.find(o => o.id === orderId);
           if (order) {
             handleViewDetails(order);
-          }
-        }}
-      />
-
-      {/* Hub de Mensagens */}
-      <MessagesHub 
-        isOpen={showMessagesHub}
-        onClose={() => setShowMessagesHub(false)}
-        onOpenOrder={(orderId) => {
-          const order = orders?.find(o => o.id === orderId);
-          if (order) {
-            setSelectedOrder(order);
-            setShowMessagesHub(false);
           }
         }}
       />

@@ -739,26 +739,25 @@ const Checkout = () => {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-3 sm:px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
-            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
-              <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">{getBackButtonText()}</span>
-                <span className="sm:hidden">Voltar</span>
+                {getBackButtonText()}
               </Button>
               <h1 className="text-xl font-semibold">Checkout Express</h1>
             </div>
           </header>
 
-          <div className="flex-1 p-3 sm:p-4 md:p-6 pb-28 sm:pb-32">
-            <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="flex-1 p-6 pb-32">
+            <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* MAIN CONTENT */}
-              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              <div className="lg:col-span-2 space-y-6">
                 
-                {/* STEP INDICATOR - Mobile Optimized */}
-                <div className="flex items-center justify-center space-x-2 sm:space-x-4 mb-6 sm:mb-8">
+                {/* STEP INDICATOR */}
+                <div className="flex items-center justify-center space-x-4 mb-8">
                   {[{
                   key: 'review',
                   label: 'Revisar',

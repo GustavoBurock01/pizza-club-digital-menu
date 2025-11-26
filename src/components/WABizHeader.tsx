@@ -24,10 +24,8 @@ interface WABizHeaderProps {
   onSearch: (query: string) => void;
   notificationCount?: number;
   pendingPaymentsCount?: number;
-  unreadMessagesCount?: number;
   onOpenPendingPayments?: () => void;
   onOpenPrintQueue?: () => void;
-  onOpenMessages?: () => void;
 }
 
 export const WABizHeader = ({ 
@@ -35,10 +33,8 @@ export const WABizHeader = ({
   onSearch,
   notificationCount = 0,
   pendingPaymentsCount = 0,
-  unreadMessagesCount = 0,
   onOpenPendingPayments,
   onOpenPrintQueue,
-  onOpenMessages,
 }: WABizHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -124,37 +120,19 @@ export const WABizHeader = ({
                   variant="ghost" 
                   size="sm" 
                   onClick={onOpenPrintQueue}
-                  className="text-gray-700 hover:text-blue-600 hover:bg-blue-50"
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
               )}
 
-              {/* Mensagens */}
-              {onOpenMessages && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onOpenMessages}
-                  className="relative text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  {unreadMessagesCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 bg-red-500 text-white h-5 w-5 flex items-center justify-center text-xs rounded-full p-0">
-                      {unreadMessagesCount}
-                    </Badge>
-                  )}
-                </Button>
-              )}
-
-              {/* Atualizar Dados */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRefresh}
-                className="text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+              {/* Central de Mensagens */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative"
+                onClick={() => setMessagesOpen(true)}
               >
-                <RefreshCw className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" />
               </Button>
 
               {/* Notificações */}

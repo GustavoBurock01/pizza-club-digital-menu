@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/services/supabase';
 import { applyStrategy } from '@/config/queryCacheMapping';
 import { CartItem } from '@/types';
 
