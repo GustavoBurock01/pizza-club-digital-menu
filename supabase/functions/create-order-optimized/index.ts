@@ -164,16 +164,19 @@ serve(async (req) => {
   }
 
   try {
+    // Use anon key for JWT validation
+    const authHeader = req.headers.get('Authorization') || '';
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         auth: { persistSession: false },
-        global: { headers: { Authorization: req.headers.get('Authorization') || '' } }
+        global: { headers: { Authorization: authHeader } }
       }
     );
 
-    // Autenticar usuário
+    // Autenticar usuário via JWT token
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
     if (authError || !user) {

@@ -2766,40 +2766,6 @@ export type Database = {
       }
     }
     Views: {
-      admin_dashboard_stats: {
-        Row: {
-          active_orders: number | null
-          active_products: number | null
-          average_ticket: number | null
-          orders_this_month: number | null
-          orders_this_week: number | null
-          orders_today: number | null
-          pending_orders: number | null
-          revenue_this_month: number | null
-          revenue_this_week: number | null
-          revenue_today: number | null
-          total_customers: number | null
-          total_products: number | null
-        }
-        Relationships: []
-      }
-      admin_stats_view: {
-        Row: {
-          active_orders: number | null
-          active_products: number | null
-          average_ticket: number | null
-          orders_this_month: number | null
-          orders_this_week: number | null
-          orders_today: number | null
-          pending_orders: number | null
-          revenue_this_month: number | null
-          revenue_this_week: number | null
-          revenue_today: number | null
-          total_customers: number | null
-          total_products: number | null
-        }
-        Relationships: []
-      }
       orders_with_details: {
         Row: {
           address_id: string | null
@@ -3048,7 +3014,6 @@ export type Database = {
         Args: { p_external_id: string; p_order_data: Json; p_platform: string }
         Returns: string
       }
-      refresh_admin_stats: { Args: never; Returns: undefined }
       validate_cpf_format: { Args: { cpf_input: string }; Returns: boolean }
       validate_password_strength: {
         Args: { password_input: string }
@@ -3080,6 +3045,7 @@ export type Database = {
         | "cancelled"
         | "picked_up"
         | "in_delivery"
+        | "expired"
       payment_method:
         | "credit_card"
         | "debit_card"
@@ -3229,6 +3195,7 @@ export const Constants = {
         "cancelled",
         "picked_up",
         "in_delivery",
+        "expired",
       ],
       payment_method: [
         "credit_card",

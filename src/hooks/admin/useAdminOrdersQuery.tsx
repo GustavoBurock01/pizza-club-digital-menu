@@ -13,7 +13,7 @@ import { memoryCache } from '@/utils/performance';
 export interface AdminOrder {
   id: string;
   user_id: string;
-  status: 'pending_payment' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivering' | 'delivered' | 'cancelled';
+  status: 'pending_payment' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_delivery' | 'delivering' | 'delivered' | 'cancelled' | 'expired';
   total_amount: number;
   delivery_fee: number;
   payment_method: string;
