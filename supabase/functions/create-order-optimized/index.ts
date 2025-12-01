@@ -185,11 +185,26 @@ serve(async (req) => {
       }
     );
 
-    // Autenticar usuário via JWT token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('Auth error:', authError);
+    // Extraímos userId e email diretamente do JWT (Supabase já validou o token)
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+
+    try {
+      const payloadBase64 = token.split('.')[1];
+      const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadJson);
+      userId = payload.sub ?? null;
+      userEmail = payload.email ?? payload.user_metadata?.email ?? null;
+    } catch (e) {
+      console.error('Error decoding JWT payload:', e);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!userId) {
+      console.error('JWT payload missing sub (user id)');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -218,15 +233,15 @@ serve(async (req) => {
     }
 
     const orderData: OrderData = await req.json();
-    console.log('[CREATE-ORDER] User authenticated:', user.id);
+    console.log('[CREATE-ORDER] User authenticated:', userId);
     console.log('[CREATE-ORDER] Delivery method received:', orderData.delivery_method);
     console.log('[CREATE-ORDER] Address ID received:', orderData.address_id);
 
     // VALIDAÇÃO 0: Verificar se loja está aberta e logar tentativa
     const storeStatus = await validateStoreIsOpen(
       supabaseClient,
-      user.id,
-      user.email,
+      userId,
+      userEmail,
       {
         items: orderData.items || [],
         total: orderData.total_amount || 0
@@ -267,7 +282,7 @@ serve(async (req) => {
     }
 
     // Reservar estoque temporariamente
-    reserveStock(orderData.items, user.id);
+    reserveStock(orderData.items, userId);
 
     try {
       // FASE 2: Buscar perfil completo do usuário (CPF e email)
@@ -275,7 +290,7 @@ serve(async (req) => {
       const { data: userProfile } = await supabaseClient
         .from('profiles')
         .select('full_name, phone, cpf')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
       
       if (userProfile) {
@@ -311,7 +326,7 @@ serve(async (req) => {
       const { data: order, error: orderError } = await supabaseClient
         .from('orders')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           total_amount: orderData.total_amount,
           delivery_fee: orderData.delivery_fee || 0,
           payment_method: orderData.payment_method,
@@ -321,7 +336,7 @@ serve(async (req) => {
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           customer_cpf: userProfile?.cpf || null, // ✅ FASE 2: Salvar CPF
-          customer_email: user.email || null, // ✅ FASE 2: Salvar Email
+          customer_email: userEmail || null, // ✅ FASE 2: Salvar Email
           notes: orderData.notes,
           status: 'pending',
           payment_status: 'pending'
