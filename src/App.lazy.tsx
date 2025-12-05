@@ -30,12 +30,10 @@ export const Orders = lazy(() => import('@/pages/Orders'));
 export const OrderStatus = lazy(() => import('@/pages/OrderStatus'));
 export const OrderStatusModern = lazy(() => import('@/pages/OrderStatusModern'));
 export const Account = lazy(() => import('@/pages/Account'));
-export const SubscriptionPlans = lazy(() => import('@/pages/SubscriptionPlans'));
 
 // ===== LAZY LOADED ANALYTICS & DEBUG (Low Priority) =====
 export const Analytics = lazy(() => import('@/pages/Analytics'));
 export const LoadTest = lazy(() => import('@/pages/LoadTest'));
-export const SubscriptionDebug = lazy(() => import('@/pages/SubscriptionDebug'));
 
 // Export lazy route wrapper
 export { LazyRoute };
