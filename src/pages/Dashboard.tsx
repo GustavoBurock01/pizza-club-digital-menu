@@ -4,15 +4,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShoppingCart, Repeat, Sparkles, Clock, Crown, RefreshCw } from "lucide-react";
-// Subscription now comes from useUnifiedAuth
+import { ShoppingCart, Repeat, Sparkles, Clock, Crown } from "lucide-react";
 import { useUnifiedStore } from '@/stores/simpleStore';
-import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import { useSubscriptionContext } from '@/providers/SubscriptionProvider';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { SubscriptionReconciling } from '@/components/SubscriptionReconciling';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/services/supabase";
@@ -22,17 +16,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { user, createCheckout, refreshSubscription, reconcileSubscription } = useUnifiedAuth();
+  const { user } = useUnifiedAuth();
   const { addItem } = useUnifiedStore();
-  const { isLoading: subscriptionLoading, isActive } = useSubscriptionContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loadingRepeat, setLoadingRepeat] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const lastRecon = user ? Number(sessionStorage.getItem(`reconciled_${user.id}`) || '0') : 0;
-  const hasReconciledRecently = lastRecon && (Date.now() - lastRecon < 60_000);
 
   useEffect(() => {
     fetchRecentOrders();
@@ -121,46 +111,10 @@ const Dashboard = () => {
     }
   }, [recentOrders, addItem, navigate, toast]);
 
-  const handleRefreshSubscription = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      // Primeiro tenta reconciliar com Stripe
-      await reconcileSubscription?.();
-      
-      // Depois faz o refresh
-      await refreshSubscription();
-      
-      toast({
-        title: "Assinatura atualizada",
-        description: "Status da assinatura foi verificado novamente.",
-      });
-    } catch (error) {
-      console.error('Error refreshing subscription:', error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível verificar a assinatura.",
-        variant: "destructive",
-      });
-    } finally {
-      setRefreshing(false);
-    }
-  }, [reconcileSubscription, refreshSubscription, toast]);
-
   const userName = useMemo(
     () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'usuário',
     [user]
   );
-
-  if (subscriptionLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <LoadingSpinner />
-          <p className="text-muted-foreground">Aguarde, estamos verificando seu acesso...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>
@@ -179,53 +133,17 @@ const Dashboard = () => {
                 Bem-vindo, {userName}! 👋
               </h1>
               <p className="text-muted-foreground">
-                {isActive 
-                  ? 'Sua assinatura está ativa! Aproveite o cardápio exclusivo.'
-                  : 'Assine para ter acesso ao cardápio exclusivo!'
-                }
+                Explore nosso cardápio e faça seu pedido!
               </p>
             </div>
-
-          {/* Banner de assinatura - mostra reconciliação antes de bloquear */}
-          {!isActive && (
-            hasReconciledRecently ? (
-              <Alert className="border-orange-200 bg-orange-50">
-                <Sparkles className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="flex items-center justify-between">
-                  <span className="text-orange-800 font-medium">
-                    Assinatura necessária para acessar o cardápio completo!
-                  </span>
-                  <Button 
-                    className="bg-orange-500 hover:bg-orange-600 text-white ml-4"
-                    onClick={() => navigate('/plans')}
-                  >
-                    Ver Planos
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <SubscriptionReconciling />
-            )
-          )}
-
 
           {/* Ações Rápidas */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Ações Rápidas</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card 
-                className={`transition-shadow ${
-                  isActive 
-                    ? 'hover:shadow-lg cursor-pointer' 
-                    : 'opacity-60 cursor-not-allowed'
-                }`} 
-                onClick={() => {
-                  if (isActive) {
-                    navigate('/menu');
-                  } else {
-                    navigate('/plans');
-                  }
-                }}
+                className="hover:shadow-lg cursor-pointer transition-shadow"
+                onClick={() => navigate('/menu')}
               >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
@@ -233,25 +151,20 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Novo Pedido</CardTitle>
                   <CardDescription className="text-sm">
-                    {isActive 
-                      ? 'Explore nosso cardápio'
-                      : (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
-                    }
+                    Explore nosso cardápio
                   </CardDescription>
                 </CardHeader>
               </Card>
 
               <Card 
                 className={`transition-shadow ${
-                  isActive && recentOrders.length > 0
+                  recentOrders.length > 0
                     ? 'hover:shadow-lg cursor-pointer' 
                     : 'opacity-60 cursor-not-allowed'
                 }`}
                 onClick={() => {
-                  if (isActive && recentOrders.length > 0) {
+                  if (recentOrders.length > 0) {
                     repeatLastOrder();
-                  } else if (!isActive) {
-                    navigate('/plans');
                   }
                 }}
               >
@@ -261,29 +174,17 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Repetir Último</CardTitle>
                   <CardDescription className="text-sm">
-                    {!isActive 
-                      ? (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
-                      : recentOrders.length > 0 
-                        ? 'Peça novamente' 
-                        : 'Nenhum pedido anterior'
+                    {recentOrders.length > 0 
+                      ? 'Peça novamente' 
+                      : 'Nenhum pedido anterior'
                     }
                   </CardDescription>
                 </CardHeader>
               </Card>
 
               <Card 
-                className={`transition-shadow ${
-                  isActive 
-                    ? 'hover:shadow-lg cursor-pointer' 
-                    : 'opacity-60 cursor-not-allowed'
-                }`} 
-                onClick={() => {
-                  if (isActive) {
-                    navigate('/menu');
-                  } else {
-                    navigate('/plans');
-                  }
-                }}
+                className="hover:shadow-lg cursor-pointer transition-shadow"
+                onClick={() => navigate('/menu')}
               >
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
@@ -291,10 +192,7 @@ const Dashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Cardápio</CardTitle>
                   <CardDescription className="text-sm">
-                    {isActive 
-                      ? 'Veja todas as opções'
-                      : (!hasReconciledRecently ? 'Verificando assinatura...' : '🔒 Assine para acessar')
-                    }
+                    Veja todas as opções
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -312,52 +210,25 @@ const Dashboard = () => {
                     <div className="flex items-center gap-3">
                       <Crown className="h-5 w-5 text-pizza-red" />
                       <div className="flex-1">
-                        <CardTitle className="text-lg">Status da Assinatura</CardTitle>
+                        <CardTitle className="text-lg">Total de Pedidos</CardTitle>
                         <CardDescription>
-                          {isActive 
-                            ? 'Assinatura ativa'
-                            : 'Nenhuma assinatura ativa'
-                          }
+                          {recentOrders.length} pedidos realizados
                         </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRefreshSubscription}
-                          disabled={refreshing}
-                        >
-                          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <Badge variant={isActive ? 'default' : 'secondary'}>
-                          {isActive ? 'Ativo' : 'Inativo'}
-                        </Badge>
                       </div>
                     </div>
                   </CardHeader>
-                  {/* Sistema de assinatura unificado com cache de 24h */}
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Plano Atual</CardTitle>
+                    <CardTitle className="text-lg">Último Pedido</CardTitle>
                     <CardDescription>
-                      {isActive 
-                        ? 'Plano ativo'
-                        : 'Nenhum plano ativo'
+                      {recentOrders.length > 0 
+                        ? new Date(recentOrders[0].created_at).toLocaleDateString('pt-BR')
+                        : 'Nenhum pedido ainda'
                       }
                     </CardDescription>
                   </CardHeader>
-                  {!isActive && (
-                    <CardContent className="pt-0">
-                      <Button 
-                        className="w-full gradient-pizza text-white"
-                        onClick={() => navigate('/plans')}
-                      >
-                        Ver Planos
-                      </Button>
-                    </CardContent>
-                  )}
                 </Card>
               </div>
             </div>
@@ -393,14 +264,12 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground mb-4">Nenhum pedido encontrado</p>
-                      {!isActive && (
-                        <Button 
-                          className="bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={() => navigate('/plans')}
-                        >
-                          Ver Planos
-                        </Button>
-                      )}
+                      <Button 
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                        onClick={() => navigate('/menu')}
+                      >
+                        Fazer Pedido
+                      </Button>
                     </div>
                   )}
                 </CardContent>
