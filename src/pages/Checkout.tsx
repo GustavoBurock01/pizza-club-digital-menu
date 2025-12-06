@@ -472,20 +472,21 @@ const Checkout = () => {
       }
     );
 
-    if (createError || !createdOrder?.orderId) {
+    if (createError || !createdOrder?.success || !createdOrder?.order?.id) {
       console.error('[CHECKOUT] Error creating order:', createError);
       throw new Error(createError?.message || 'Erro ao criar pedido');
     }
 
-    console.log('[CHECKOUT] ✅ Order created successfully:', createdOrder.orderId);
+    const orderId = createdOrder.order.id;
+    console.log('[CHECKOUT] ✅ Order created successfully:', orderId);
 
     // Navegar para página de pagamento COM orderId
     if (paymentMethod === 'pix') {
       console.log('[CHECKOUT] Navigating to PIX payment page with orderId');
-      navigate(`/payment/pix?order=${createdOrder.orderId}`);
+      navigate(`/payment/pix?order=${orderId}`);
     } else if (paymentMethod === 'credit_card_online' || paymentMethod === 'debit_card_online') {
       console.log('[CHECKOUT] Navigating to card payment page with orderId');
-      navigate(`/payment/card?order=${createdOrder.orderId}`);
+      navigate(`/payment/card?order=${orderId}`);
     }
     
     toast({
