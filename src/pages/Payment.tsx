@@ -174,18 +174,28 @@ const Payment = () => {
         throw error;
       }
 
-      if (!data || !data.order || !data.pixData) {
+      // Aceitar ambos os formatos: { order: {...}, pixData } ou { orderId: "...", pixData }
+      if (!data || !data.pixData) {
         console.error('[PAYMENT] Invalid response from edge function:', data);
         throw new Error('Resposta inválida do servidor');
       }
 
+      // Determinar orderId do formato correto
+      const receivedOrderId = data.order?.id || data.orderId;
+      
       console.log('[PAYMENT] PIX order created successfully:', {
-        orderId: data.order.id,
+        orderId: receivedOrderId,
         pixCode: data.pixData.pixCode?.substring(0, 20) + '...',
         transactionId: data.pixData.transactionId
       });
 
-      setOrder(data.order);
+      // Se recebeu objeto order, usar diretamente; senão buscar pelo orderId
+      if (data.order) {
+        setOrder(data.order);
+      } else if (data.orderId) {
+        await fetchExistingOrder(data.orderId);
+      }
+      
       setPixData(data.pixData);
       await SecureStorage.remove('pendingOrder');
       
