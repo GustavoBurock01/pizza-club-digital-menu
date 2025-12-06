@@ -184,12 +184,12 @@ class SecurityHeadersManager {
   }
 
   private applyAdditionalHeaders() {
+    // NOTE: X-Frame-Options, Strict-Transport-Security, and X-XSS-Protection 
+    // only work via HTTP headers, not meta tags. They are removed here to avoid
+    // browser warnings. These should be configured at the server/CDN level.
     const headers = [
       { name: 'Referrer-Policy', value: this.config.referrerPolicy },
-      { name: 'X-Content-Type-Options', value: 'nosniff' },
-      { name: 'X-Frame-Options', value: 'DENY' },
-      { name: 'X-XSS-Protection', value: '1; mode=block' },
-      { name: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' }
+      { name: 'X-Content-Type-Options', value: 'nosniff' }
     ];
 
     headers.forEach(header => {
@@ -325,11 +325,19 @@ class SecurityHeadersManager {
   private setupClickjackingProtection() {
     // Check if page is in an iframe
     if (window.self !== window.top) {
-      console.warn('Page loaded in iframe - potential clickjacking attempt');
-      this.reportSecurityViolation('clickjacking', { 
-        referrer: document.referrer,
-        parentOrigin: window.location.ancestorOrigins?.[0] || 'unknown'
-      });
+      // Ignore if running in Lovable preview/development environment
+      const referrer = document.referrer || '';
+      const isLovablePreview = referrer.includes('lovable.dev') || 
+                               referrer.includes('lovable.app') || 
+                               referrer.includes('lovableproject.com');
+      
+      if (!isLovablePreview) {
+        console.warn('Page loaded in iframe - potential clickjacking attempt');
+        this.reportSecurityViolation('clickjacking', { 
+          referrer: document.referrer,
+          parentOrigin: window.location.ancestorOrigins?.[0] || 'unknown'
+        });
+      }
       
       // Optional: Break out of iframe
       // window.top.location = window.self.location;
