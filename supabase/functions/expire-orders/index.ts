@@ -28,7 +28,7 @@ serve(async (req) => {
 
     // Calculate expiration time (30 minutes ago)
     const thirtyMinutesAgo = new Date();
-    thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+    thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 1);
     
     logStep('Expiration cutoff time', { cutoff: thirtyMinutesAgo.toISOString() });
 
