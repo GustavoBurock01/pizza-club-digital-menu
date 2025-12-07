@@ -1669,6 +1669,151 @@ export type Database = {
           },
         ]
       }
+      print_layout_config: {
+        Row: {
+          font_size: string | null
+          footer_message: string | null
+          id: string
+          line_spacing: number | null
+          show_customer_cpf: boolean | null
+          show_customer_email: boolean | null
+          show_logo: boolean | null
+          show_store_address: boolean | null
+          show_store_name: boolean | null
+          show_store_phone: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          font_size?: string | null
+          footer_message?: string | null
+          id?: string
+          line_spacing?: number | null
+          show_customer_cpf?: boolean | null
+          show_customer_email?: boolean | null
+          show_logo?: boolean | null
+          show_store_address?: boolean | null
+          show_store_name?: boolean | null
+          show_store_phone?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          font_size?: string | null
+          footer_message?: string | null
+          id?: string
+          line_spacing?: number | null
+          show_customer_cpf?: boolean | null
+          show_customer_email?: boolean | null
+          show_logo?: boolean | null
+          show_store_address?: boolean | null
+          show_store_name?: boolean | null
+          show_store_phone?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      print_logs: {
+        Row: {
+          copies_printed: number | null
+          copies_requested: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          order_id: string | null
+          printer_id: string | null
+          status: string | null
+        }
+        Insert: {
+          copies_printed?: number | null
+          copies_requested?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          printer_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          copies_printed?: number | null
+          copies_requested?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          printer_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_with_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_logs_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "printer_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printer_configs: {
+        Row: {
+          bluetooth_address: string | null
+          connection_type: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          is_default: boolean | null
+          is_enabled: boolean | null
+          last_status: string | null
+          last_used_at: string | null
+          name: string
+          paper_width: number | null
+          port: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          bluetooth_address?: string | null
+          connection_type: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_default?: boolean | null
+          is_enabled?: boolean | null
+          last_status?: string | null
+          last_used_at?: string | null
+          name: string
+          paper_width?: number | null
+          port?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          bluetooth_address?: string | null
+          connection_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_default?: boolean | null
+          is_enabled?: boolean | null
+          last_status?: string | null
+          last_used_at?: string | null
+          name?: string
+          paper_width?: number | null
+          port?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       product_crusts: {
         Row: {
           created_at: string | null
