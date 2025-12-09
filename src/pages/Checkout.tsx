@@ -473,8 +473,10 @@ const Checkout = () => {
     );
 
     if (createError || !createdOrder?.success || !createdOrder?.order?.id) {
-      console.error('[CHECKOUT] Error creating order:', createError);
-      throw new Error(createError?.message || 'Erro ao criar pedido');
+      console.error('[CHECKOUT] Error creating order:', createError, createdOrder);
+      // Tratar erro de loja fechada especificamente
+      const errorMessage = createdOrder?.message || createdOrder?.error || createError?.message || 'Erro ao criar pedido';
+      throw new Error(errorMessage);
     }
 
     const orderId = createdOrder.order.id;
