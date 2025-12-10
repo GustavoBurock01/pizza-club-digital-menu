@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Printer, 
   Layout, 
@@ -11,7 +11,9 @@ import {
   Plus, 
   RefreshCw,
   Trash2,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,10 +49,10 @@ const defaultAutomationConfig: AutomationConfig = {
 };
 
 export default function Impressao() {
-  const [activeTab, setActiveTab] = useState('impressoras');
   const [showPrinterForm, setShowPrinterForm] = useState(false);
   const [editingPrinter, setEditingPrinter] = useState<PrinterConfig | null>(null);
   const [testingPrinterId, setTestingPrinterId] = useState<string | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
   
   // Automação config (localStorage)
   const [automationConfig, setAutomationConfig] = useState<AutomationConfig>(defaultAutomationConfig);
@@ -207,64 +209,43 @@ export default function Impressao() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="impressoras" className="flex items-center gap-2">
-            <Printer className="h-4 w-4" />
-            <span className="hidden sm:inline">Impressoras</span>
-          </TabsTrigger>
-          <TabsTrigger value="layout" className="flex items-center gap-2">
-            <Layout className="h-4 w-4" />
-            <span className="hidden sm:inline">Layout</span>
-          </TabsTrigger>
-          <TabsTrigger value="automacao" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">Automação</span>
-          </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Logs</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Tab: Impressoras */}
-        <TabsContent value="impressoras" className="space-y-4">
+      {/* Seção 1: Impressoras */}
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Impressoras Configuradas</h3>
-              <p className="text-sm text-muted-foreground">
-                {printers.length} impressora{printers.length !== 1 ? 's' : ''} cadastrada{printers.length !== 1 ? 's' : ''}
-              </p>
+            <div className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Impressoras Configuradas</CardTitle>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={fetchPrinters} disabled={printersLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${printersLoading ? 'animate-spin' : ''}`} />
-                Atualizar
+                <span className="hidden sm:inline">Atualizar</span>
               </Button>
-              <Button onClick={handleAddPrinter}>
+              <Button size="sm" onClick={handleAddPrinter}>
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Adicionar</span>
+              </Button>
+            </div>
+          </div>
+          <CardDescription>
+            {printers.length} impressora{printers.length !== 1 ? 's' : ''} cadastrada{printers.length !== 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {printers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Printer className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">
+                Nenhuma impressora configurada. Adicione sua primeira impressora.
+              </p>
+              <Button variant="outline" size="sm" onClick={handleAddPrinter}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Impressora
               </Button>
             </div>
-          </div>
-
-          {printers.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Printer className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Nenhuma impressora configurada</h3>
-                <p className="text-sm text-muted-foreground text-center mb-4">
-                  Adicione sua primeira impressora para começar a imprimir comandas automaticamente.
-                </p>
-                <Button onClick={handleAddPrinter}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Impressora
-                </Button>
-              </CardContent>
-            </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {printers.map((printer) => (
                 <PrinterCard
                   key={printer.id}
@@ -279,58 +260,39 @@ export default function Impressao() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
 
-          {/* Instruções */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Dica:</strong> Configure uma impressora como padrão para que ela seja usada automaticamente na impressão de comandas.
-              Impressoras USB funcionam melhor com modelos Elgin i7 Plus.
-            </AlertDescription>
-          </Alert>
-        </TabsContent>
-
-        {/* Tab: Layout */}
-        <TabsContent value="layout" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Layout da Comanda</h3>
-              <p className="text-sm text-muted-foreground">
-                Personalize como as comandas serão impressas
-              </p>
-            </div>
+      {/* Seção 2: Layout da Comanda */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Layout className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Layout da Comanda</CardTitle>
           </div>
-
+          <CardDescription>
+            Personalize como as comandas serão impressas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Editor */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Configurações</CardTitle>
-                <CardDescription>
-                  Selecione quais informações exibir na comanda
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {layout && (
-                  <PrintLayoutEditor
-                    config={layout}
-                    onSave={handleSaveLayout}
-                    onReset={handleResetLayout}
-                    isLoading={layoutLoading}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            <div>
+              <h4 className="text-sm font-medium mb-3">Configurações</h4>
+              {layout && (
+                <PrintLayoutEditor
+                  config={layout}
+                  onSave={handleSaveLayout}
+                  onReset={handleResetLayout}
+                  isLoading={layoutLoading}
+                />
+              )}
+            </div>
 
             {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Preview ao Vivo</CardTitle>
-                <CardDescription>
-                  Visualize como a comanda ficará
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-center">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Preview ao Vivo</h4>
+              <div className="flex justify-center p-4 bg-muted/30 rounded-lg">
                 {layout && (
                   <PrintPreviewLive 
                     layout={layout} 
@@ -338,20 +300,24 @@ export default function Impressao() {
                     className="max-w-[250px]"
                   />
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        {/* Tab: Automação */}
-        <TabsContent value="automacao" className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold">Automação de Impressão</h3>
-            <p className="text-sm text-muted-foreground">
-              Configure impressão automática ao receber novos pedidos
-            </p>
+      {/* Seção 3: Automação */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Automação de Impressão</CardTitle>
           </div>
-
+          <CardDescription>
+            Configure impressão automática ao receber novos pedidos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <PrintAutomationSettings 
             config={automationConfig}
             printers={printers}
@@ -362,43 +328,58 @@ export default function Impressao() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Quando a impressão automática está ativada, as comandas serão impressas automaticamente 
-              assim que um pedido for confirmado. Os atendentes verão um indicador no painel.
+              Quando ativada, as comandas serão impressas automaticamente ao confirmar pedidos.
             </AlertDescription>
           </Alert>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        {/* Tab: Logs */}
-        <TabsContent value="logs" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Histórico de Impressões</h3>
-              <p className="text-sm text-muted-foreground">
-                {stats.total} registro{stats.total !== 1 ? 's' : ''} • 
-                {' '}{stats.successful} sucesso{stats.successful !== 1 ? 's' : ''} • 
-                {' '}{stats.failed} erro{stats.failed !== 1 ? 's' : ''}
-                {stats.successRate !== undefined && ` • ${stats.successRate.toFixed(0)}% taxa de sucesso`}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={fetchLogs} disabled={logsLoading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleClearOldLogs}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Limpar Antigos
-              </Button>
-            </div>
-          </div>
+      {/* Seção 4: Histórico de Impressões (Colapsável) */}
+      <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">Histórico de Impressões</CardTitle>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {stats.total} registros • {stats.successRate?.toFixed(0) || 0}% sucesso
+                  </span>
+                  {logsOpen ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="flex items-center justify-end gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={fetchLogs} disabled={logsLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleClearOldLogs}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Limpar Antigos
+                </Button>
+              </div>
 
-          <PrintLogsTable 
-            logs={logs}
-            onRefresh={fetchLogs}
-            onRetry={handleRetryPrint}
-          />
-        </TabsContent>
-      </Tabs>
+              <PrintLogsTable 
+                logs={logs}
+                onRefresh={fetchLogs}
+                onRetry={handleRetryPrint}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Dialog: Adicionar/Editar Impressora */}
       <PrinterForm
